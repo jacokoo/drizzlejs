@@ -1,7 +1,7 @@
 {
   "name": "jacojs",
   "version": "0.1.0",
-  "main": "core/jaco.js",
+  "main": "core/drizzle.js",
   "ignore": [
     "**/.*",
     "node_modules",
