@@ -1,32 +1,39 @@
-define ['jquery', 'underscore'], ($, _) ->
+define ['jquery', 'underscore', './config'], ($, _, config) ->
 
-    create = (name, obj) ->
-        return obj unless name
-        obj = $.Deferred() unless obj
-        return obj unless obj.promise
+    if config.development is true
+        create = (name, obj) ->
+            obj = $.Deferred() unless obj
+            return obj unless name
+            return obj unless obj.promise
 
-        obj.name = name
-        p = obj.promise
-        obj.promise = ->
-            o = p.apply obj
-            o.name = name
-            o
-        obj
+            @logger.debug '[Deferred]', name, '[create]'
+            me = @
+            for key in ['resolve', 'reject', 'notify']
+                do (key) ->
+                    old = obj[key + 'With']
+                    obj[key + 'With'] = (args...) ->
+                        me.logger.debug '[Deferred]', name, "[#{key}]"
+                        old.apply obj, args
+            obj
+    else
+        create = ->
+            obj = $.Deferred() unless obj
+            obj
 
-    deferred: (name, obj) ->
-        create name, obj
+    createDeferred: (name, obj) ->
+        create.call @, name, obj
 
-    promise: (name, fn, args...) ->
-        unless _.isString name
+    deferred: (name, fn, args...) ->
+        if name and not _.isString name
             args.unshift fn if fn?
             fn = name
             name = null
 
-        return @deferred(name, fn).promise() if fn?.promise
+        return @createDeferred(name, fn).promise() if fn?.promise
 
-        obj = @deferred name
+        obj = @createDeferred name
         if _.isFunction fn
-            returned = fn.apply @, [obj].concat args
+            returned = fn.apply @, args.concat [obj]
             return obj.promise() if returned is obj
             return returned.promise() if returned?.promise
             obj.resolve returned
@@ -36,33 +43,44 @@ define ['jquery', 'underscore'], ($, _) ->
 
     chain: (name, args...) ->
         unless _.isString name
-            args.unshift name if name?
+            args.unshift name
             name = null
 
-        return @promise name, args[0] if args.length is 0 or (args.length is 1 and not _.isArray args[0])
+        return @deferred name, args[0] if args.length is 0 or (args.length is 1 and not _.isArray args[0])
 
-        @promise name, (deferred) =>
+        @deferred name, (deferred) =>
             gots = []
             previous = null
             i = 0
 
             process = (item) =>
-                n = if name then name + i++ else name
                 (if _.isArray item
-                    ps = for p, j in _.flatten item
-                        nn = if n then n + j else n
-                        @promise nn, p, previous, [].concat gots
-                    @promise n, (d) ->
-                        $.when.apply($, ps).then _.bind(d.resolve, d), _.bind(d.reject, d), _.bind(d.notify, d)
+                    if item.length is 0
+                        @deferred(null, [])
+                    else if item.length is 1
+                        @deferred(null, item[0], previous, [].concat gots).then (data, args...) ->
+                            if args.length > 0
+                                args.unshift data
+                                data = args
+                            [data]
+                    else
+                        ps = for p, j in _.flatten item
+                            @deferred null, p, previous, [].concat gots
+                        ps or= []
+                        $.when.apply($, ps).then (args...) -> args
                 else
-                    @promise n, p, previous, [].concat gots
-                ).then done, fail, progress
+                    @deferred null, item, previous, [].concat gots
+                ).done(done).fail(fail).progress(progress)
 
-            done = (data...) ->
-                data = data[0] if data.length is 1
+            done = (data, others...) ->
+                if others.length > 0
+                    others.unshift data
+                    data = others
+
                 gots.push data
                 previous = data
-                if args.length is 0 then deferred.resolve previous, gots else process args.shift()
+
+                if args.length is 0 then deferred.resolve previous else process args.shift()
 
             fail = (data...) ->
                 data = data[0] if data.length is 1
@@ -74,3 +92,4 @@ define ['jquery', 'underscore'], ($, _) ->
                 deferred.nodify data
 
             process args.shift()
+            deferred

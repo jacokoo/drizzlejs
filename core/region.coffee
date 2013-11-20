@@ -1,16 +1,16 @@
 define [
     'jquery'
     'underscore'
-    './util'
-    './deferred'
-], ($, _, util, Deferred) ->
+    './base'
+], ($, _, Base) ->
 
-    class Region
-        constructor: (@root, @module, name, el) ->
+    class Region extends Base
+        constructor: (@app, @module, @name, el) ->
             @id = _.uniqueId 'R'
-            @logger = new util.Logger "Region #{name}"
-
             @el = if el instanceof $ then el else $ el
+            super
+
+        initialize: ->
             @logger.warn "dom element: #{el} not exsits" if @el.size() is 0
 
         getEl: -> @el
@@ -22,37 +22,57 @@ define [
         # set currentItem to item
         # render item
         show: (item, options) ->
-            unless item and item.render and item.setRegion
-                @logger.warn "try to show an item which is neither a view nor a module"
-                return
-
-            @chain 'show item:' + item.name,
-            [ =>
-                item.region.close() if item.region and item.region.id isnt @id
-            , =>
-                @close()
-            ]
-            , =>
-                @showItem item, options
+            deferred = @createDeferred()
+            if _.isString item
+                @app.getLoader(item).loadModule(item).done (module, args) =>
+                    @showItem module, options, deferred
+            else
+                @showItem item, options, deferred
+            deferred
 
         close: ->
             return unless @currentItem
-            @chain 'close item:' + @currentItem.name, =>
+            @chain 'close item:' + @currentItem.name, ->
                 @currentItem.close()
-            , =>
+            , ->
                 @empty()
                 @currentItem = null
                 @
+
+        delegateEvent: (view, name, selector, fn) ->
+            n = "#{name}.events#{@id}#{view.id}"
+            if selector then @el.on n, selector, fn else @el.on n, fn
+
+        undelegateEvents: (view)->
+            @el.off ".events#{@id}#{view.id}"
+
+        attachHtml: (html) ->
+            @el.html html
+
+        $$: (selector) ->
+            @el.find selector
 
         # for inner use, override it to customize empty behavior
         empty: -> @getEl().empty()
 
         # for inner use,
-        showItem: (item, options) ->
-            @currentItem = item
-            item.setRegion @
-            item.render(options)
+        showItem: (item, options, deferred) ->
+            unless item and item.render and item.setRegion
+                @logger.warn "try to show an item which is neither a view nor a module"
+                return deferred.reject item
 
-    util.include Region, Deferred
+            @chain 'show item:' + item.name,
+            [ ->
+                item.region.close() if item.region and item.region.id isnt @id
+            , ->
+                @close()
+            ]
+            , ->
+                @currentItem = item
+                item.setRegion @
+            , ->
+                item.render(options)
+            .done ->
+                deferred.resolve item
 
     Region

@@ -1,5 +1,5 @@
 {
-  "name": "jacojs",
+  "name": "drizzlejs",
   "version": "0.1.0",
   "main": "core/drizzle.js",
   "ignore": [

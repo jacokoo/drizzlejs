@@ -1,0 +1,11 @@
+{{#layout}}
+<ul class="sidebar-nav" data-region="items">
+</ul>
+{{/layout}}
+
+{{#view "menu"}}
+<li class="sidebar-brand"><a href="javascript:void 0">{{Global.applicationName}}</a></li>
+{{#each items}}
+  <li><a href="javascript:void 0" id="menu-{{id}}">{{name}}</a></li>
+{{/each}}
+{{/view}}

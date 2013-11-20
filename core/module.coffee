@@ -2,14 +2,15 @@ define [
     'jquery'
     'underscore'
     'backbone'
-    './config'
-    './loader'
-    './util'
-], ($, _, Backbone, config, Loader, util) ->
+    './base'
+    './view'
+    './region'
+], ($, _, Backbone, Base, View, Region) ->
 
-    class ModuleContainer
+    class ModuleContainer extends Base
         constructor: (@name) ->
             @modules = {}
+            super
 
         checkId: (id) ->
             throw new Error "id: #{id} is invalid" unless id and _.isString id
@@ -35,77 +36,116 @@ define [
         remove: (id) ->
             delete @modules[id]
 
-    createLayout = (module, def) ->
+    class Layout extends View
+        initialize: ->
+            @isLayout = true
+            @loadDeferred = @chain "Initialize Layout", [@loadTemplate(), @loadHandlers()]
+            delete @bindData
 
-
-    class Module
-        constructor: (@name, @root, @loader, @options) ->
+    class Module extends Base
+        @Container = ModuleContainer
+        @Layout = Layout
+        constructor: (@name, @app, @loader, @options) ->
             @id = _.uniqueId('f')
-            @container = options.container or @root.modules
+            [a..., @baseName] = @name.split '/'
+            @container = options.container or @app.modules
             @container.add @
             @separatedTemplate = options.separatedTemplate is true
             @regions = {}
+            super
 
-            util.extend @, options.extend if options.extend
+        initialize: ->
+            @extend @options.extend if @options.extend
+            @loadDeferred = @createDeferred "Initialize Module #{@name}"
+            @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()], => @loadDeferred.resolve()
 
         loadTemplate: ->
             return if @separatedTemplate
-            @loader.loadTemplate(@, config.fileNames.template).done (template) =>
+            @chain @loader.loadTemplate(@), (template) =>
                 @template = template
 
         loadLayout: ->
-            layout = util.getValue @options, 'layout', @
-            if _.isString layout
-                names = Loader.analyse layout
-                return loader.get(names.loader).loadLayout(layout).done (obj) =>
-                    @layout = obj
-            def = if _.isObject layout then layout else {}
-            @layout = createLayout module, def
+            layout = @getOptionResult @options, 'layout'
+            name = if _.isString layout then layout else layout?.name
+            name or= 'layout'
+            @chain @app.getLoader(name).loadLayout(@, name, layout), (obj) =>
+                @layout = obj
 
         loadData: ->
             @data = {}
             promises = []
-            models = util.getValue(@options, 'models', @) or {}
-            collections = util.getValue(@options, 'collections', @) or {}
+            models = @getOptionResult(@options, 'models') or {}
+            collections = @getOptionResult(@options, 'collections') or {}
+            @autoLoadDuringRender = []
+            @autoLoadAfterRender = []
 
-            for id, value of models
-                do (id, value) =>
-                    value = util.callIt value, @
-                    names = Loader.analyse value
-                    loader = Loader.get names.loader
-                    promises.push loader.loadModel(value, @).done (model) =>
-                        @data[id] = model
+            loadIt = (id, value, isModel) =>
+                throw new Error "data id: #{id} is already used" if @data[id]
+                value = @getOptionResult value
+                if value
+                    (if value.autoLoad is 'after' or value.autoLoad is 'afterRender' then @autoLoadAfterRender else @autoLoadDuringRender).push id
+                promises.push @chain @app.getLoader(value)[if isModel then 'loadModel' else 'loadCollection'](value, @), (d) =>
+                    @data[id] = d
 
-            for id, value of collections
-                do (id, value) =>
-                    throw new Error "collection id: #{id} is already used" if @data[id]
-                    value = util.callIt value, @
-                    names = Loader.analyse value
-                    loader = Loader.get names.loader
-                    promises.push loader.loadCollection(value, @).done (collection) =>
-                        @data[id] = collection
+            loadIt id, value for id, value of models
+            loadIt id, value for id, value of collections
 
-            promises
+            @chain.call @, "load data for #{@name}", promises
 
         loadItems: ->
             @items = {}
             @inRegionItems = {}
 
             promises = []
-            items = util.getValue(@options, 'items', @) or []
-            for item in items
-                do (item) =>
-                    item = callIt item, @
-                    item = name: item if _.isString item
+            items = @getOptionResult(@options, 'items') or []
+            for name, item of items
+                do (name, item) =>
+                    item = @getOptionResult item
+                    item = region: item if _.isString item
                     isModule = item.isModule
-                    names = Loader.analyse item.name
-                    loader = Loader.get items.loader
 
-                    promises.push loader[if isModule then 'loadModule' else 'loadView'](item.name, @).done (obj) =>
-                        @items[names.name] = obj
-                        @inRegionItems[region] = obj if item.region
+                    p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>
+                        @items[obj.name] = obj
+                        @inRegionItems[item.region] = obj if item.region
+                    promises.push p
 
-            promises
+            @chain.call @, "load items for #{@name}", promises
 
         addRegion: (name, el) ->
-            @regions[name] = new Region @root, @module, name, el
+            @regions[name] = new Region @app, @module, name, el
+
+        render: ->
+            return @logger.error 'No region to render in' unless @region
+
+            @chain "Render module #{@name}",
+                @loadDeferred
+                -> @options.beforeRender?.apply @
+                -> @layout.setRegion @region
+                @fetchDataDuringRender
+                -> @layout.render()
+                -> @options.afterLayoutRender?.apply @
+                ->
+                    promises = for key, value of @inRegionItems
+                        region = @regions[key]
+                        @logger.error "Can not find region: #{key}" unless region
+                        region.show value
+                    @chain promises
+                -> @options.afterRender?.apply @
+                @fetchDataAfterRender
+
+        setRegion: (@region) ->
+
+        close: ->
+            @chain "Close module: #{@name}",
+                @options.beforeClose?.apply @
+                value.close() for key, value of @regions
+                @layout.close()
+                @options.afterClose?.apply @
+
+        fetchDataDuringRender: ->
+            @chain (@data[id].fetch?() for id in @autoLoadDuringRender)
+
+        fetchDataAfterRender: ->
+            @chain (@data[id].fetch?() for id in @autoLoadAfterRender)
+
+    Module
