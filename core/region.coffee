@@ -5,13 +5,20 @@ define [
 ], ($, _, Base) ->
 
     class Region extends Base
+        @types = {}
+        @register: (name, clazz) ->
+            @types[name] = clazz
+        @create: (type, app, module, name, el) ->
+            clazz = @types[type] or Region
+            new clazz(app, module, name, el)
+
         constructor: (@app, @module, @name, el) ->
             @id = _.uniqueId 'R'
             @el = if el instanceof $ then el else $ el
             super
 
         initialize: ->
-            @logger.warn "dom element: #{el} not exsits" if @el.size() is 0
+            @logger.warn "DOM element: #{el} not exists" if @el.size() is 0
 
         getEl: -> @el
 
@@ -39,20 +46,16 @@ define [
                 @currentItem = null
                 @
 
-        delegateEvent: (view, name, selector, fn) ->
-            n = "#{name}.events#{@id}#{view.id}"
+        delegateEvent: (item, name, selector, fn) ->
+            n = "#{name}.events#{@id}#{item.id}"
             if selector then @el.on n, selector, fn else @el.on n, fn
 
-        undelegateEvents: (view)->
-            @el.off ".events#{@id}#{view.id}"
-
-        attachHtml: (html) ->
-            @el.html html
+        undelegateEvents: (item)->
+            @el.off ".events#{@id}#{item.id}"
 
         $$: (selector) ->
             @el.find selector
 
-        # for inner use, override it to customize empty behavior
         empty: -> @getEl().empty()
 
         # for inner use,
@@ -61,9 +64,13 @@ define [
                 @logger.warn "try to show an item which is neither a view nor a module"
                 return deferred.reject item
 
+            if item.region and item.region.id is @id
+                return @chain 'show item:' + item.name, item.render(options), ->
+                    deferred.resolve item
+
             @chain 'show item:' + item.name,
             [ ->
-                item.region.close() if item.region and item.region.id isnt @id
+                item.region.close() if item.region
             , ->
                 @close()
             ]

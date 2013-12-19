@@ -7,7 +7,8 @@ define [
     './config'
     './module'
     './view'
-], ($, _, Backbone, Handlebars, Base, config, Module, View) ->
+    './collection'
+], ($, _, Backbone, Handlebars, Base, config, Module, View, Collection) ->
 
     require.s.contexts._.config.urlArgs = unless config.cache then '_c=' + (new Date()).getTime() else ''
 
@@ -44,6 +45,7 @@ define [
 
             require [path], (obj) =>
                 @logger.debug 'load resource:', path, 'done, got:', obj
+                obj = obj(@app) if _.isFunction obj
                 wish.resolve obj
             , error
 
@@ -69,12 +71,12 @@ define [
             @chain "load layout: #{name} for module #{module.name}",
                 if layout.templateOnly is false then @loadModuleResource(module, name) else {}
                 (options) =>
-                    new Module.Layout name, module, @, options
+                    new Module.Layout name, module, @, _.extend(layout, options)
 
         innerLoadTemplate: (module, p) ->
             path = p + '.html'
-            template = Loader.TemplateCache[path]
-            template = Loader.TemplateCache[path] = @loadModuleResource module, path, 'text' unless template
+            template = Loader.TemplateCache[module.name + path]
+            template = Loader.TemplateCache[module.name + path] = @loadModuleResource module, path, 'text' unless template
 
             @chain "load template: #{path}", template, (t) =>
                 if _.isString t
@@ -91,21 +93,16 @@ define [
             path = config.fileNames.template + name
             @innerLoadTemplate view.module, path
 
-        parseUrl: (url = '', module) ->
-            url = url.apply module if _.isFunction url
-            if url.charAt(0) is '/'
-                url.substring 1
-            else if url.indexOf('../') is 0
-                if @app.urlRoot then Base.joinPath @app.urlRoot, url.substring(3) else url.substring(3)
-            else
-                if @app.urlRoot then Base.joinPath @app.urlRoot, module.name, url else Base.joinPath module.name, url
+        parseUrl: (u = '', module) ->
+            url = if _.isFunction u then u.apply module else u
+            prefix = if module.options.urlPrefix then module.options.urlPrefix + module.name else module.name
+            @app.url prefix, url or ''
 
         loadModel: (name = '', module) ->
             return name if name instanceof Backbone.Model
             name = url: name if _.isString name
-
-            url = if _.isFunction name.url then name.url.apply module else url
-            name.urlRoot = @app.url module.name, url or ''
+            name = _.extend {}, name
+            name.urlRoot = @parseUrl name.url, module
             delete name.url
 
             model = Backbone.Model.extend name
@@ -114,12 +111,18 @@ define [
         loadCollection: (name = '', module) ->
             return name if name instanceof Backbone.Collection
             name = url: name if _.isString name
-            url = if _.isFunction name.url then name.url.apply module else url
-            name.url = @app.url module.name, url or ''
+            name = _.extend {}, name
+            name.url = @parseUrl name.url, module
 
-            collection = Backbone.Collection.extend name
-            new collection()
+            new Collection(null, name)
 
         loadHandlers: (view, name) ->
             view.options.handlers or {}
+
+        loadRouter: (path) ->
+            {name} = Loader.analyse path
+            path = Base.joinPath name, config.fileNames.router
+            path = path.substring(1) if path.charAt(0) is '/'
+            @chain 'load router:' + path, @loadResource(path)
+
     Loader

@@ -20,6 +20,7 @@ define ['jquery', 'underscore', 'config'], ($, _, config) ->
             handler: 'handler-'       # event handler file name prefix
             model: 'model-'           # model definition file name prefix
             collection: 'collection-' # collection definition file name prefix
+            router: 'router'
 
     merged = _.extend {}, defaults, config
 

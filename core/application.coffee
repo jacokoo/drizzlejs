@@ -1,8 +1,9 @@
 define [
-    'jquery', 'underscore', 'handlebars'
+    'jquery', 'underscore', 'handlebars', 'backbone'
     './base', './config', './region', './loader', './module', './loaders/simple'
+    './router'
     './helpers'
-], ($, _, Handlebars, Base, config, Region, Loader, Module, SimpleLoader, helpers) ->
+], ($, _, Handlebars, Backbone, Base, config, Region, Loader, Module, SimpleLoader, Router, helpers) ->
 
     getPath = (root, path) ->
         return root if not path
@@ -25,7 +26,7 @@ define [
             @registerLoader new Loader(@), true
             @registerLoader new SimpleLoader(@)
             @registerHelper key, value for key, value of helpers
-            @setRegion 'Region Body', $(document.body)
+            @setRegion new Region(@, null, 'Region Body', $(document.body))
 
         path: (path) ->
             getPath @scriptRoot, path
@@ -55,11 +56,18 @@ define [
             {loader} = Loader.analyse name
             if loader and @loaders[loader] then @loaders[loader] else @defaultLoader
 
-        setRegion: (name, el) ->
-            @region = new Region @, null, name, el
+        setRegion: (region) ->
+            @region = region
             @regions.unshift @region
 
-        startRoutes: ->
+        startRoute: (paths...) ->
+            @router = new Router(@) unless @router
+
+            @chain @router.mountRouter.apply(@router, paths), ->
+                Backbone.history.start()
+
+        navigate: (path, options = {}) ->
+            Backbone.history.navigate(path, options)
 
         load: (names...) ->
             @chain (@getLoader(name).loadModule name for name in names)

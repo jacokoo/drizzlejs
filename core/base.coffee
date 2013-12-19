@@ -23,11 +23,12 @@ define ['underscore', './config', './deferred'], (_, config, Deferred) ->
     # some utility methods
     class Base
         @Logger: Logger
-        @include: (clazz, mixins...) ->
-            clazz::[key] = value for key, value of mixin for mixin in mixins
-            clazz
+        @include: (mixins...) ->
+            @::[key] = value for key, value of mixin for mixin in mixins
+            @
         @joinPath: (paths...) -> paths.join('/').replace /\/{2,}/g, '/'
 
+        @include Deferred
         constructor: ->
             @logger = new Base.Logger @name, @
             @initialize()
@@ -53,5 +54,5 @@ define ['underscore', './config', './deferred'], (_, config, Deferred) ->
                         @[key] = (args...) ->
                             args.unshift old if old
                             value.apply @, args
-
-    Base.include Base, Deferred
+                    else if not @[key]
+                        @[key] = value

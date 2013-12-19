@@ -18,12 +18,12 @@ define [
                 return view.logger.error "Component name can not be null" unless name
                 view.logger.warn "Component ID is null" unless id
 
-                dom = if selector then view.$$(selector) else if id then view.$(id) else view.region.getEl()
+                dom = if selector then view.$$(selector) else if id then view.$(id) else view.getEl()
                 handler = @handlers[name] or creator: (view, el, options) ->
                     view.logger.error "No component handler for name: #{name}" unless el[name]
                     el[name] options
-                , destructor: (view, info) ->
-                    el[name] 'destroy'
+                , destructor: (view, component, info) ->
+                    component[name] 'destroy'
                 , initialized: true
 
                 obj = if not handler.initialized and handler.initializer then handler.initializer() else null
@@ -80,7 +80,7 @@ define [
                                 [name, method] = binding.split '#'
                                 throw new Error "Data bindings only can be defined as eventName#methodName" unless name and method
                                 listener = name: name, fn: (args...) =>
-                                    return @[method]?.apply @, args
+                                    return @[method].apply @, args if _.isFunction @[method]
                                     return @eventHandlers[method]?.apply @, args
                                     @logger.error "Can not find view method or event handler with name:#{method}"
                                 @listeners[key] or = []
@@ -148,13 +148,16 @@ define [
                     return me.logger.error "No handler defined with name: #{value}" unless method
                     method.apply me, args
 
+        getEl: ->
+            if @region then @region.getEl @ else null
+
         $: (id) ->
             return @logger.error "Region is null" unless @region
             @region.$$ '#' + @wrapDomId id
 
         $$: (selector) ->
             return @logger.error "Region is null" unless @region
-            @region.$$ selector
+            @getEl().find selector
 
         close: ->
             @region.undelegateEvents(@)
@@ -202,7 +205,7 @@ define [
         executeTemplate: (data, ignore, deferred) ->
             data.global = @app.global
             html = @template data
-            @region.attachHtml html
+            @getEl().html html
 
         processIdReplacement: ->
             used = {}
@@ -228,9 +231,9 @@ define [
             components = @getOptionResult(@options, 'components') or []
             promises = for component in components
                 component = @getOptionResult component
-                View.ComponentManager.create @, component
+                View.ComponentManager.create @, component if component
             @chain promises, (comps) =>
-                for comp in comps
+                for comp in comps when comp
                     id = comp.id or @componentIndex++
                     @components[id] = comp.component
                     @componentInfos[id] = comp.info
@@ -238,7 +241,7 @@ define [
         exportRegions: ->
             @$$('[data-region]').each (i, el) =>
                 el = $ el
-                id = el.attr 'data-region'
+                id = el.data 'region'
                 @module.addRegion id, el
 
         afterRender: ->

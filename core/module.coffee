@@ -74,27 +74,27 @@ define [
         loadData: ->
             @data = {}
             promises = []
-            models = @getOptionResult(@options, 'models') or {}
-            collections = @getOptionResult(@options, 'collections') or {}
+            items = @getOptionResult(@options, 'data') or {}
             @autoLoadDuringRender = []
             @autoLoadAfterRender = []
 
             loadIt = (id, value, isModel) =>
-                throw new Error "data id: #{id} is already used" if @data[id]
                 value = @getOptionResult value
                 if value
-                    (if value.autoLoad is 'after' or value.autoLoad is 'afterRender' then @autoLoadAfterRender else @autoLoadDuringRender).push id
+                    if value.autoLoad is 'after' or value.autoLoad is 'afterRender'
+                        @autoLoadAfterRender.push id
+                    else if value.autoLoad
+                        @autoLoadDuringRender.push id
                 promises.push @chain @app.getLoader(value)[if isModel then 'loadModel' else 'loadCollection'](value, @), (d) =>
                     @data[id] = d
 
-            loadIt id, value for id, value of models
-            loadIt id, value for id, value of collections
+            loadIt id, value, value.type is 'model' for id, value of items
 
             @chain.call @, "load data for #{@name}", promises
 
         loadItems: ->
             @items = {}
-            @inRegionItems = {}
+            @inRegionItems = []
 
             promises = []
             items = @getOptionResult(@options, 'items') or []
@@ -106,13 +106,15 @@ define [
 
                     p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>
                         @items[obj.name] = obj
-                        @inRegionItems[item.region] = obj if item.region
+                        obj.regionInfo = item
+                        @inRegionItems.push obj if item.region
                     promises.push p
 
             @chain.call @, "load items for #{@name}", promises
 
         addRegion: (name, el) ->
-            @regions[name] = new Region @app, @module, name, el
+            type = el.data 'region-type'
+            @regions[name] = Region.create type, @app, @module, name, el
 
         render: ->
             return @logger.error 'No region to render in' unless @region
@@ -125,8 +127,8 @@ define [
                 -> @layout.render()
                 -> @options.afterLayoutRender?.apply @
                 ->
-                    promises = for key, value of @inRegionItems
-                        region = @regions[key]
+                    promises = for value in @inRegionItems
+                        region = @regions[value.regionInfo.region]
                         @logger.error "Can not find region: #{key}" unless region
                         region.show value
                     @chain promises
@@ -137,10 +139,11 @@ define [
 
         close: ->
             @chain "Close module: #{@name}",
-                @options.beforeClose?.apply @
-                value.close() for key, value of @regions
-                @layout.close()
-                @options.afterClose?.apply @
+                -> @options.beforeClose?.apply @
+                -> value.close() for key, value of @regions
+                -> @layout.close()
+                -> @options.afterClose?.apply @
+                -> @container.remove @id
 
         fetchDataDuringRender: ->
             @chain (@data[id].fetch?() for id in @autoLoadDuringRender)
