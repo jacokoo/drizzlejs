@@ -74,3 +74,15 @@ define [
 
         show: (feature, options) ->
             @region.show feature, options
+
+        #methods for notification
+        success: (title, content) ->
+            alert content or title
+
+        info: (title, content) ->
+            content = title unless content
+            alert content or title
+
+        error: (title, content) ->
+            content = title unless content
+            alert content or title
