@@ -25,7 +25,7 @@ define [
 
             module = @modules[from]
             throw new Error "module with id: #{from} not exists" if not module
-            delete @modules[form]
+            delete @modules[from]
             module.id = to
             @modules[to] = module
 
@@ -116,8 +116,10 @@ define [
             type = el.data 'region-type'
             @regions[name] = Region.create type, @app, @module, name, el
 
-        render: ->
-            return @logger.error 'No region to render in' unless @region
+        render: (options = {}) ->
+            throw new Error 'No region to render in' unless @region
+            @renderOptions = options
+            @container.changeId @id, options.id if options.id
 
             @chain "Render module #{@name}",
                 @loadDeferred
