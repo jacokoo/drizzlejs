@@ -33,7 +33,7 @@ define [
             wish = @createDeferred "load-#{path}"
 
             error = (e) =>
-                @logger.warn 'resource:', path, 'not found, define it to null'
+                @logger.warn 'resource:', path, 'not found, define it to null', e
                 if e.requireModules?[0] is path
                     define path, null
                     require.undef path
