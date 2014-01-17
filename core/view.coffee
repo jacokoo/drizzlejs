@@ -198,8 +198,6 @@ define [
                 data[key] = value.toJSON()
             data.Global = @app.global
             data.View = @
-            console.log data
-
             data
 
         executeTemplate: (data, ignore, deferred) ->

@@ -45,7 +45,6 @@ define [
                 while d?
                     deps.unshift d
                     d = @dependencies[d]
-                console.log deps, 'deps', @dependencies
                 ps = []
                 for p in deps
                     do (p) =>
