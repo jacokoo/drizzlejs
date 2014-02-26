@@ -143,10 +143,17 @@ define [
                     i = el.attr 'id'
                     args.unshift i.substring id.length
 
+                if el.data('after-click') is 'defer'
+                    deferred = me.createDeferred()
+                    el.addClass 'disabled'
+                    deferred.always ->
+                        el.removeClass 'disabled'
+
                 me.loadDeferred.done ->
                     method = me.eventHandlers[value]
                     return me.logger.error "No handler defined with name: #{value}" unless method
-                    method.apply me, args
+                    arr = if deferred then [deferred].concat args else args
+                    method.apply me, arr
 
         getEl: ->
             if @region then @region.getEl @ else null
