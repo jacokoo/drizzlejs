@@ -49,5 +49,6 @@ define [
                 for p in deps
                     do (p) =>
                         ps.push (prev) ->
-                            @routes[p].apply @, args.concat [prev]
+                            arr = if prev then [prev] else []
+                            @routes[p].apply @, arr.concat args
                 @chain ps...
