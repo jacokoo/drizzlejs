@@ -139,6 +139,8 @@ define [
             (args...) ->
                 el = $ @
 
+                return if el.hasClass 'disabled'
+
                 if selector.charAt(0) isnt '#'
                     i = el.attr 'id'
                     args.unshift i.substring id.length

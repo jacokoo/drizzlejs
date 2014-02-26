@@ -222,6 +222,9 @@
           var args, deferred, el, i;
           args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
           el = $(this);
+          if (el.hasClass('disabled')) {
+            return;
+          }
           if (selector.charAt(0) !== '#') {
             i = el.attr('id');
             args.unshift(i.substring(id.length));
