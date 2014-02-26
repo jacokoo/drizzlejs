@@ -1,7 +1,7 @@
 {
   "name": "drizzlejs",
   "version": "0.1.0",
-  "main": "drizzle.js",
+  "main": "dist/drizzle.js",
   "ignore": [
     "**/.*",
     "node_modules",
