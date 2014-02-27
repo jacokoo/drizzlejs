@@ -30,6 +30,9 @@ define [
                     page = @options.pagination.page - 1
                     @turnPage page, options
 
+                @firstPage = (options) -> @turnPage 1, options
+                @lastPage = (options) -> @turnPage @options.pagination.pageCount
+
                 @getPageInfo = ->
                     p = @options.pagination
                     return {} if not p

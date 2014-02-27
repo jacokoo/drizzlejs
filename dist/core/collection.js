@@ -40,6 +40,12 @@
             page = this.options.pagination.page - 1;
             return this.turnPage(page, options);
           };
+          this.firstPage = function(options) {
+            return this.turnPage(1, options);
+          };
+          this.lastPage = function(options) {
+            return this.turnPage(this.options.pagination.pageCount);
+          };
           this.getPageInfo = function() {
             var d, p;
             p = this.options.pagination;
