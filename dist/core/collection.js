@@ -19,7 +19,7 @@
           this.options.pagination = {
             page: options.page || 1,
             pageSize: options.pageSize || 10,
-            firstKey: options.firstKey || '_first',
+            pageKey: options.pageKey || '_page',
             pageSizeKey: options.pageSizeKey || '_pageSize',
             recordCountKey: options.recordCountKey || 'recordCount'
           };
@@ -77,7 +77,7 @@
         data = _.extend({}, this.options.params, this.params);
         if (this.options.pageable) {
           p = this.options.pagination;
-          data[p.firstKey] = p.pageSize * (p.page - 1);
+          data[p.pageKey] = p.page;
           data[p.pageSizeKey] = p.pageSize;
         }
         options || (options = {});
