@@ -13,7 +13,7 @@ define [
                 @options.pagination =
                     page: options.page or 1
                     pageSize: options.pageSize or 10
-                    firstKey: options.firstKey or '_first'
+                    pageKey: options.pageKey or '_page'
                     pageSizeKey: options.pageSizeKey or '_pageSize'
                     recordCountKey: options.recordCountKey or 'recordCount'
                 @turnPage = (page, options) ->
@@ -54,7 +54,7 @@ define [
             data = _.extend {}, @options.params, @params
             if @options.pageable
                 p = @options.pagination
-                data[p.firstKey] = p.pageSize * (p.page - 1)
+                data[p.pageKey] = p.page
                 data[p.pageSizeKey] = p.pageSize
 
             options or (options = {})
