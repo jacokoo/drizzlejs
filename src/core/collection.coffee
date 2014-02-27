@@ -33,10 +33,15 @@ define [
                 @getPageInfo = ->
                     p = @options.pagination
                     return {} if not p
-                    d =
+                    d = if @size() > 0
                         start: (p.page - 1) * p.pageSize + 1
                         end: p.page * p.pageSize
                         total: p.recordCount
+                    else
+                        start: 0
+                        end: 0
+                        total: 0
+
                     d.end = if d.end > d.total then d.total else d.end
                     d
 

@@ -46,10 +46,14 @@
             if (!p) {
               return {};
             }
-            d = {
+            d = this.size() > 0 ? {
               start: (p.page - 1) * p.pageSize + 1,
               end: p.page * p.pageSize,
               total: p.recordCount
+            } : {
+              start: 0,
+              end: 0,
+              total: 0
             };
             d.end = d.end > d.total ? d.total : d.end;
             return d;
