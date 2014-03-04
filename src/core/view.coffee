@@ -43,7 +43,7 @@ define [
 
         initialize: ->
             @extend @options.extend if @options.extend
-            @loadDeferred = @chain "Initialize view #{@name}", [@loadTemplate(), @loadHandlers(), @bindData()]
+            @loadDeferred = @chain "Initialize view #{@name}", [@loadTemplate(), @loadHandlers()]
 
         loadTemplate: ->
             if @module.separatedTemplate isnt true
@@ -178,6 +178,7 @@ define [
 
             @chain "render view #{@name}",
                 @loadDeferred
+                @bindData
                 -> @options.beforeRender?.apply(@)
                 @beforeRender
                 @serializeData

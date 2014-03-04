@@ -84,7 +84,7 @@
         if (this.options.extend) {
           this.extend(this.options.extend);
         }
-        return this.loadDeferred = this.chain("Initialize view " + this.name, [this.loadTemplate(), this.loadHandlers(), this.bindData()]);
+        return this.loadDeferred = this.chain("Initialize view " + this.name, [this.loadTemplate(), this.loadHandlers()]);
       };
 
       View.prototype.loadTemplate = function() {
@@ -280,7 +280,7 @@
         if (!this.region) {
           this.logger.error('No region to render in');
         }
-        return this.chain("render view " + this.name, this.loadDeferred, function() {
+        return this.chain("render view " + this.name, this.loadDeferred, this.bindData, function() {
           var _ref;
           return (_ref = this.options.beforeRender) != null ? _ref.apply(this) : void 0;
         }, this.beforeRender, this.serializeData, this.options.adjustData || function(data) {
