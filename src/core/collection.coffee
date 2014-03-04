@@ -16,8 +16,12 @@ define [
                     pageKey: options.pageKey or '_page'
                     pageSizeKey: options.pageSizeKey or '_pageSize'
                     recordCountKey: options.recordCountKey or 'recordCount'
+                    pageCount: 0
                 @turnPage = (page, options) ->
-                    return if page > @options.pagination.pageCount or page < 1
+                    if page > @options.pagination.pageCount or page < 1
+                        deferred = Backbone.$.Deferred()
+                        deferred.reject()
+                        return deferred
 
                     @options.pagination.page = page
                     @fetch(options)

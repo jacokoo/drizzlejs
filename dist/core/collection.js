@@ -21,11 +21,15 @@
             pageSize: options.pageSize || 10,
             pageKey: options.pageKey || '_page',
             pageSizeKey: options.pageSizeKey || '_pageSize',
-            recordCountKey: options.recordCountKey || 'recordCount'
+            recordCountKey: options.recordCountKey || 'recordCount',
+            pageCount: 0
           };
           this.turnPage = function(page, options) {
+            var deferred;
             if (page > this.options.pagination.pageCount || page < 1) {
-              return;
+              deferred = Backbone.$.Deferred();
+              deferred.reject();
+              return deferred;
             }
             this.options.pagination.page = page;
             return this.fetch(options);
