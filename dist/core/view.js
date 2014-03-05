@@ -280,7 +280,7 @@
         if (!this.region) {
           this.logger.error('No region to render in');
         }
-        return this.chain("render view " + this.name, this.loadDeferred, this.bindData, function() {
+        return this.chain("render view " + this.name, this.loadDeferred, this.unbindData, this.bindData, function() {
           var _ref;
           return (_ref = this.options.beforeRender) != null ? _ref.apply(this) : void 0;
         }, this.beforeRender, this.serializeData, this.options.adjustData || function(data) {

@@ -178,6 +178,7 @@ define [
 
             @chain "render view #{@name}",
                 @loadDeferred
+                @unbindData
                 @bindData
                 -> @options.beforeRender?.apply(@)
                 @beforeRender
