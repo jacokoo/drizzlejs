@@ -6,7 +6,6 @@
 
   define(['jquery', 'underscore', 'backbone', 'handlebars', './base', './config', './module', './view', './collection'], function($, _, Backbone, Handlebars, Base, config, Module, View, Collection) {
     var Loader;
-    require.s.contexts._.config.urlArgs = !config.cache ? '_c=' + (new Date()).getTime() : '';
     Loader = (function(_super) {
       __extends(Loader, _super);
 

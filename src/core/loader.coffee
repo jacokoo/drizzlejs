@@ -10,8 +10,6 @@ define [
     './collection'
 ], ($, _, Backbone, Handlebars, Base, config, Module, View, Collection) ->
 
-    require.s.contexts._.config.urlArgs = unless config.cache then '_c=' + (new Date()).getTime() else ''
-
     class Loader extends Base
         @TemplateCache = {}
 
