@@ -36,8 +36,7 @@
         return obj;
       };
     } else {
-      create = function() {
-        var obj;
+      create = function(name, obj) {
         if (!obj) {
           obj = $.Deferred();
         }

@@ -16,7 +16,7 @@ define ['jquery', 'underscore', './config'], ($, _, config) ->
                         old.apply obj, args
             obj
     else
-        create = ->
+        create = (name, obj) ->
             obj = $.Deferred() unless obj
             obj
 
