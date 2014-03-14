@@ -4,7 +4,8 @@ define [
     './core/loader'
     './core/region'
     './core/view'
-], (Application, Module, Loader, Region, View) ->
+    './core/multi-region'
+], (Application, Module, Loader, Region, View, MultiRegion) ->
 
     Drizzle =
         Application: Application
@@ -12,5 +13,6 @@ define [
         Loader: Loader
         Region: Region
         View: View
+        MultiRegion: MultiRegion
 
     Drizzle
