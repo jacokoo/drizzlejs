@@ -88,6 +88,7 @@
 
       Collection.prototype.fetch = function(options) {
         var data, p;
+        this.reset();
         data = _.extend({}, this.options.params, this.params);
         if (this.options.pageable) {
           p = this.options.pagination;

@@ -63,6 +63,7 @@ define [
             if @options.root then resp[@options.root] else resp
 
         fetch: (options) ->
+            @reset()
             data = _.extend {}, @options.params, @params
             if @options.pageable
                 p = @options.pagination
