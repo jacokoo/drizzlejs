@@ -22,9 +22,4 @@ define ['jquery', 'underscore'], ($, _) ->
             collection: 'collection-' # collection definition file name prefix
             router: 'router'
 
-    config = require('config')
-    merged = _.extend {}, defaults, config
-
-    merged.fileNames[key] = value for key, value of defaults.fileNames when not (key of merged.fileNames)
-
-    merged
+    defaults
