@@ -3,7 +3,7 @@
   var __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  define(['jquery', 'underscore', './base'], function($, _, Base) {
+  define(['jquery', 'underscore', './base', './loader'], function($, _, Base, Loader) {
     var Region;
     Region = (function(_super) {
       __extends(Region, _super);
@@ -40,9 +40,13 @@
       };
 
       Region.prototype.show = function(item, options) {
-        var deferred;
+        var deferred, name;
         deferred = this.createDeferred();
         if (_.isString(item)) {
+          name = Loader.analyse(item).name;
+          if (this.currentItem && this.currentItem.name === name) {
+            return deferred.resolve(this.currentItem);
+          }
           this.app.getLoader(item).loadModule(item).done((function(_this) {
             return function(module, args) {
               return _this.showItem(module, options, deferred);

@@ -2,7 +2,8 @@ define [
     'jquery'
     'underscore'
     './base'
-], ($, _, Base) ->
+    './loader'
+], ($, _, Base, Loader) ->
 
     class Region extends Base
         @types = {}
@@ -31,6 +32,9 @@ define [
         show: (item, options) ->
             deferred = @createDeferred()
             if _.isString item
+                {name} = Loader.analyse item
+                if @currentItem and @currentItem.name is name
+                    return deferred.resolve @currentItem
                 @app.getLoader(item).loadModule(item).done (module, args) =>
                     @showItem module, options, deferred
             else
