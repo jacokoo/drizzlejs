@@ -40,9 +40,13 @@
       };
 
       Region.prototype.show = function(item, options) {
-        var deferred;
+        var deferred, name;
         deferred = this.createDeferred();
         if (_.isString(item)) {
+          name = this.app.extractName(item);
+          if (this.currentItem && this.currentItem.name === name) {
+            return deferred.resolve(this.currentItem);
+          }
           this.app.getLoader(item).loadModule(item).done((function(_this) {
             return function(module, args) {
               return _this.showItem(module, options, deferred);

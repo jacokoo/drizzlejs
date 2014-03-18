@@ -56,6 +56,9 @@ define [
             {loader} = Loader.analyse name
             if loader and @loaders[loader] then @loaders[loader] else @defaultLoader
 
+        extractName: (name) ->
+            Loader.analyse(name).name
+
         setRegion: (region) ->
             @region = region
             @regions.unshift @region

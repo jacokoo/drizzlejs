@@ -101,6 +101,10 @@
         }
       };
 
+      Application.prototype.extractName = function(name) {
+        return Loader.analyse(name).name;
+      };
+
       Application.prototype.setRegion = function(region) {
         this.region = region;
         return this.regions.unshift(this.region);

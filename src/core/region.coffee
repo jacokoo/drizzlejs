@@ -31,6 +31,9 @@ define [
         show: (item, options) ->
             deferred = @createDeferred()
             if _.isString item
+                name = @app.extractName item
+                if @currentItem and @currentItem.name is name
+                    return deferred.resolve @currentItem
                 @app.getLoader(item).loadModule(item).done (module, args) =>
                     @showItem module, options, deferred
             else
