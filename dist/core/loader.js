@@ -146,7 +146,7 @@
       };
 
       Loader.prototype.loadModel = function(name, module) {
-        var model;
+        var data, m, model;
         if (name == null) {
           name = '';
         }
@@ -161,15 +161,22 @@
         name = _.extend({}, name);
         name.urlRoot = this.parseUrl(name.url, module);
         delete name.url;
+        delete name.autoLoad;
+        data = name.data;
+        delete name.data;
         model = Backbone.Model.extend(name);
-        return new model();
+        m = new model();
+        if (data) {
+          m.set(data);
+        }
+        return m;
       };
 
       Loader.prototype.loadCollection = function(name, module) {
         if (name == null) {
           name = '';
         }
-        if (name instanceof Backbone.Collection) {
+        if (name instanceof Backbone.Collection || name instanceof Backbone.Model) {
           return name;
         }
         if (_.isString(name)) {

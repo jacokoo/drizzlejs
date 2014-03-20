@@ -102,12 +102,17 @@ define [
             name = _.extend {}, name
             name.urlRoot = @parseUrl name.url, module
             delete name.url
+            delete name.autoLoad
+            data = name.data
+            delete name.data
 
             model = Backbone.Model.extend name
-            new model()
+            m = new model()
+            m.set data if data
+            m
 
         loadCollection: (name = '', module) ->
-            return name if name instanceof Backbone.Collection
+            return name if name instanceof Backbone.Collection or name instanceof Backbone.Model
             name = url: name if _.isString name
             name = _.extend {}, name
             name.url = @parseUrl name.url, module
