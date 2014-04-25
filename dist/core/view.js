@@ -271,9 +271,21 @@
       };
 
       View.prototype.close = function() {
-        this.region.undelegateEvents(this);
-        this.unbindData();
-        return this.destroyComponents();
+        return this.chain("close view " + this.name, function() {
+          var _ref;
+          return (_ref = this.options.beforeClose) != null ? _ref.apply(this) : void 0;
+        }, [
+          function() {
+            return this.region.undelegateEvents(this);
+          }, function() {
+            return this.unbindData();
+          }, function() {
+            return this.destroyComponents();
+          }
+        ], function() {
+          var _ref;
+          return (_ref = this.options.afterClose) != null ? _ref.apply(this) : void 0;
+        });
       };
 
       View.prototype.render = function() {

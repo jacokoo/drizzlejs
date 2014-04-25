@@ -169,9 +169,14 @@ define [
             @getEl().find selector
 
         close: ->
-            @region.undelegateEvents(@)
-            @unbindData()
-            @destroyComponents()
+            @chain "close view #{@name}",
+                -> @options.beforeClose?.apply @
+                [
+                    -> @region.undelegateEvents(@)
+                    -> @unbindData()
+                    -> @destroyComponents()
+                ]
+                -> @options.afterClose?.apply @
 
         render: ->
             @logger.error 'No region to render in' unless @region
