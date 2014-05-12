@@ -116,6 +116,9 @@ define [
             type = el.data 'region-type'
             @regions[name] = Region.create type, @app, @module, name, el
 
+        removeRegion: (name) ->
+            delete @regions[name]
+
         render: (options = {}) ->
             throw new Error 'No region to render in' unless @region
             @renderOptions = options
@@ -142,8 +145,8 @@ define [
         close: ->
             @chain "Close module: #{@name}",
                 -> @options.beforeClose?.apply @
-                -> value.close() for key, value of @regions
                 -> @layout.close()
+                -> value.close() for key, value of @regions
                 -> @options.afterClose?.apply @
                 -> @container.remove @id
 

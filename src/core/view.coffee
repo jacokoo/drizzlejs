@@ -175,6 +175,7 @@ define [
                     -> @region.undelegateEvents(@)
                     -> @unbindData()
                     -> @destroyComponents()
+                    -> @unexportRegions()
                 ]
                 -> @options.afterClose?.apply @
 
@@ -253,9 +254,15 @@ define [
                     @componentInfos[id] = comp.info
 
         exportRegions: ->
+            @exportedRegions = {}
             @$$('[data-region]').each (i, el) =>
                 el = $ el
                 id = el.data 'region'
-                @module.addRegion id, el
+                @exportedRegions[id] = @module.addRegion id, el
+
+        unexportRegions: ->
+            @chain 'remove regions',
+                (value.close() for key, value of @exportedRegions)
+                (@module.removeRegion key for key, value of @exportedRegions)
 
         afterRender: ->

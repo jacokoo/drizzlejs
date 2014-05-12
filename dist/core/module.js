@@ -196,6 +196,10 @@
         return this.regions[name] = Region.create(type, this.app, this.module, name, el);
       };
 
+      Module.prototype.removeRegion = function(name) {
+        return delete this.regions[name];
+      };
+
       Module.prototype.render = function(options) {
         if (options == null) {
           options = {};
@@ -249,6 +253,8 @@
           var _ref;
           return (_ref = this.options.beforeClose) != null ? _ref.apply(this) : void 0;
         }, function() {
+          return this.layout.close();
+        }, function() {
           var key, value, _ref, _results;
           _ref = this.regions;
           _results = [];
@@ -257,8 +263,6 @@
             _results.push(value.close());
           }
           return _results;
-        }, function() {
-          return this.layout.close();
         }, function() {
           var _ref;
           return (_ref = this.options.afterClose) != null ? _ref.apply(this) : void 0;

@@ -281,6 +281,8 @@
             return this.unbindData();
           }, function() {
             return this.destroyComponents();
+          }, function() {
+            return this.unexportRegions();
           }
         ], function() {
           var _ref;
@@ -413,14 +415,38 @@
       };
 
       View.prototype.exportRegions = function() {
+        this.exportedRegions = {};
         return this.$$('[data-region]').each((function(_this) {
           return function(i, el) {
             var id;
             el = $(el);
             id = el.data('region');
-            return _this.module.addRegion(id, el);
+            return _this.exportedRegions[id] = _this.module.addRegion(id, el);
           };
         })(this));
+      };
+
+      View.prototype.unexportRegions = function() {
+        var key, value;
+        return this.chain('remove regions', (function() {
+          var _ref, _results;
+          _ref = this.exportedRegions;
+          _results = [];
+          for (key in _ref) {
+            value = _ref[key];
+            _results.push(value.close());
+          }
+          return _results;
+        }).call(this), (function() {
+          var _ref, _results;
+          _ref = this.exportedRegions;
+          _results = [];
+          for (key in _ref) {
+            value = _ref[key];
+            _results.push(this.module.removeRegion(key));
+          }
+          return _results;
+        }).call(this));
       };
 
       View.prototype.afterRender = function() {};
