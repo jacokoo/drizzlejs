@@ -76,7 +76,7 @@ define [
             template = Loader.TemplateCache[module.name + path]
             template = Loader.TemplateCache[module.name + path] = @loadModuleResource module, path, 'text' unless template
 
-            @chain "load template: #{path}", template, (t) =>
+            @chain "load template: #{path}", template, (t) ->
                 if _.isString t
                     t = Loader.TemplateCache[path] = Handlebars.compile t
                 t

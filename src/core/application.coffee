@@ -47,7 +47,7 @@ define [
             @loaders[loader.name] = loader
             @defaultLoader = loader if isDefault
 
-        registerHelper: (name, fn)->
+        registerHelper: (name, fn) ->
             app = @
             Handlebars.registerHelper name, (args...) ->
                 fn.apply @, [app, Handlebars].concat args

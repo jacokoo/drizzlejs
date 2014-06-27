@@ -8,7 +8,7 @@ define [
     class View extends Base
         @ComponentManager =
             handlers: {}
-            register: (name, creator, destructor = (->), initializer = (->)) ->
+            register: (name, creator, destructor = ( -> ), initializer = ( -> )) ->
                 @handlers[name] =
                     creator: creator, destructor: destructor, initializer: initializer, initialized: false
 

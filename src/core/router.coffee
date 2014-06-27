@@ -47,7 +47,7 @@ define [
                     d = @dependencies[d]
                 ps = []
                 for p in deps
-                    do (p) =>
+                    do (p) ->
                         ps.push (prev) ->
                             arr = if prev then [prev] else []
                             @routes[p].apply @, arr.concat args

@@ -53,7 +53,7 @@ define [
             n = "#{name}.events#{@id}#{item.id}"
             if selector then @el.on n, selector, fn else @el.on n, fn
 
-        undelegateEvents: (item)->
+        undelegateEvents: (item) ->
             @el.off ".events#{@id}#{item.id}"
 
         $$: (selector) ->

@@ -1,18 +1,14 @@
-define [
-    './core/application'
-    './core/module'
-    './core/loader'
-    './core/region'
-    './core/view'
-    './core/multi-region'
-], (Application, Module, Loader, Region, View, MultiRegion) ->
+Drizzle = {}
 
-    Drizzle =
-        Application: Application
-        Module: Module
-        Loader: Loader
-        Region: Region
-        View: View
-        MultiRegion: MultiRegion
+types = ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
 
-    Drizzle
+for item in types
+    do (item) -> Drizzle["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
+
+
+if Drizzle.isFunction(define) and define.amd
+    define -> Drizzle
+else if Drizzle.isObject(module) and module.exports
+    module.exports = Drizzle
+else
+    @Drizzle = Drizzle
