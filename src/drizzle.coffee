@@ -1,14 +1,49 @@
-Drizzle = {}
+((root, factory) ->
 
-types = ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
+    if typeof define is 'function' and define.amd
+        define ['jquery'], ($) -> factory root, $
+    else if module and module.exports
+        $ = require 'jquery'
+        module.exports = factory root, $
+    else
+        root.Drizzle = factory root, $
+) this, (root, $) ->
+    Drizzle = version: '<%= version %>'
 
-for item in types
-    do (item) -> Drizzle["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
+    previousDrizzle = root.Drizzle
 
+    Drizzle.noConflict = ->
+        root.Drizzle = previousDrizzle
+        Drizzle
 
-if Drizzle.isFunction(define) and define.amd
-    define -> Drizzle
-else if Drizzle.isObject(module) and module.exports
-    module.exports = Drizzle
-else
-    @Drizzle = Drizzle
+    types = ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
+
+    for item in types
+        do (item) -> Drizzle["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
+
+    Drizzle.getOptionValue = (thisObj, options, key) ->
+        return null unless options
+        value = if key then options[key] else options
+        if Drizzle.isFunction value then value.apply thisObj else value
+
+    Drizzle.include = (clazz, mixins...) ->
+        clazz::[key] = value for key, value of mixin for mixin in mixins
+        clazz
+
+    Drizzle.extend = (obj, mixins) ->
+        return unless obj and mixins
+
+        doExtend = (key, value) ->
+            if Drizzle.isFunction value
+                old = obj[key]
+                obj[key] = (args...) ->
+                    args.unshift old if old
+                    value.apply @, args
+            else
+                obj[key] = value unless obj[key]
+
+        doExtend key, value for key, value of mixins
+
+    # @include core/deferred.coffee
+
+    Drizzle
