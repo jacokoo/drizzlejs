@@ -42,7 +42,7 @@ module.exports = (grunt) ->
                 dest: 'dist/drizzle.js'
 
         coffee: compile:
-            options: sourceMap: true
+            options: sourceMap: true, bare: true
             src: 'dist/drizzle.coffee'
             dest: 'dist/drizzle.js'
 

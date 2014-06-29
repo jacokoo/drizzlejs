@@ -1,88 +1,78 @@
-define [
-    'jquery'
-    'underscore'
-    './base'
-], ($, _, Base) ->
+Drizzle.Region = class Region
+    @types = {}
+    @register: (name, clazz) -> @types[name] = clazz
+    @create: (type, app, module, name, el) ->
+        clazz = @types[type] or Region
+        new clazz(app, module, name, el)
 
-    class Region extends Base
-        @types = {}
-        @register: (name, clazz) ->
-            @types[name] = clazz
-        @create: (type, app, module, name, el) ->
-            clazz = @types[type] or Region
-            new clazz(app, module, name, el)
+    constructor: (@app, @module, @name, el) ->
+        @id = Drizzle.uniqueId 'R'
+        @el = if el instanceof $ then el else $ el
+        throw new Error "can not find DOM element: #{el}" if @el.size() is 0
 
-        constructor: (@app, @module, @name, el) ->
-            @id = _.uniqueId 'R'
-            @el = if el instanceof $ then el else $ el
-            super
+    getEl: -> @el
 
-        initialize: ->
-            @logger.warn "DOM element: #{el} not exists" if @el.size() is 0
+    # show the specified item which could be a view or a module
+    # close the item's region if it has one
+    # close current region
+    # assign current region to the item
+    # set currentItem to item
+    # render item
+    show: (item, options) ->
+        deferred = @createDeferred()
+        if _.isString item
+            name = @app.extractName item
+            if @currentItem and @currentItem.name is name
+                return deferred.resolve @currentItem
+            @app.getLoader(item).loadModule(item).done (module, args) =>
+                @showItem module, options, deferred
+        else
+            @showItem item, options, deferred
+        deferred
 
-        getEl: -> @el
+    close: ->
+        return unless @currentItem
+        @chain 'close item:' + @currentItem.name, ->
+            @currentItem.close()
+        , ->
+            @empty()
+            @currentItem = null
+            @
 
-        # show the specified item which could be a view or a module
-        # close the item's region if it has one
-        # close current region
-        # assign current region to the item
-        # set currentItem to item
-        # render item
-        show: (item, options) ->
-            deferred = @createDeferred()
-            if _.isString item
-                name = @app.extractName item
-                if @currentItem and @currentItem.name is name
-                    return deferred.resolve @currentItem
-                @app.getLoader(item).loadModule(item).done (module, args) =>
-                    @showItem module, options, deferred
-            else
-                @showItem item, options, deferred
-            deferred
+    delegateEvent: (item, name, selector, fn) ->
+        n = "#{name}.events#{@id}#{item.id}"
+        if selector then @el.on n, selector, fn else @el.on n, fn
 
-        close: ->
-            return unless @currentItem
-            @chain 'close item:' + @currentItem.name, ->
-                @currentItem.close()
-            , ->
-                @empty()
-                @currentItem = null
-                @
+    undelegateEvents: (item) ->
+        @el.off ".events#{@id}#{item.id}"
 
-        delegateEvent: (item, name, selector, fn) ->
-            n = "#{name}.events#{@id}#{item.id}"
-            if selector then @el.on n, selector, fn else @el.on n, fn
+    $$: (selector) ->
+        @el.find selector
 
-        undelegateEvents: (item) ->
-            @el.off ".events#{@id}#{item.id}"
+    empty: -> @getEl().empty()
 
-        $$: (selector) ->
-            @el.find selector
+    # for inner use,
+    showItem: (item, options, deferred) ->
+        unless item and item.render and item.setRegion
+            @logger.warn "try to show an item which is neither a view nor a module"
+            return deferred.reject item
 
-        empty: -> @getEl().empty()
-
-        # for inner use,
-        showItem: (item, options, deferred) ->
-            unless item and item.render and item.setRegion
-                @logger.warn "try to show an item which is neither a view nor a module"
-                return deferred.reject item
-
-            if item.region and item.region.id is @id
-                return @chain 'show item:' + item.name, item.render(options), ->
-                    deferred.resolve item
-
-            @chain 'show item:' + item.name,
-            [ ->
-                item.region.close() if item.region
-            , ->
-                @close()
-            ]
-            , ->
-                @currentItem = item
-                item.setRegion @
-            , ->
-                item.render(options)
-            .done ->
+        if item.region and item.region.id is @id
+            return @chain 'show item:' + item.name, item.render(options), ->
                 deferred.resolve item
 
-    Region
+        @chain 'show item:' + item.name,
+        [ ->
+            item.region.close() if item.region
+        , ->
+            @close()
+        ]
+        , ->
+            @currentItem = item
+            item.setRegion @
+        , ->
+            item.render(options)
+        .done ->
+            deferred.resolve item
+
+Drizzle.include Region, Drizzle.Deferred
