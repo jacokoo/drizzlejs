@@ -25,6 +25,9 @@ module.exports = (grunt) ->
             src: 'src/drizzle.coffee'
             dest: 'dist/drizzle.coffee'
 
+        trimtrailingspaces: drizzle:
+            src: 'dist/drizzle.coffee'
+
         template:
             options: data: version: '<%= pkg.version %>'
             drizzle:
@@ -54,4 +57,4 @@ module.exports = (grunt) ->
             drizzle:
                 files: 'dist/drizzle.min.js': ['dist/drizzle.js']
 
-    grunt.registerTask 'default', ['clean', 'coffeelint', 'preprocess', 'template', 'coffee', 'concat', 'uglify']
+    grunt.registerTask 'default', ['clean', 'coffeelint', 'preprocess', 'trimtrailingspaces', 'template', 'coffee', 'concat', 'uglify']

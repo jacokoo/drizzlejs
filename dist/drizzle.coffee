@@ -14,31 +14,123 @@
         root.Drizzle = factory root, $
 ) this, (root, $) ->
 
-    Drizzle = version: '0.2.0'
+    D = Drizzle = version: '0.2.0'
 
     previousDrizzle = root.Drizzle
     idCounter = 0
 
     for item in ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
-        do (item) -> Drizzle["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
+        do (item) -> D["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
 
-    Drizzle.extend = (target, mixins...) ->
-        return target unless Drizzle.isObject target
+    D.extend = (target, mixins...) ->
+        return target unless D.isObject target
         target[key] = value for key, value of mixin for mixin in mixins
         target
 
-    Drizzle.extend Drizzle,
-        getOptionValue = (thisObj, options, key) ->
-            return null unless options
-            value = if key then options[key] else options
-            if Drizzle.isFunction value then value.apply thisObj else value
+    D.extend D,
         uniqueId = (prefix) -> (if prefix then prefix else '') + ++i
-        include = (clazz, mixins...) ->
-            clazz::[key] = value for key, value of mixin for mixin in mixins
-            clazz
         noConflict = ->
             root.Drizzle = previousDrizzle
-            Drizzle
+            D
+
+    Drizzle.Base = class Base
+
+        @include: (mixins...) ->
+            @::[key] = value for key, value of mixin for mixin in mixins
+            @
+
+        @include Drizzle.Deferred
+
+        constructor: (idPrefix) ->
+            @id = Drizzle.uniqueId(idPrefix)
+            @initialize()
+
+        initialize: ->
+
+        getOptionResult: (value) -> if _.isFunction value then value.apply @ else value
+
+        extend: (mixins) ->
+            return unless mixins
+
+            doExtend = (key, value) =>
+                if Drizzle.isFunction value
+                    old = @[key]
+                    @[key] = (args...) ->
+                        args.unshift old if old
+                        value.apply @, args
+                else
+                    @[key] = value unless @[key]
+
+            doExtend key, value for key, value of mixins
+
+
+    D.Model = class Data extends D.Base
+
+        constructor: (@app, @module, @options = {}) ->
+            @data = @options.data or {}
+            @params = {}
+
+            if options.pageable
+                defaults = D.Config.pagination
+                p = @pagination =
+                    page: options.page or 1
+                    pageCount: 0
+                    pageSize: options.pageSize or defaults.pageSize
+                    pageKey: options.pageKey or defaults.pageKey
+                    pageSizeKey: options.pageSizeKey or defaults.pageSizeKey
+                    recordCountKey: options.recordCountKey or defaults.recordCountKey
+
+            super 'd'
+
+        setData: (data) ->
+            @data = if D.isFunction @options.parse then @options.parse data else data
+            if p = @pagination
+                p.recordCount = @data[p.recordCountKey]
+                p.pageCount = Math.ceil(p.recordCount / p.pageSize)
+            @data = @data[@options.root] if @options.root
+
+        url: -> @getOptionResult(@options.url) or @getOptionResult(@url) or ''
+
+        toJSON: -> @data
+
+        getParams: ->
+            d = {}
+            if p = @pagination
+                d[p.pageKey] = p.page
+                d[p.pageSizeKey] = p.pageSize
+
+            D.extend d, @params, @options.params
+
+        clear: ->
+            @data = {}
+            if p = @pagination
+                p.page = 1
+                p.pageCount = 0
+
+        turnToPage: (page, options) ->
+            return @createRejectedDeferred() unless p = @pagination and page <= p.pageCount and page >= 1
+            p.page = page
+            @get options
+
+        firstPage: (options) -> @turnToPage 1, options
+        lastPage: (options) -> @turnToPage @pagination.pageCount, options
+        nextPage: (options) -> @turnToPage @pagination.page + 1, options
+        prevPage: (options) -> @turnToPage @pagination.page - 1, options
+
+        getPageInfo: ->
+            return {} unless p = @pagination
+            d = if @data.length > 0
+                start: (p.page - 1) * p.pageSize + 1, end: p.page * p.pageSize,  total: p.recordCount
+            else
+                start: 0, end: 0, total: 0
+
+            d.end = d.total if d.end > d.total
+            d
+
+    for item in ['get', 'post', 'put', 'del']
+        do (item) ->
+        D.Model::[item] = (options) -> D.Require[item] @, options
+
 
     Drizzle.Config =
         scriptRoot: 'app'
@@ -49,7 +141,7 @@
             'data-target' #for bootstrap
             'data-parent' #for bootstrap
         ]
-    
+
         fileNames:
             module: 'index'           # module definition file name
             templates: 'templates'    # merged template file name
@@ -59,31 +151,43 @@
             model: 'model-'           # model definition file name prefix
             collection: 'collection-' # collection definition file name prefix
             router: 'router'
-    
-    Drizzle.Deferred =
-    
+
+        pagination:
+            defaultPageSize: 10
+            pageKey: '_page'
+            pageSizeKey: '_pageSize'
+            recordCountKey: 'recordCount'
+
+
+    D.Deferred =
+
         createDeferred: -> $.Deferred()
-    
+
+        createRejectedDeferred: (args...) ->
+            d = @createDeferred()
+            d.reject args...
+            d
+
         deferred: (fn, args...) ->
-            fn = fn.apply @, args if Drizzle.isFunction fn
+            fn = fn.apply @, args if D.isFunction fn
             return fn.promise() if fn?.promise
             obj = @createDeferred()
             obj.resolve fn
             obj.promise()
-    
+
         chain: (rings...) ->
             obj = @createDeferred()
             if rings.length is 0
                 obj.resolve()
                 return obj.promise()
-    
+
             gots = []
             doItem = (item, i) =>
                 gotResult = (data) ->
-                    data = data[0] if not Drizzle.isArray(item) and data.length < 2
+                    data = data[0] if not D.isArray(item) and data.length < 2
                     gots.push data
-    
-                (if Drizzle.isArray item
+
+                (if D.isArray item
                     promises = for inArray in item
                         args = [inArray]
                         args.push gots[i - 1] if i > 0
@@ -99,9 +203,81 @@
                 .fail (data...) ->
                     gotResult data
                     obj.reject gots...
-    
+
             doItem rings.shift(), 0
             obj.promise()
-    
+
+
+    D.Event =
+        on: (name, callback, context) ->
+            @registeredEvents or= {}
+            (@registeredEvents[name] or= []).push fn: callback, context: context
+            @
+
+        off: (name, callback, context) ->
+            return @ unless @registeredEvents and events = @registeredEvents[name]
+            @registeredEvents[name] = (item for item in events when item.fn isnt callback or (context and context isnt item.context))
+            @
+
+        trigger: (name, args...) ->
+            return @ unless @registeredEvents and events = @registeredEvents[name]
+            item.fn.apply item.context, args for item in events
+            @
+
+        listenTo: (obj, name, callback) ->
+            @registeredListeners or= {}
+            (@registeredListeners[name] or= []).push fn: callback, obj: obj
+            obj.on name, callback, @
+            @
+
+        stopListening: (obj, name, callback) ->
+            return @ unless @registeredListeners
+            unless obj
+                value.obj.off key, value.fn, @ for key, value of @registeredListeners
+                return @
+
+            for key, value of @registeredListeners
+                continue if name and name isnt key
+                @registeredListeners[key] = []
+                for item in value
+                    if item.obj isnt obj or (callback and callback isnt item.fn)
+                        @registeredListeners[key].push item
+                    else
+                        item.obj.off key, item.fn, @
+            @
+
+
+    D.Request =
+
+        url: (model) ->
+            urls = [D.Config.urlRoot]
+            url.push model.module.options.urlPrefix if model.module.options.urlPrefix
+            url.push model.module.name
+            base = model.url or ''
+            base = base.apply model if D.isFunction base
+
+            while base.indexOf('../') is 0
+                paths.pop()
+                base = base.slice 3
+
+            urls.push base
+            urls.push model.data.id if model.data.id
+            urls.join('/').replace /\/{2, }/g, '/'
+
+        get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
+        post: (model, options) -> @ajax type: 'POST', model, model.data, options
+        put: (model, options) -> @ajax type: 'PUT', model, model.data, options
+        del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
+
+        ajax: (params, model, data, options) ->
+            url = @url model
+            params = D.extend params,
+                contentType: 'application/json'
+            , options
+            data = D.extend data, options.data
+            params.url = url
+            params.data = data
+            D.Deferred.chain $.ajax(params), (resp) -> model.setData resp
+
 
     Drizzle

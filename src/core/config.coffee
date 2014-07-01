@@ -17,3 +17,9 @@ Drizzle.Config =
         model: 'model-'           # model definition file name prefix
         collection: 'collection-' # collection definition file name prefix
         router: 'router'
+
+    pagination:
+        defaultPageSize: 10
+        pageKey: '_page'
+        pageSizeKey: '_pageSize'
+        recordCountKey: 'recordCount'
