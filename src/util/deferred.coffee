@@ -1,9 +1,14 @@
-Drizzle.Deferred =
+D.Deferred =
 
     createDeferred: -> $.Deferred()
 
+    createRejectedDeferred: (args...) ->
+        d = @createDeferred()
+        d.reject args...
+        d
+
     deferred: (fn, args...) ->
-        fn = fn.apply @, args if Drizzle.isFunction fn
+        fn = fn.apply @, args if D.isFunction fn
         return fn.promise() if fn?.promise
         obj = @createDeferred()
         obj.resolve fn
@@ -18,10 +23,10 @@ Drizzle.Deferred =
         gots = []
         doItem = (item, i) =>
             gotResult = (data) ->
-                data = data[0] if not Drizzle.isArray(item) and data.length < 2
+                data = data[0] if not D.isArray(item) and data.length < 2
                 gots.push data
 
-            (if Drizzle.isArray item
+            (if D.isArray item
                 promises = for inArray in item
                     args = [inArray]
                     args.push gots[i - 1] if i > 0

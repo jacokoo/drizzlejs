@@ -1,4 +1,4 @@
-Drizzle.Event =
+D.Event =
     on: (name, callback, context) ->
         @registeredEvents or= {}
         (@registeredEvents[name] or= []).push fn: callback, context: context
