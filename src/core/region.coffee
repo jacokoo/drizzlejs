@@ -1,38 +1,41 @@
-Drizzle.Region = class Region
+D.Region = class Region extends D.Base
     @types = {}
     @register: (name, clazz) -> @types[name] = clazz
-    @create: (type, app, module, name, el) ->
+    @create: (type, app, module, el) ->
         clazz = @types[type] or Region
-        new clazz(app, module, name, el)
+        new clazz(app, module, el)
 
-    constructor: (@app, @module, @name, el) ->
-        @id = Drizzle.uniqueId 'R'
+    constructor: (@app, @module, el) ->
         @el = if el instanceof $ then el else $ el
-        throw new Error "can not find DOM element: #{el}" if @el.size() is 0
+        super 'r'
+
+        throw new Error "Can not find DOM element: #{el}" if @el.size() is 0
 
     getEl: -> @el
 
     # show the specified item which could be a view or a module
-    # close the item's region if it has one
-    # close current region
-    # assign current region to the item
-    # set currentItem to item
-    # render item
     show: (item, options) ->
-        deferred = @createDeferred()
-        if _.isString item
-            name = @app.extractName item
-            if @currentItem and @currentItem.name is name
-                return deferred.resolve @currentItem
-            @app.getLoader(item).loadModule(item).done (module, args) =>
-                @showItem module, options, deferred
-        else
-            @showItem item, options, deferred
-        deferred
+        if @currentItem
+            if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.loader.analyse(item).name is @currentItem.name)
+                return @chain @currentItem.render(options), @currentItem
+
+        @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
+            throw new Error "Can not show item: #{item}" unless item.render and item.setRegion
+            item
+        , [(item) ->
+            item.region.close() if item.region
+            item
+        , ->
+            @close()
+        ], ([item]) ->
+            item.setRegion @
+            @currentItem = item
+        , (item) ->
+            item.render(options)
 
     close: ->
-        return unless @currentItem
-        @chain 'close item:' + @currentItem.name, ->
+        return @createRejectedDeferred() unless @currentItem
+        @chain ->
             @currentItem.close()
         , ->
             @empty()
@@ -50,29 +53,3 @@ Drizzle.Region = class Region
         @el.find selector
 
     empty: -> @getEl().empty()
-
-    # for inner use,
-    showItem: (item, options, deferred) ->
-        unless item and item.render and item.setRegion
-            @logger.warn "try to show an item which is neither a view nor a module"
-            return deferred.reject item
-
-        if item.region and item.region.id is @id
-            return @chain 'show item:' + item.name, item.render(options), ->
-                deferred.resolve item
-
-        @chain 'show item:' + item.name,
-        [ ->
-            item.region.close() if item.region
-        , ->
-            @close()
-        ]
-        , ->
-            @currentItem = item
-            item.setRegion @
-        , ->
-            item.render(options)
-        .done ->
-            deferred.resolve item
-
-Drizzle.include Region, Drizzle.Deferred

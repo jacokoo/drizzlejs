@@ -12,36 +12,21 @@ define [
     class Application extends Base
         constructor: (@options = {}) ->
             @name = 'application'
-            @scriptRoot = @options.scriptRoot or config.scriptRoot
-            @urlRoot = @options.urlRoot or config.urlRoot
-            @urlSuffix = @options.urlSuffix or config.urlSuffix
             @modules = new Module.Container('Default Module Container')
             @global = {}
             @loaders = {}
             @regions = []
 
-            super
+            super 'a'
 
         initialize: ->
             @registerLoader new Loader(@), true
             @registerLoader new SimpleLoader(@)
             @registerHelper key, value for key, value of helpers
-            @setRegion new Region(@, null, 'Region Body', $(document.body))
+            @setRegion new Region(@, null, $(document.body))
 
         path: (path) ->
             getPath @scriptRoot, path
-
-        url: (paths..., base) ->
-            withSuffix = (p) =>
-                p = p.substring 0, p.length - 1 if p.charAt(p.length - 1) is '/'
-                if @urlSuffix then p + @urlSuffix else p
-            return withSuffix base.substring 1 if base.charAt(0) is '/'
-            paths.unshift @urlRoot
-            while base.indexOf('../') is 0
-                paths.pop()
-                base = base.substring 3
-            paths.push base
-            withSuffix Base.joinPath.apply(Base, paths)
 
         registerLoader: (loader, isDefault) ->
             @loaders[loader.name] = loader

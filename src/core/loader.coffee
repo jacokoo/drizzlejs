@@ -16,13 +16,13 @@ define [
         @analyse: (name) ->
             return loader: null, name: name unless _.isString name
 
-            [loader, name, args...] = name.split ':'
+            [loaderName, name, args...] = name.split ':'
             if not name
-                name = loader
-                loader = null
-            loader: loader, name: name, args: args
+                name = loaderName
+                loaderName = null
+            loader: loaderName, name: name, args: args
 
-        constructor: (@app, @name = 'Default Loader') ->
+        constructor: (@app, @name = 'default') ->
             super
 
         loadResource: (path, plugin) ->

@@ -64,3 +64,5 @@ D.Model = class Data extends D.Base
 for item in ['get', 'post', 'put', 'del']
     do (item) ->
     D.Model::[item] = (options) -> D.Require[item] @, options
+
+D.Model.include D.Event
