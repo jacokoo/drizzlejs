@@ -4,7 +4,7 @@ class ModuleContainer extends D.Base
         super
 
     checkId: (id) ->
-        throw new Error "id: #{id} is invalid" unless id and _.isString id
+        throw new Error "id: #{id} is invalid" unless id and D.isString id
         throw new Error "id: #{id} is already used" if @modules[id]
 
     get: (id) ->
@@ -36,17 +36,18 @@ class Layout extends D.View
 D.Module = class Module extends D.Base
     @Container = ModuleContainer
     @Layout = Layout
-    constructor: (@name, @app, @loader, @options) ->
+    constructor: (@name, @app, @loader, @options = {}) ->
         [..., @baseName] = @name.split '/'
-        @container = options.container or @app.modules
-        @container.add @
-        @separatedTemplate = options.separatedTemplate is true
+        @container = @options.container or @app.modules
+        @separatedTemplate = @options.separatedTemplate is true
         @regions = {}
         super 'm'
+        @container.add @
 
     initialize: ->
         @extend @options.extend if @options.extend
-        @loadDeferred = @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()]
+        @loadDeferred = @createDeferred()
+        @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()], -> @loadDeferred.resolve()
 
     loadTemplate: ->
         return if @separatedTemplate
@@ -54,7 +55,7 @@ D.Module = class Module extends D.Base
 
     loadLayout: ->
         layout = @getOptionResult @options.layout
-        name = if _.isString layout then layout else layout?.name
+        name = if D.isString layout then layout else layout?.name
         name or= 'layout'
         @chain @app.getLoader(name).loadLayout(@, name, layout), (obj) =>
             @layout = obj
@@ -88,7 +89,7 @@ D.Module = class Module extends D.Base
         items = @getOptionResult(@options.items) or []
         doLoad = (name, item) =>
             item = @getOptionResult item
-            item = region: item if item and _.isString item
+            item = region: item if item and D.isString item
             isModule = item.isModule
 
             p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>

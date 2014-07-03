@@ -6,21 +6,21 @@
 ((root, factory) ->
 
     if typeof define is 'function' and define.amd
-        define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $
+        define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $, Handlebars
     else if module and module.exports
         $ = require 'jquery'
         Handlebars = require 'handlebars'
-        module.exports = factory root, $
+        module.exports = factory root, $, Handlebars
     else
         root.Drizzle = factory root, $
-) this, (root, $) ->
+) this, (root, $, Handlebars) ->
 
     D = Drizzle = version: '0.2.0'
 
     old = root.Drizzle
     idCounter = 0
 
-    for item in ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
+    for item in ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
         do (item) -> D["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
 
     D.extend = (target, mixins...) ->
@@ -29,11 +29,138 @@
         target
 
     D.extend D,
-        uniqueId: (prefix) -> (if prefix then prefix else '') + ++i
+        uniqueId: (prefix) -> (if prefix then prefix else '') + ++idCounter
         noConflict: ->
             root.Drizzle = old
             D
         joinPath: (paths...) -> paths.join('/').replace(/\/{2, }/g, '/')
+
+    D.Deferred =
+
+        createDeferred: -> $.Deferred()
+
+        createRejectedDeferred: (args...) ->
+            d = @createDeferred()
+            d.reject args...
+            d
+
+        createResolvedDeferred: (args...) ->
+            d = @createDeferred()
+            d.resolve args...
+            d
+
+
+        deferred: (fn, args...) ->
+            fn = fn.apply @, args if D.isFunction fn
+            return fn.promise() if fn?.promise
+            obj = @createDeferred()
+            obj.resolve fn
+            obj.promise()
+
+        chain: (rings...) ->
+            obj = @createDeferred()
+            if rings.length is 0
+                obj.resolve()
+                return obj.promise()
+
+            gots = []
+            doItem = (item, i) =>
+                gotResult = (data) ->
+                    data = data[0] if not D.isArray(item) and data.length < 2
+                    gots.push data
+
+                (if D.isArray item
+                    promises = for inArray in item
+                        args = [inArray]
+                        args.push gots[i - 1] if i > 0
+                        @deferred(args...)
+                    $.when(promises...)
+                else
+                    args = [item]
+                    args.push gots[i - 1] if i > 0
+                    @deferred(args...)
+                ).done (data...) ->
+                    gotResult data
+                    if rings.length is 0 then obj.resolve gots[gots.length - 1] else doItem(rings.shift(), ++i)
+                .fail (data...) ->
+                    gotResult data
+                    obj.reject gots...
+
+            doItem rings.shift(), 0
+            obj.promise()
+
+
+    D.Event =
+        on: (name, callback, context) ->
+            @registeredEvents or= {}
+            (@registeredEvents[name] or= []).push fn: callback, context: context
+            @
+
+        off: (name, callback, context) ->
+            return @ unless @registeredEvents and events = @registeredEvents[name]
+            @registeredEvents[name] = (item for item in events when item.fn isnt callback or (context and context isnt item.context))
+            @
+
+        trigger: (name, args...) ->
+            return @ unless @registeredEvents and events = @registeredEvents[name]
+            item.fn.apply item.context, args for item in events
+            @
+
+        listenTo: (obj, name, callback) ->
+            @registeredListeners or= {}
+            (@registeredListeners[name] or= []).push fn: callback, obj: obj
+            obj.on name, callback, @
+            @
+
+        stopListening: (obj, name, callback) ->
+            return @ unless @registeredListeners
+            unless obj
+                value.obj.off key, value.fn, @ for key, value of @registeredListeners
+                return @
+
+            for key, value of @registeredListeners
+                continue if name and name isnt key
+                @registeredListeners[key] = []
+                for item in value
+                    if item.obj isnt obj or (callback and callback isnt item.fn)
+                        @registeredListeners[key].push item
+                    else
+                        item.obj.off key, item.fn, @
+            @
+
+
+    D.Request =
+
+        url: (model) ->
+            urls = [D.Config.urlRoot]
+            url.push model.module.options.urlPrefix if model.module.options.urlPrefix
+            url.push model.module.name
+            base = model.url or ''
+            base = base.apply model if D.isFunction base
+
+            while base.indexOf('../') is 0
+                paths.pop()
+                base = base.slice 3
+
+            urls.push base
+            urls.push model.data.id if model.data.id
+            D.joinPath urls...
+
+        get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
+        post: (model, options) -> @ajax type: 'POST', model, model.data, options
+        put: (model, options) -> @ajax type: 'PUT', model, model.data, options
+        del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
+
+        ajax: (params, model, data, options) ->
+            url = @url model
+            params = D.extend params,
+                contentType: 'application/json'
+            , options
+            data = D.extend data, options.data
+            params.url = url
+            params.data = data
+            D.Deferred.chain $.ajax(params), (resp) -> model.setData resp
+
 
     Drizzle.Base = class Base
 
@@ -49,7 +176,7 @@
 
         initialize: ->
 
-        getOptionResult: (value) -> if _.isFunction value then value.apply @ else value
+        getOptionResult: (value) -> if D.isFunction value then value.apply @ else value
 
         extend: (mixins) ->
             return unless mixins
@@ -125,155 +252,6 @@
             error: (title, content) ->
                 content = title unless content
                 alert content or title
-
-
-    class ModuleContainer extends D.Base
-        constructor: (@name) ->
-            @modules = {}
-            super
-
-        checkId: (id) ->
-            throw new Error "id: #{id} is invalid" unless id and _.isString id
-            throw new Error "id: #{id} is already used" if @modules[id]
-
-        get: (id) ->
-            @modules[id]
-
-        changeId: (from, to) ->
-            return if from is to
-            @checkId to
-
-            module = @modules[from]
-            throw new Error "module id: #{from} not exists" if not module
-            delete @modules[from]
-            module.id = to
-            @modules[to] = module
-
-        add: (module) ->
-            @checkId module.id
-            @modules[module.id] = module
-
-        remove: (id) ->
-            delete @modules[id]
-
-    class Layout extends D.View
-        initialize: ->
-            @isLayout = true
-            @loadDeferred = @chain [@loadTemplate(), @loadHandlers()]
-            delete @bindData
-
-    D.Module = class Module extends D.Base
-        @Container = ModuleContainer
-        @Layout = Layout
-        constructor: (@name, @app, @loader, @options) ->
-            [..., @baseName] = @name.split '/'
-            @container = options.container or @app.modules
-            @container.add @
-            @separatedTemplate = options.separatedTemplate is true
-            @regions = {}
-            super 'm'
-
-        initialize: ->
-            @extend @options.extend if @options.extend
-            @loadDeferred = @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()]
-
-        loadTemplate: ->
-            return if @separatedTemplate
-            @chain @loader.loadTemplate(@), (template) -> @template = template
-
-        loadLayout: ->
-            layout = @getOptionResult @options.layout
-            name = if _.isString layout then layout else layout?.name
-            name or= 'layout'
-            @chain @app.getLoader(name).loadLayout(@, name, layout), (obj) =>
-                @layout = obj
-
-        loadData: ->
-            @data = {}
-            promises = []
-            items = @getOptionResult(@options.data) or {}
-            @autoLoadDuringRender = []
-            @autoLoadAfterRender = []
-
-            doLoad = (id, value) =>
-                name = D.Loader.analyse(id).name
-                value = @getOptionResult value
-                if value
-                    if value.autoLoad is 'after' or value.autoLoad is 'afterRender'
-                        @autoLoadAfterRender.push name
-                    else if value.autoLoad
-                        @autoLoadDuringRender.push name
-                promises.push @chain @app.getLoader(id).loadModel(value, @), (d) -> @data[name] = d
-
-            doLoad id, value for id, value of items
-
-            @chain promises
-
-        loadItems: ->
-            @items = {}
-            @inRegionItems = []
-
-            promises = []
-            items = @getOptionResult(@options.items) or []
-            doLoad = (name, item) =>
-                item = @getOptionResult item
-                item = region: item if item and _.isString item
-                isModule = item.isModule
-
-                p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>
-                    @items[obj.name] = obj
-                    obj.regionInfo = item
-                    @inRegionItems.push obj if item.region
-                promises.push p
-
-            doLoad name, item for name, item of items
-
-            @chain promises
-
-        addRegion: (name, el) ->
-            type = el.data 'region-type'
-            @regions[name] = Region.create type, @app, @module, el
-
-        removeRegion: (name) ->
-            delete @regions[name]
-
-        render: (options = {}) ->
-            throw new Error 'No region to render in' unless @region
-            @renderOptions = options
-            @container.changeId @id, options.id if options.id
-
-            @chain(
-                @loadDeferred
-                -> @options.beforeRender?.apply @
-                -> @layout.setRegion @region
-                @fetchDataDuringRender
-                -> @layout.render()
-                -> @options.afterLayoutRender?.apply @
-                -> for value in @inRegionItems
-                    key = value.regionInfo.region
-                    region = @regions[key]
-                    throw new Error "Can not find region: #{key}" unless region
-                    region.show value
-                -> @options.afterRender?.apply @
-                @fetchDataAfterRender
-                -> @
-            )
-
-        setRegion: (@region) ->
-
-        close: -> @chain(
-            -> @options.beforeClose?.apply @
-            -> @layout.close()
-            -> value.close() for key, value of @regions
-            -> @options.afterClose?.apply @
-            -> @container.remove @id
-        )
-
-        fetchDataDuringRender: ->
-            @chain (@data[id].get?() for id in @autoLoadDuringRender)
-
-        fetchDataAfterRender: ->
-            @chain (@data[id].get?() for id in @autoLoadAfterRender)
 
 
     D.Model = class Data extends D.Base
@@ -382,7 +360,7 @@
                 item.render(options)
 
         close: ->
-            return @createRejectedDeferred() unless @currentItem
+            return @createResolvedDeferred() unless @currentItem
             @chain ->
                 @currentItem.close()
             , ->
@@ -652,6 +630,156 @@
         stopListening: D.Event.stopListening
 
 
+    class ModuleContainer extends D.Base
+        constructor: (@name) ->
+            @modules = {}
+            super
+
+        checkId: (id) ->
+            throw new Error "id: #{id} is invalid" unless id and D.isString id
+            throw new Error "id: #{id} is already used" if @modules[id]
+
+        get: (id) ->
+            @modules[id]
+
+        changeId: (from, to) ->
+            return if from is to
+            @checkId to
+
+            module = @modules[from]
+            throw new Error "module id: #{from} not exists" if not module
+            delete @modules[from]
+            module.id = to
+            @modules[to] = module
+
+        add: (module) ->
+            @checkId module.id
+            @modules[module.id] = module
+
+        remove: (id) ->
+            delete @modules[id]
+
+    class Layout extends D.View
+        initialize: ->
+            @isLayout = true
+            @loadDeferred = @chain [@loadTemplate(), @loadHandlers()]
+            delete @bindData
+
+    D.Module = class Module extends D.Base
+        @Container = ModuleContainer
+        @Layout = Layout
+        constructor: (@name, @app, @loader, @options = {}) ->
+            [..., @baseName] = @name.split '/'
+            @container = @options.container or @app.modules
+            @separatedTemplate = @options.separatedTemplate is true
+            @regions = {}
+            super 'm'
+            @container.add @
+
+        initialize: ->
+            @extend @options.extend if @options.extend
+            @loadDeferred = @createDeferred()
+            @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()], -> @loadDeferred.resolve()
+
+        loadTemplate: ->
+            return if @separatedTemplate
+            @chain @loader.loadTemplate(@), (template) -> @template = template
+
+        loadLayout: ->
+            layout = @getOptionResult @options.layout
+            name = if D.isString layout then layout else layout?.name
+            name or= 'layout'
+            @chain @app.getLoader(name).loadLayout(@, name, layout), (obj) =>
+                @layout = obj
+
+        loadData: ->
+            @data = {}
+            promises = []
+            items = @getOptionResult(@options.data) or {}
+            @autoLoadDuringRender = []
+            @autoLoadAfterRender = []
+
+            doLoad = (id, value) =>
+                name = D.Loader.analyse(id).name
+                value = @getOptionResult value
+                if value
+                    if value.autoLoad is 'after' or value.autoLoad is 'afterRender'
+                        @autoLoadAfterRender.push name
+                    else if value.autoLoad
+                        @autoLoadDuringRender.push name
+                promises.push @chain @app.getLoader(id).loadModel(value, @), (d) -> @data[name] = d
+
+            doLoad id, value for id, value of items
+
+            @chain promises
+
+        loadItems: ->
+            @items = {}
+            @inRegionItems = []
+
+            promises = []
+            items = @getOptionResult(@options.items) or []
+            doLoad = (name, item) =>
+                item = @getOptionResult item
+                item = region: item if item and D.isString item
+                isModule = item.isModule
+
+                p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>
+                    @items[obj.name] = obj
+                    obj.regionInfo = item
+                    @inRegionItems.push obj if item.region
+                promises.push p
+
+            doLoad name, item for name, item of items
+
+            @chain promises
+
+        addRegion: (name, el) ->
+            type = el.data 'region-type'
+            @regions[name] = Region.create type, @app, @module, el
+
+        removeRegion: (name) ->
+            delete @regions[name]
+
+        render: (options = {}) ->
+            throw new Error 'No region to render in' unless @region
+            @renderOptions = options
+            @container.changeId @id, options.id if options.id
+
+            @chain(
+                @loadDeferred
+                -> @options.beforeRender?.apply @
+                -> @layout.setRegion @region
+                @fetchDataDuringRender
+                -> @layout.render()
+                -> @options.afterLayoutRender?.apply @
+                -> for value in @inRegionItems
+                    key = value.regionInfo.region
+                    region = @regions[key]
+                    throw new Error "Can not find region: #{key}" unless region
+                    region.show value
+                -> @options.afterRender?.apply @
+                @fetchDataAfterRender
+                -> @
+            )
+
+        setRegion: (@region) ->
+
+        close: -> @chain(
+            -> @options.beforeClose?.apply @
+            -> @layout.close()
+            -> value.close() for key, value of @regions
+            -> @options.afterClose?.apply @
+            -> @container.remove @id
+        )
+
+        fetchDataDuringRender: ->
+            @chain (@data[id].get?() for id in @autoLoadDuringRender)
+
+        fetchDataAfterRender: ->
+            @chain (@data[id].get?() for id in @autoLoadAfterRender)
+
+
     D.Loader = class Loader extends D.Base
         @TemplateCache = {}
 
@@ -669,26 +797,26 @@
             super
 
         loadResource: (path, plugin) ->
-            path = @app.path path
+            path = D.joinPath D.Config.scriptRoot, path
             path = plugin + '!' + path if plugin
-            obj = @createDeferred()
+            deferred = @createDeferred()
 
             error = (e) ->
                 if e.requireModules?[0] is path
                     define path, null
                     require.undef path
                     require [path], ->
-                    obj.resolve null
+                    deferred.resolve null
                 else
-                    obj.reject null
+                    deferred.reject null
                     throw e
 
             require [path], (obj) =>
                 obj = obj(@app) if D.isFunction obj
-                obj.resolve obj
+                deferred.resolve obj
             , error
 
-            obj.promise()
+            deferred.promise()
 
         loadModuleResource: (module, path, plugin) ->
             @loadResource D.joinPath(module.name, path), plugin
@@ -705,8 +833,10 @@
 
         loadLayout: (module, name, layout = {}) ->
             {name} = Loader.analyse name
-            @chain @loadModuleResource(module, name), (options) =>
-                new D.Module.Layout name, module, @, D.extend(layout, options)
+            @chain(
+                if layout.templateOnly is false then @loadModuleResource(module, name) else {}
+                (options) => new D.Module.Layout name, module, @, D.extend(layout, options)
+            )
 
         innerLoadTemplate: (module, p) ->
             path = p + @fileNames.templateSuffix
@@ -842,127 +972,6 @@
             pageKey: '_page'
             pageSizeKey: '_pageSize'
             recordCountKey: 'recordCount'
-
-
-    D.Deferred =
-
-        createDeferred: -> $.Deferred()
-
-        createRejectedDeferred: (args...) ->
-            d = @createDeferred()
-            d.reject args...
-            d
-
-        deferred: (fn, args...) ->
-            fn = fn.apply @, args if D.isFunction fn
-            return fn.promise() if fn?.promise
-            obj = @createDeferred()
-            obj.resolve fn
-            obj.promise()
-
-        chain: (rings...) ->
-            obj = @createDeferred()
-            if rings.length is 0
-                obj.resolve()
-                return obj.promise()
-
-            gots = []
-            doItem = (item, i) =>
-                gotResult = (data) ->
-                    data = data[0] if not D.isArray(item) and data.length < 2
-                    gots.push data
-
-                (if D.isArray item
-                    promises = for inArray in item
-                        args = [inArray]
-                        args.push gots[i - 1] if i > 0
-                        @deferred(args...)
-                    $.when(promises...)
-                else
-                    args = [item]
-                    args.push gots[i - 1] if i > 0
-                    @deferred(args...)
-                ).done (data...) ->
-                    gotResult data
-                    if rings.length is 0 then obj.resolve gots... else doItem(rings.shift(), ++i)
-                .fail (data...) ->
-                    gotResult data
-                    obj.reject gots...
-
-            doItem rings.shift(), 0
-            obj.promise()
-
-
-    D.Event =
-        on: (name, callback, context) ->
-            @registeredEvents or= {}
-            (@registeredEvents[name] or= []).push fn: callback, context: context
-            @
-
-        off: (name, callback, context) ->
-            return @ unless @registeredEvents and events = @registeredEvents[name]
-            @registeredEvents[name] = (item for item in events when item.fn isnt callback or (context and context isnt item.context))
-            @
-
-        trigger: (name, args...) ->
-            return @ unless @registeredEvents and events = @registeredEvents[name]
-            item.fn.apply item.context, args for item in events
-            @
-
-        listenTo: (obj, name, callback) ->
-            @registeredListeners or= {}
-            (@registeredListeners[name] or= []).push fn: callback, obj: obj
-            obj.on name, callback, @
-            @
-
-        stopListening: (obj, name, callback) ->
-            return @ unless @registeredListeners
-            unless obj
-                value.obj.off key, value.fn, @ for key, value of @registeredListeners
-                return @
-
-            for key, value of @registeredListeners
-                continue if name and name isnt key
-                @registeredListeners[key] = []
-                for item in value
-                    if item.obj isnt obj or (callback and callback isnt item.fn)
-                        @registeredListeners[key].push item
-                    else
-                        item.obj.off key, item.fn, @
-            @
-
-
-    D.Request =
-
-        url: (model) ->
-            urls = [D.Config.urlRoot]
-            url.push model.module.options.urlPrefix if model.module.options.urlPrefix
-            url.push model.module.name
-            base = model.url or ''
-            base = base.apply model if D.isFunction base
-
-            while base.indexOf('../') is 0
-                paths.pop()
-                base = base.slice 3
-
-            urls.push base
-            urls.push model.data.id if model.data.id
-            D.joinPath urls...
-
-        get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
-        post: (model, options) -> @ajax type: 'POST', model, model.data, options
-        put: (model, options) -> @ajax type: 'PUT', model, model.data, options
-        del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
-
-        ajax: (params, model, data, options) ->
-            url = @url model
-            params = D.extend params,
-                contentType: 'application/json'
-            , options
-            data = D.extend data, options.data
-            params.url = url
-            params.data = data
-            D.Deferred.chain $.ajax(params), (resp) -> model.setData resp
 
 
     D.Helpers =

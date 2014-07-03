@@ -45,13 +45,13 @@ module.exports = (grunt) ->
                 dest: 'dist/drizzle.js'
 
         coffee: compile:
-            options: sourceMap: true, bare: true
+            options: sourceMap: false, bare: true
             src: 'dist/drizzle.coffee'
             dest: 'dist/drizzle.js'
 
         uglify:
             options:
-                sourceMap: true
+                sourceMap: false
                 sourceMapIn: 'dist/drizzle.js.map'
                 banner: banner
             drizzle:

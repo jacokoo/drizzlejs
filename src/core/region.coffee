@@ -34,7 +34,7 @@ D.Region = class Region extends D.Base
             item.render(options)
 
     close: ->
-        return @createRejectedDeferred() unless @currentItem
+        return @createResolvedDeferred() unless @currentItem
         @chain ->
             @currentItem.close()
         , ->

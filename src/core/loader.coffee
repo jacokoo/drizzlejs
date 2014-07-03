@@ -15,26 +15,26 @@ D.Loader = class Loader extends D.Base
         super
 
     loadResource: (path, plugin) ->
-        path = @app.path path
+        path = D.joinPath D.Config.scriptRoot, path
         path = plugin + '!' + path if plugin
-        obj = @createDeferred()
+        deferred = @createDeferred()
 
         error = (e) ->
             if e.requireModules?[0] is path
                 define path, null
                 require.undef path
                 require [path], ->
-                obj.resolve null
+                deferred.resolve null
             else
-                obj.reject null
+                deferred.reject null
                 throw e
 
         require [path], (obj) =>
             obj = obj(@app) if D.isFunction obj
-            obj.resolve obj
+            deferred.resolve obj
         , error
 
-        obj.promise()
+        deferred.promise()
 
     loadModuleResource: (module, path, plugin) ->
         @loadResource D.joinPath(module.name, path), plugin
@@ -51,8 +51,10 @@ D.Loader = class Loader extends D.Base
 
     loadLayout: (module, name, layout = {}) ->
         {name} = Loader.analyse name
-        @chain @loadModuleResource(module, name), (options) =>
-            new D.Module.Layout name, module, @, D.extend(layout, options)
+        @chain(
+            if layout.templateOnly is false then @loadModuleResource(module, name) else {}
+            (options) => new D.Module.Layout name, module, @, D.extend(layout, options)
+        )
 
     innerLoadTemplate: (module, p) ->
         path = p + @fileNames.templateSuffix

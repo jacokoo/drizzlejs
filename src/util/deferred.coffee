@@ -7,6 +7,12 @@ D.Deferred =
         d.reject args...
         d
 
+    createResolvedDeferred: (args...) ->
+        d = @createDeferred()
+        d.resolve args...
+        d
+
+
     deferred: (fn, args...) ->
         fn = fn.apply @, args if D.isFunction fn
         return fn.promise() if fn?.promise
@@ -38,7 +44,7 @@ D.Deferred =
                 @deferred(args...)
             ).done (data...) ->
                 gotResult data
-                if rings.length is 0 then obj.resolve gots... else doItem(rings.shift(), ++i)
+                if rings.length is 0 then obj.resolve gots[gots.length - 1] else doItem(rings.shift(), ++i)
             .fail (data...) ->
                 gotResult data
                 obj.reject gots...

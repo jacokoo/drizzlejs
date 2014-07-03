@@ -12,7 +12,7 @@ Drizzle.Base = class Base
 
     initialize: ->
 
-    getOptionResult: (value) -> if _.isFunction value then value.apply @ else value
+    getOptionResult: (value) -> if D.isFunction value then value.apply @ else value
 
     extend: (mixins) ->
         return unless mixins
