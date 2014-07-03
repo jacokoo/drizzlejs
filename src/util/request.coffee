@@ -13,7 +13,7 @@ D.Request =
 
         urls.push base
         urls.push model.data.id if model.data.id
-        urls.join('/').replace /\/{2, }/g, '/'
+        D.joinPath urls...
 
     get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
     post: (model, options) -> @ajax type: 'POST', model, model.data, options

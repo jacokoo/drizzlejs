@@ -2,6 +2,7 @@ Drizzle.Config =
     scriptRoot: 'app'
     urlRoot: ''
     urlSuffix: ''
+    caseSensitiveHash: false
     attributesReferToId: [
         'for' # for label
         'data-target' #for bootstrap
@@ -17,6 +18,7 @@ Drizzle.Config =
         model: 'model-'           # model definition file name prefix
         collection: 'collection-' # collection definition file name prefix
         router: 'router'
+        templateSuffix: '.html'
 
     pagination:
         defaultPageSize: 10

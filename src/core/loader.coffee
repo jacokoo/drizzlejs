@@ -1,131 +1,89 @@
-define [
-    'jquery'
-    'underscore'
-    'backbone'
-    'handlebars'
-    './base'
-    './config'
-    './module'
-    './view'
-    './collection'
-], ($, _, Backbone, Handlebars, Base, config, Module, View, Collection) ->
+D.Loader = class Loader extends D.Base
+    @TemplateCache = {}
 
-    class Loader extends Base
-        @TemplateCache = {}
+    @analyse: (name) ->
+        return loader: null, name: name unless D.isString name
 
-        @analyse: (name) ->
-            return loader: null, name: name unless _.isString name
+        [loaderName, name, args...] = name.split ':'
+        if not name
+            name = loaderName
+            loaderName = null
+        loader: loaderName, name: name, args: args
 
-            [loaderName, name, args...] = name.split ':'
-            if not name
-                name = loaderName
-                loaderName = null
-            loader: loaderName, name: name, args: args
+    constructor: (@app, @name = 'default') ->
+        @fileNames = D.Config.fileNames
+        super
 
-        constructor: (@app, @name = 'default') ->
-            super
+    loadResource: (path, plugin) ->
+        path = @app.path path
+        path = plugin + '!' + path if plugin
+        obj = @createDeferred()
 
-        loadResource: (path, plugin) ->
-            path = @app.path path
-            path = plugin + '!' + path if plugin
-            wish = @createDeferred "load-#{path}"
+        error = (e) ->
+            if e.requireModules?[0] is path
+                define path, null
+                require.undef path
+                require [path], ->
+                obj.resolve null
+            else
+                obj.reject null
+                throw e
 
-            error = (e) =>
-                @logger.warn 'resource:', path, 'not found, define it to null', e
-                if e.requireModules?[0] is path
-                    define path, null
-                    require.undef path
-                    require [path], ->
-                    wish.resolve null
-                else
-                    wish.reject null
-                    throw e
+        require [path], (obj) =>
+            obj = obj(@app) if D.isFunction obj
+            obj.resolve obj
+        , error
 
-            require [path], (obj) =>
-                @logger.debug 'load resource:', path, 'done, got:', obj
-                obj = obj(@app) if _.isFunction obj
-                wish.resolve obj
-            , error
+        obj.promise()
 
-            wish.promise()
+    loadModuleResource: (module, path, plugin) ->
+        @loadResource D.joinPath(module.name, path), plugin
 
-        loadModuleResource: (module, path, plugin) ->
-            @loadResource Base.joinPath(module.name, path), plugin
+    loadModule: (path, parentModule) ->
+        {name} = Loader.analyse path
+        @chain @loadResource(D.joinPath name, @fileNames.module), (options) =>
+            new Module name, @app, @, options
 
-        loadModule: (path, parentModule) ->
-            {name} = Loader.analyse path
-            @chain "load module: #{path}", @loadResource(Base.joinPath name, 'index'), (options) =>
-                new Module name, @app, @, options
+    loadView: (name, module, options) ->
+        {name} = Loader.analyse name
+        @chain @loadModuleResource(module, @fileNames.view + name), (options) =>
+            new View name, module, @, options
 
-        loadView: (name, module, options) ->
-            {name} = Loader.analyse name
-            @chain "load view: #{name} in module #{module.name}",
-                @loadModuleResource(module, config.fileNames.view + name)
-                (options) =>
-                    new View name, module, @, options
+    loadLayout: (module, name, layout = {}) ->
+        {name} = Loader.analyse name
+        @chain @loadModuleResource(module, name), (options) =>
+            new D.Module.Layout name, module, @, D.extend(layout, options)
 
-        loadLayout: (module, name, layout = {}) ->
-            {name} = Loader.analyse name
-            @chain "load layout: #{name} for module #{module.name}",
-                if layout.templateOnly is false then @loadModuleResource(module, name) else {}
-                (options) =>
-                    new Module.Layout name, module, @, _.extend(layout, options)
+    innerLoadTemplate: (module, p) ->
+        path = p + @fileNames.templateSuffix
+        template = Loader.TemplateCache[module.name + path]
+        template = Loader.TemplateCache[module.name + path] = @loadModuleResource module, path, 'text' unless template
 
-        innerLoadTemplate: (module, p) ->
-            path = p + '.html'
-            template = Loader.TemplateCache[module.name + path]
-            template = Loader.TemplateCache[module.name + path] = @loadModuleResource module, path, 'text' unless template
+        @chain template, (t) ->
+            if D.isString t
+                t = Loader.TemplateCache[path] = Handlebars.compile t
+            t
 
-            @chain "load template: #{path}", template, (t) ->
-                if _.isString t
-                    t = Loader.TemplateCache[path] = Handlebars.compile t
-                t
+    #load template for module
+    loadTemplate: (module) ->
+        path = @fileNames.templates
+        @innerLoadTemplate module, path
 
-        #load template for module
-        loadTemplate: (module) ->
-            path = config.fileNames.templates
-            @innerLoadTemplate module, path
+    #load template for view
+    loadSeparatedTemplate: (view, name) ->
+        path = @fileNames.template + name
+        @innerLoadTemplate view.module, path
 
-        #load template for view
-        loadSeparatedTemplate: (view, name) ->
-            path = config.fileNames.template + name
-            @innerLoadTemplate view.module, path
+    loadModel: (name = '', module) ->
+        return name if name instanceof D.Model
+        name = url: name if D.isString name
+        new D.Model(@app, module, name)
 
-        parseUrl: (u = '', module) ->
-            url = if _.isFunction u then u.apply module else u
-            prefix = if module.options.urlPrefix then module.options.urlPrefix + module.name else module.name
-            @app.url prefix, url or ''
+    loadHandlers: (view, name) ->
+        view.options.handlers or {}
 
-        loadModel: (name = '', module) ->
-            return name if name instanceof Backbone.Model
-            name = url: name if _.isString name
-            name = _.extend {}, name
-            name.urlRoot = @parseUrl name.url, module
-            delete name.url
-            delete name.autoLoad
-            data = name.data
-            delete name.data
-
-            model = Backbone.Model.extend name
-            m = new model()
-            m.set data if data
-            m
-
-        loadCollection: (name = '', module) ->
-            return name if name instanceof Backbone.Collection or name instanceof Backbone.Model
-            name = url: name if _.isString name
-            name = _.extend {}, name
-            name.url = @parseUrl name.url, module
-
-            new Collection(null, name)
-
-        loadHandlers: (view, name) ->
-            view.options.handlers or {}
-
-        loadRouter: (path) ->
-            {name} = Loader.analyse path
-            path = Base.joinPath name, config.fileNames.router
-            path = path.substring(1) if path.charAt(0) is '/'
-            @chain 'load router:' + path, @loadResource(path)
-
-    Loader
+    loadRouter: (path) ->
+        {name} = Loader.analyse path
+        path = D.joinPath name, @fileNames.router
+        path = path.substring(1) if path.charAt(0) is '/'
+        @loadResource(path)

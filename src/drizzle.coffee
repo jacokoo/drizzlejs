@@ -1,9 +1,10 @@
 ((root, factory) ->
 
     if typeof define is 'function' and define.amd
-        define ['jquery'], ($) -> factory root, $
+        define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $
     else if module and module.exports
         $ = require 'jquery'
+        Handlebars = require 'handlebars'
         module.exports = factory root, $
     else
         root.Drizzle = factory root, $
@@ -11,7 +12,7 @@
 
     D = Drizzle = version: '<%= version %>'
 
-    previousDrizzle = root.Drizzle
+    old = root.Drizzle
     idCounter = 0
 
     for item in ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
@@ -23,14 +24,27 @@
         target
 
     D.extend D,
-        uniqueId = (prefix) -> (if prefix then prefix else '') + ++i
-        noConflict = ->
-            root.Drizzle = previousDrizzle
+        uniqueId: (prefix) -> (if prefix then prefix else '') + ++i
+        noConflict: ->
+            root.Drizzle = old
             D
+        joinPath: (paths...) -> paths.join('/').replace(/\/{2, }/g, '/')
 
     # @include core/base.coffee
 
+    # @include core/application.coffee
+
+    # @include core/module.coffee
+
     # @include core/model.coffee
+
+    # @include core/region.coffee
+
+    # @include core/view.coffee
+
+    # @include core/loader.coffee
+
+    # @include core/router.coffee
 
     # @include core/config.coffee
 
@@ -39,5 +53,7 @@
     # @include util/event.coffee
 
     # @include util/request.coffee
+
+    # @include util/helpers.coffee
 
     Drizzle

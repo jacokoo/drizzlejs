@@ -1,69 +1,52 @@
-define [
-    'jquery', 'underscore', 'handlebars', 'backbone'
-    './base', './config', './region', './loader', './module', './loaders/simple'
-    './router'
-    './helpers'
-], ($, _, Handlebars, Backbone, Base, config, Region, Loader, Module, SimpleLoader, Router, helpers) ->
+D.Application = class Application extends D.Base
+    constructor: (@options = {}) ->
+        @name = 'application'
+        @modules = new Module.Container('Default Module Container')
+        @global = {}
+        @loaders = {}
+        @regions = []
 
-    getPath = (root, path) ->
-        return root if not path
-        if path.charAt(0) is '/' then path else Base.joinPath root, path
+        super 'a'
 
-    class Application extends Base
-        constructor: (@options = {}) ->
-            @name = 'application'
-            @modules = new Module.Container('Default Module Container')
-            @global = {}
-            @loaders = {}
-            @regions = []
+    initialize: ->
+        @registerLoader new D.Loader(@), true
+        @registerHelper key, value for key, value of D.Helpers
+        @setRegion new Region(@, null, $(document.body))
 
-            super 'a'
+    registerLoader: (loader, isDefault) ->
+        @loaders[loader.name] = loader
+        @defaultLoader = loader if isDefault
 
-        initialize: ->
-            @registerLoader new Loader(@), true
-            @registerLoader new SimpleLoader(@)
-            @registerHelper key, value for key, value of helpers
-            @setRegion new Region(@, null, $(document.body))
+    registerHelper: (name, fn) ->
+        app = @
+        Handlebars.registerHelper name, (args...) ->
+            fn.apply @, [app, Handlebars].concat args
 
-        path: (path) ->
-            getPath @scriptRoot, path
+    getLoader: (name) ->
+        {loader} = Loader.analyse name
+        if loader and @loaders[loader] then @loaders[loader] else @defaultLoader
 
-        registerLoader: (loader, isDefault) ->
-            @loaders[loader.name] = loader
-            @defaultLoader = loader if isDefault
+    setRegion: (region) ->
+        @region = region
+        @regions.unshift @region
 
-        registerHelper: (name, fn) ->
-            app = @
-            Handlebars.registerHelper name, (args...) ->
-                fn.apply @, [app, Handlebars].concat args
+    startRoute: (defaultPath, paths...) ->
+        @router = new D.Router(@) unless @router
 
-        getLoader: (name) ->
-            {loader} = Loader.analyse name
-            if loader and @loaders[loader] then @loaders[loader] else @defaultLoader
+        @chain @router.mountRoutes paths..., ->
+            @navigate defaultPath, true if defaultPath
 
-        extractName: (name) ->
-            Loader.analyse(name).name
+    navigate: (path, trigger) ->
+        @router.navigate(path, trigger)
 
-        setRegion: (region) ->
-            @region = region
-            @regions.unshift @region
+    load: (names...) ->
+        @chain (@getLoader(name).loadModule name for name in names)
 
-        startRoute: (paths...) ->
-            @router = new Router(@) unless @router
+    show: (feature, options) ->
+        @region.show feature, options
 
-            @chain @router.mountRouter.apply(@router, paths), ->
-                Backbone.history.start()
-
-        navigate: (path, options = {}) ->
-            Backbone.history.navigate(path, options)
-
-        load: (names...) ->
-            @chain (@getLoader(name).loadModule name for name in names)
-
-        show: (feature, options) ->
-            @region.show feature, options
-
-        #methods for notification
+    #methods for notification
+    message:
         success: (title, content) ->
             alert content or title
 

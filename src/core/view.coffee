@@ -145,22 +145,21 @@ D.View = class View extends Base
         throw new Error "Region is null" unless @region
         @getEl().find selector
 
-    close: ->
-        @chain
-            -> @options.beforeClose?.apply @
-            [
-                -> @region.undelegateEvents(@)
-                -> @unbindData()
-                -> @destroyComponents()
-                -> @unexportRegions()
-            ]
-            -> @options.afterClose?.apply @
-            -> @
+    close: -> @chain(
+        -> @options.beforeClose?.apply @
+        [
+            -> @region.undelegateEvents(@)
+            -> @unbindData()
+            -> @destroyComponents()
+            -> @unexportRegions()
+        ]
+        -> @options.afterClose?.apply @
+    )
 
     render: ->
         throw new Error 'No region to render in' unless @region
 
-        @chain
+        @chain(
             @loadDeferred
             [@unbindData, @destroyComponents, @unexportRegions]
             @bindData
@@ -175,6 +174,7 @@ D.View = class View extends Base
             @afterRender
             -> @options.afterRender?.apply(@)
             -> @
+        )
 
     beforeRender: ->
 
@@ -207,18 +207,18 @@ D.View = class View extends Base
             used[id] = true
             el.attr 'id', @wrapDomId id
 
-        for attr in config.attributesReferToId or []
+        for attr in D.Config.attributesReferToId or []
             @$$("[#{attr}]").each (i, el) =>
                 el = $ el
                 value = el.attr attr
                 withHash = value.charAt(0) is '#'
                 if withHash
-                    el.attr attr, '#' + @wrapDomId value.substring 1
+                    el.attr attr, '#' + @wrapDomId value.slice 1
                 else
                     el.attr attr, @wrapDomId value
 
     renderComponent: ->
-        components = @getOptionResult(@options, 'components') or []
+        components = @getOptionResult(@options.components) or []
         promises = for component in components
             component = @getOptionResult component
             View.ComponentManager.create @, component if component

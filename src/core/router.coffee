@@ -1,54 +1,70 @@
-define [
-    'underscore'
-    'backbone'
-    './base'
-], (_, Backbone, Base) ->
+class Route
+    regExps: [
+        /:([\w\d]+)/g
+        '([^\/]+)'
+        /\*([\w\d]+)/g
+        '(.*)'
+    ]
+    constructor: (@app, @router, @path, @fn) ->
+        pattern = path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
+        @pattern = new RegExp "^#{pattern}$", if D.Config.caseSensitiveHash then 'g' else 'gi'
 
-    joinPath = (paths...) ->
-        p = Base.joinPath paths...
-        p = if p.charAt(0) is '/' then p.substring(1)  else p
-        if p.charAt(p.length - 1) is '/' then p.substring(0, p.length - 1) else p
+    match: (hash) -> @pattern.test hash
 
-    class Router extends Base
-        @include Backbone.Router.prototype
+    handle: (hash) ->
+        args = @pattern.exec(hash).slice 1
+        routes = @router.getDependencies(@path)
+        routes.push @
+        fns = for route, i in routes
+            (prev) -> route.fn (if i > 0 then [prev].concat args else args)...
+        router.chain fns...
 
-        constructor: (@app) ->
-            @name = 'Router'
-            @routes = {}
-            @dependencies = {}
-            Backbone.Router.call @
-            super
+D.Router = class Router extends D.Base
+    constructor: (@app) ->
+        @routes = []
+        @routeMap = {}
+        @dependencies = {}
+        super 'ro'
 
-        mountRouter: (paths...) ->
-            @chain(
-                @app.getLoader(path).loadRouter(path) for path in paths
-                (routers) ->
-                    @addRouter paths[i], router for router, i in routers
-            )
+    start: (defaultPath) ->
+        $(root).on 'popstate.drizzlerouter', =>
+            hash = root.location.hash.slice 1
+            return if @previousHash is hash
+            @previousHash = hash
+            @dispatch(hash)
+        @navigate defaultPath, true if defaultPath
 
-        addRouter: (path, router) ->
-            routes = @getOptionResult router, 'routes'
-            dependencies = @getOptionResult router, 'deps'
-            for key, value of dependencies
-                p = joinPath path, key
-                @dependencies[p] = if value.charAt(0) is '/' then value.substring(1) else joinPath path, value
+    stop: -> $(root).off '.drizzlerouter'
 
-            for key, value of routes
-                p = joinPath path, key
-                @routes[p] = router[value]
-                @route p,  @createHandler(p)
+    dispatch: (hash) -> return route.handle hash for route in @routes when route.match hash
 
-        createHandler: (path) ->
-            (args...) ->
-                deps = [path]
-                d = @dependencies[path]
-                while d?
-                    deps.unshift d
-                    d = @dependencies[d]
-                ps = []
-                for p in deps
-                    do (p) ->
-                        ps.push (prev) ->
-                            arr = if prev then [prev] else []
-                            @routes[p].apply @, arr.concat args
-                @chain ps...
+    navigate: (path, trigger) ->
+        root.history.pushState {}, root.document.title, "##{path}"
+        @routeMap[path]?.handle path if trigger
+
+    mountRoutes: (paths...) -> @chain(
+        @app.getLoader(path).loadRouter(path) for path in paths
+        (routers) ->
+            @addRouter paths[i], router for router, i in routers
+    )
+
+    addRoute: (path, router) ->
+        routes = @getOptionResult router.route
+        dependencies = @getOptionResult router.deps
+        for key, value of dependencies
+            p = D.joinPath path, key
+            @dependencies[p] = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
+
+        for key, value of routes
+            p = D.joinPath path, key
+            route = new Route @app, @, p, router[value]
+            @routes.unshift route
+            @routeMap[p] = route
+
+    getDependencies: (path) ->
+        deps = []
+        d = @dependencies[path]
+        while d?
+            deps.unshift @routeMap[d]
+            d = @dependencies[d]
+        deps

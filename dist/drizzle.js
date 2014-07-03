@@ -8,23 +8,24 @@ var __slice = [].slice,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 (function(root, factory) {
-  var $;
+  var $, Handlebars;
   if (typeof define === 'function' && define.amd) {
-    return define(['jquery'], function($) {
+    return define(['jquery', 'handlebars'], function($, Handlebars) {
       return factory(root, $);
     });
   } else if (module && module.exports) {
     $ = require('jquery');
+    Handlebars = require('handlebars');
     return module.exports = factory(root, $);
   } else {
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $) {
-  var Base, D, Data, Drizzle, idCounter, item, noConflict, previousDrizzle, uniqueId, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, Data, Drizzle, Layout, Loader, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, old, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.0'
   };
-  previousDrizzle = root.Drizzle;
+  old = root.Drizzle;
   idCounter = 0;
   _ref = ['Function', 'Object', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null'];
   _fn = function(item) {
@@ -51,11 +52,19 @@ var __slice = [].slice,
     }
     return target;
   };
-  D.extend(D, uniqueId = function(prefix) {
-    return (prefix ? prefix : '') + ++i;
-  }, noConflict = function() {
-    root.Drizzle = previousDrizzle;
-    return D;
+  D.extend(D, {
+    uniqueId: function(prefix) {
+      return (prefix ? prefix : '') + ++i;
+    },
+    noConflict: function() {
+      root.Drizzle = old;
+      return D;
+    },
+    joinPath: function() {
+      var paths;
+      paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return paths.join('/').replace(/\/{2, }/g, '/');
+    }
   });
   Drizzle.Base = Base = (function() {
     Base.include = function() {
@@ -95,7 +104,6 @@ var __slice = [].slice,
       }
       doExtend = (function(_this) {
         return function(key, value) {
-          var old;
           if (Drizzle.isFunction(value)) {
             old = _this[key];
             return _this[key] = function() {
@@ -124,6 +132,407 @@ var __slice = [].slice,
     return Base;
 
   })();
+  D.Application = Application = (function(_super) {
+    __extends(Application, _super);
+
+    function Application(options) {
+      this.options = options != null ? options : {};
+      this.name = 'application';
+      this.modules = new Module.Container('Default Module Container');
+      this.global = {};
+      this.loaders = {};
+      this.regions = [];
+      Application.__super__.constructor.call(this, 'a');
+    }
+
+    Application.prototype.initialize = function() {
+      var key, value, _ref1;
+      this.registerLoader(new D.Loader(this), true);
+      _ref1 = D.Helpers;
+      for (key in _ref1) {
+        value = _ref1[key];
+        this.registerHelper(key, value);
+      }
+      return this.setRegion(new Region(this, null, $(document.body)));
+    };
+
+    Application.prototype.registerLoader = function(loader, isDefault) {
+      this.loaders[loader.name] = loader;
+      if (isDefault) {
+        return this.defaultLoader = loader;
+      }
+    };
+
+    Application.prototype.registerHelper = function(name, fn) {
+      var app;
+      app = this;
+      return Handlebars.registerHelper(name, function() {
+        var args;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        return fn.apply(this, [app, Handlebars].concat(args));
+      });
+    };
+
+    Application.prototype.getLoader = function(name) {
+      var loader;
+      loader = Loader.analyse(name).loader;
+      if (loader && this.loaders[loader]) {
+        return this.loaders[loader];
+      } else {
+        return this.defaultLoader;
+      }
+    };
+
+    Application.prototype.setRegion = function(region) {
+      this.region = region;
+      return this.regions.unshift(this.region);
+    };
+
+    Application.prototype.startRoute = function() {
+      var defaultPath, paths, _ref1;
+      defaultPath = arguments[0], paths = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      if (!this.router) {
+        this.router = new D.Router(this);
+      }
+      return this.chain((_ref1 = this.router).mountRoutes.apply(_ref1, __slice.call(paths).concat([function() {
+        if (defaultPath) {
+          return this.navigate(defaultPath, true);
+        }
+      }])));
+    };
+
+    Application.prototype.navigate = function(path, trigger) {
+      return this.router.navigate(path, trigger);
+    };
+
+    Application.prototype.load = function() {
+      var name, names;
+      names = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.chain((function() {
+        var _j, _len1, _results;
+        _results = [];
+        for (_j = 0, _len1 = names.length; _j < _len1; _j++) {
+          name = names[_j];
+          _results.push(this.getLoader(name).loadModule(name));
+        }
+        return _results;
+      }).call(this));
+    };
+
+    Application.prototype.show = function(feature, options) {
+      return this.region.show(feature, options);
+    };
+
+    Application.prototype.message = {
+      success: function(title, content) {
+        return alert(content || title);
+      },
+      info: function(title, content) {
+        if (!content) {
+          content = title;
+        }
+        return alert(content || title);
+      },
+      error: function(title, content) {
+        if (!content) {
+          content = title;
+        }
+        return alert(content || title);
+      }
+    };
+
+    return Application;
+
+  })(D.Base);
+  ModuleContainer = (function(_super) {
+    __extends(ModuleContainer, _super);
+
+    function ModuleContainer(name) {
+      this.name = name;
+      this.modules = {};
+      ModuleContainer.__super__.constructor.apply(this, arguments);
+    }
+
+    ModuleContainer.prototype.checkId = function(id) {
+      if (!(id && _.isString(id))) {
+        throw new Error("id: " + id + " is invalid");
+      }
+      if (this.modules[id]) {
+        throw new Error("id: " + id + " is already used");
+      }
+    };
+
+    ModuleContainer.prototype.get = function(id) {
+      return this.modules[id];
+    };
+
+    ModuleContainer.prototype.changeId = function(from, to) {
+      var module;
+      if (from === to) {
+        return;
+      }
+      this.checkId(to);
+      module = this.modules[from];
+      if (!module) {
+        throw new Error("module id: " + from + " not exists");
+      }
+      delete this.modules[from];
+      module.id = to;
+      return this.modules[to] = module;
+    };
+
+    ModuleContainer.prototype.add = function(module) {
+      this.checkId(module.id);
+      return this.modules[module.id] = module;
+    };
+
+    ModuleContainer.prototype.remove = function(id) {
+      return delete this.modules[id];
+    };
+
+    return ModuleContainer;
+
+  })(D.Base);
+  Layout = (function(_super) {
+    __extends(Layout, _super);
+
+    function Layout() {
+      return Layout.__super__.constructor.apply(this, arguments);
+    }
+
+    Layout.prototype.initialize = function() {
+      this.isLayout = true;
+      this.loadDeferred = this.chain([this.loadTemplate(), this.loadHandlers()]);
+      return delete this.bindData;
+    };
+
+    return Layout;
+
+  })(D.View);
+  D.Module = Module = (function(_super) {
+    __extends(Module, _super);
+
+    Module.Container = ModuleContainer;
+
+    Module.Layout = Layout;
+
+    function Module(name, app, loader, options) {
+      var _ref1;
+      this.name = name;
+      this.app = app;
+      this.loader = loader;
+      this.options = options;
+      _ref1 = this.name.split('/'), this.baseName = _ref1[_ref1.length - 1];
+      this.container = options.container || this.app.modules;
+      this.container.add(this);
+      this.separatedTemplate = options.separatedTemplate === true;
+      this.regions = {};
+      Module.__super__.constructor.call(this, 'm');
+    }
+
+    Module.prototype.initialize = function() {
+      if (this.options.extend) {
+        this.extend(this.options.extend);
+      }
+      return this.loadDeferred = this.chain([this.loadTemplate(), this.loadLayout(), this.loadData(), this.loadItems()]);
+    };
+
+    Module.prototype.loadTemplate = function() {
+      if (this.separatedTemplate) {
+        return;
+      }
+      return this.chain(this.loader.loadTemplate(this), function(template) {
+        return this.template = template;
+      });
+    };
+
+    Module.prototype.loadLayout = function() {
+      var layout, name;
+      layout = this.getOptionResult(this.options.layout);
+      name = _.isString(layout) ? layout : layout != null ? layout.name : void 0;
+      name || (name = 'layout');
+      return this.chain(this.app.getLoader(name).loadLayout(this, name, layout), (function(_this) {
+        return function(obj) {
+          return _this.layout = obj;
+        };
+      })(this));
+    };
+
+    Module.prototype.loadData = function() {
+      var doLoad, id, items, promises, value;
+      this.data = {};
+      promises = [];
+      items = this.getOptionResult(this.options.data) || {};
+      this.autoLoadDuringRender = [];
+      this.autoLoadAfterRender = [];
+      doLoad = (function(_this) {
+        return function(id, value) {
+          var name;
+          name = D.Loader.analyse(id).name;
+          value = _this.getOptionResult(value);
+          if (value) {
+            if (value.autoLoad === 'after' || value.autoLoad === 'afterRender') {
+              _this.autoLoadAfterRender.push(name);
+            } else if (value.autoLoad) {
+              _this.autoLoadDuringRender.push(name);
+            }
+          }
+          return promises.push(_this.chain(_this.app.getLoader(id).loadModel(value, _this), function(d) {
+            return this.data[name] = d;
+          }));
+        };
+      })(this);
+      for (id in items) {
+        value = items[id];
+        doLoad(id, value);
+      }
+      return this.chain(promises);
+    };
+
+    Module.prototype.loadItems = function() {
+      var doLoad, items, name, promises;
+      this.items = {};
+      this.inRegionItems = [];
+      promises = [];
+      items = this.getOptionResult(this.options.items) || [];
+      doLoad = (function(_this) {
+        return function(name, item) {
+          var isModule, p;
+          item = _this.getOptionResult(item);
+          if (item && _.isString(item)) {
+            item = {
+              region: item
+            };
+          }
+          isModule = item.isModule;
+          p = _this.chain(_this.app.getLoader(name)[isModule ? 'loadModule' : 'loadView'](name, _this, item), function(obj) {
+            _this.items[obj.name] = obj;
+            obj.regionInfo = item;
+            if (item.region) {
+              return _this.inRegionItems.push(obj);
+            }
+          });
+          return promises.push(p);
+        };
+      })(this);
+      for (name in items) {
+        item = items[name];
+        doLoad(name, item);
+      }
+      return this.chain(promises);
+    };
+
+    Module.prototype.addRegion = function(name, el) {
+      var type;
+      type = el.data('region-type');
+      return this.regions[name] = Region.create(type, this.app, this.module, el);
+    };
+
+    Module.prototype.removeRegion = function(name) {
+      return delete this.regions[name];
+    };
+
+    Module.prototype.render = function(options) {
+      if (options == null) {
+        options = {};
+      }
+      if (!this.region) {
+        throw new Error('No region to render in');
+      }
+      this.renderOptions = options;
+      if (options.id) {
+        this.container.changeId(this.id, options.id);
+      }
+      return this.chain(this.loadDeferred, function() {
+        var _ref1;
+        return (_ref1 = this.options.beforeRender) != null ? _ref1.apply(this) : void 0;
+      }, function() {
+        return this.layout.setRegion(this.region);
+      }, this.fetchDataDuringRender, function() {
+        return this.layout.render();
+      }, function() {
+        var _ref1;
+        return (_ref1 = this.options.afterLayoutRender) != null ? _ref1.apply(this) : void 0;
+      }, function() {
+        var key, region, value, _j, _len1, _ref1, _results;
+        _ref1 = this.inRegionItems;
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          value = _ref1[_j];
+          key = value.regionInfo.region;
+          region = this.regions[key];
+          if (!region) {
+            throw new Error("Can not find region: " + key);
+          }
+          _results.push(region.show(value));
+        }
+        return _results;
+      }, function() {
+        var _ref1;
+        return (_ref1 = this.options.afterRender) != null ? _ref1.apply(this) : void 0;
+      }, this.fetchDataAfterRender, function() {
+        return this;
+      });
+    };
+
+    Module.prototype.setRegion = function(region) {
+      this.region = region;
+    };
+
+    Module.prototype.close = function() {
+      return this.chain(function() {
+        var _ref1;
+        return (_ref1 = this.options.beforeClose) != null ? _ref1.apply(this) : void 0;
+      }, function() {
+        return this.layout.close();
+      }, function() {
+        var key, value, _ref1, _results;
+        _ref1 = this.regions;
+        _results = [];
+        for (key in _ref1) {
+          value = _ref1[key];
+          _results.push(value.close());
+        }
+        return _results;
+      }, function() {
+        var _ref1;
+        return (_ref1 = this.options.afterClose) != null ? _ref1.apply(this) : void 0;
+      }, function() {
+        return this.container.remove(this.id);
+      });
+    };
+
+    Module.prototype.fetchDataDuringRender = function() {
+      var id;
+      return this.chain((function() {
+        var _base, _j, _len1, _ref1, _results;
+        _ref1 = this.autoLoadDuringRender;
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          id = _ref1[_j];
+          _results.push(typeof (_base = this.data[id]).get === "function" ? _base.get() : void 0);
+        }
+        return _results;
+      }).call(this));
+    };
+
+    Module.prototype.fetchDataAfterRender = function() {
+      var id;
+      return this.chain((function() {
+        var _base, _j, _len1, _ref1, _results;
+        _ref1 = this.autoLoadAfterRender;
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          id = _ref1[_j];
+          _results.push(typeof (_base = this.data[id]).get === "function" ? _base.get() : void 0);
+        }
+        return _results;
+      }).call(this));
+    };
+
+    return Module;
+
+  })(D.Base);
   D.Model = Data = (function(_super) {
     __extends(Data, _super);
 
@@ -244,10 +653,820 @@ var __slice = [].slice,
       return D.Require[item](this, options);
     };
   }
+  D.Model.include(D.Event);
+  D.Region = Region = (function(_super) {
+    __extends(Region, _super);
+
+    Region.types = {};
+
+    Region.register = function(name, clazz) {
+      return this.types[name] = clazz;
+    };
+
+    Region.create = function(type, app, module, el) {
+      var clazz;
+      clazz = this.types[type] || Region;
+      return new clazz(app, module, el);
+    };
+
+    function Region(app, module, el) {
+      this.app = app;
+      this.module = module;
+      this.el = el instanceof $ ? el : $(el);
+      Region.__super__.constructor.call(this, 'r');
+      if (this.el.size() === 0) {
+        throw new Error("Can not find DOM element: " + el);
+      }
+    }
+
+    Region.prototype.getEl = function() {
+      return this.el;
+    };
+
+    Region.prototype.show = function(item, options) {
+      if (this.currentItem) {
+        if ((D.isObject(item) && item.id === this.currentItem.id) || (D.isString(item) && D.loader.analyse(item).name === this.currentItem.name)) {
+          return this.chain(this.currentItem.render(options), this.currentItem);
+        }
+      }
+      return this.chain((D.isString(item) ? this.app.getLoader(item).loadModule(item) : item), function(item) {
+        if (!(item.render && item.setRegion)) {
+          throw new Error("Can not show item: " + item);
+        }
+        return item;
+      }, [
+        function(item) {
+          if (item.region) {
+            item.region.close();
+          }
+          return item;
+        }, function() {
+          return this.close();
+        }
+      ], function(_arg) {
+        var item;
+        item = _arg[0];
+        item.setRegion(this);
+        return this.currentItem = item;
+      }, function(item) {
+        return item.render(options);
+      });
+    };
+
+    Region.prototype.close = function() {
+      if (!this.currentItem) {
+        return this.createRejectedDeferred();
+      }
+      return this.chain(function() {
+        return this.currentItem.close();
+      }, function() {
+        this.empty();
+        this.currentItem = null;
+        return this;
+      });
+    };
+
+    Region.prototype.delegateEvent = function(item, name, selector, fn) {
+      var n;
+      n = "" + name + ".events" + this.id + item.id;
+      if (selector) {
+        return this.el.on(n, selector, fn);
+      } else {
+        return this.el.on(n, fn);
+      }
+    };
+
+    Region.prototype.undelegateEvents = function(item) {
+      return this.el.off(".events" + this.id + item.id);
+    };
+
+    Region.prototype.$$ = function(selector) {
+      return this.el.find(selector);
+    };
+
+    Region.prototype.empty = function() {
+      return this.getEl().empty();
+    };
+
+    return Region;
+
+  })(D.Base);
+  D.View = View = (function(_super) {
+    __extends(View, _super);
+
+    View.ComponentManager = {
+      handlers: {},
+      register: function(name, creator, destructor, initializer) {
+        if (destructor == null) {
+          destructor = (function() {});
+        }
+        if (initializer == null) {
+          initializer = (function() {});
+        }
+        return this.handlers[name] = {
+          creator: creator,
+          destructor: destructor,
+          initializer: initializer,
+          initialized: false
+        };
+      },
+      create: function(view, options) {
+        var dom, handler, id, name, obj, opt, selector;
+        if (options == null) {
+          options = {};
+        }
+        id = options.id, name = options.name, selector = options.selector;
+        opt = options.options;
+        if (!name) {
+          throw new Error('Component name can not be null');
+        }
+        if (!id) {
+          throw new Error('Component id can not be null');
+        }
+        dom = selector ? view.$$(selector) : id ? view.$(id) : view.getEl();
+        handler = this.handlers[name] || {
+          creator: function(view, el, options) {
+            if (!el[name]) {
+              throw new Error("No component handler for name: " + name);
+            }
+            return el[name](options);
+          },
+          destructor: function(view, component, info) {
+            return component[name]('destroy');
+          },
+          initialized: true
+        };
+        obj = !handler.initialized && handler.initializer ? handler.initializer() : null;
+        handler.initialized = true;
+        return view.chain(obj, handler.creator(view, dom, opt), function(comp) {
+          return {
+            id: id,
+            component: comp,
+            info: {
+              destructor: handler.destructor,
+              options: opt
+            }
+          };
+        });
+      },
+      destroy: function(view, component, info) {
+        return typeof info.destructor === "function" ? info.destructor(view, component, info.options) : void 0;
+      }
+    };
+
+    function View(name, module, loader, options) {
+      this.name = name;
+      this.module = module;
+      this.loader = loader;
+      this.options = options != null ? options : {};
+      this.id = D.uniqueId('v');
+      this.app = this.module.app;
+      this.eventHandlers = {};
+      View.__super__.constructor.apply(this, arguments);
+    }
+
+    View.prototype.initialize = function() {
+      if (this.options.extend) {
+        this.extend(this.options.extend);
+      }
+      return this.loadDeferred = this.chain([this.loadTemplate(), this.loadHandlers()]);
+    };
+
+    View.prototype.loadTemplate = function() {
+      var template;
+      if (this.module.separatedTemplate !== true) {
+        return this.chain(this.module.loadDeferred, function() {
+          return this.template = this.module.template;
+        });
+      } else {
+        template = this.getOptionResult(this.options.template) || this.name;
+        return this.chain(this.app.getLoader(template).loadSeparatedTemplate(this, template), function(t) {
+          return this.template = t;
+        });
+      }
+    };
+
+    View.prototype.loadHandlers = function() {
+      var handlers;
+      handlers = this.getOptionResult(this.options.handlers) || this.name;
+      return this.chain(this.app.getLoader(handlers).loadHandlers(this, handlers), function(handlers) {
+        return D.extend(this.eventHandlers, handlers);
+      });
+    };
+
+    View.prototype.bindData = function() {
+      return this.module.loadDeferred.done((function(_this) {
+        return function() {
+          var bind, binding, bindings, doBind, key, value, _k, _len2;
+          bind = _this.getOptionResult(_this.options.bind) || {};
+          _this.data = {};
+          doBind = function(model, binding) {
+            return _this.listenTo(model, event, function() {
+              var args, event, handler, _base, _ref2;
+              args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+              _ref2 = binding.split('#'), event = _ref2[0], handler = _ref2[1];
+              if (!(name && handler)) {
+                throw new Error("Incorrect binding string format:" + binding);
+              }
+              return typeof this[handler] === "function" ? this[handler].apply(this, args) : void 0;
+              return typeof (_base = this.eventHandlers)[handler] === "function" ? _base[handler].apply(_base, args) : void 0;
+              throw new Error("Can not find handler function for :" + handler);
+            });
+          };
+          for (key in bind) {
+            value = bind[key];
+            _this.data[key] = _this.module.data[key];
+            if (!_this.data[key]) {
+              throw new Error("Model: " + key + " doesn't exists");
+            }
+            if (!value) {
+              return;
+            }
+            bindings = value.replace(/\s+/g, '').split(',');
+            for (_k = 0, _len2 = bindings.length; _k < _len2; _k++) {
+              binding = bindings[_k];
+              doBind(_this.data[key], bindings);
+            }
+          }
+        };
+      })(this));
+    };
+
+    View.prototype.unbindData = function() {
+      this.stopListening();
+      return delete this.data;
+    };
+
+    View.prototype.wrapDomId = function(id) {
+      return "" + this.id + id;
+    };
+
+    View.prototype.setRegion = function(region) {
+      var events, handler, id, key, name, selector, value, _ref2, _results;
+      this.region = region;
+      events = this.getOptionResult(this.options.events) || {};
+      _results = [];
+      for (key in events) {
+        value = events[key];
+        if (!D.isString(value)) {
+          throw new Error('The value defined in events must be a string');
+        }
+        _ref2 = key.replace(/^\s+/g, '').replace(/\s+$/, '').split(/\s+/), name = _ref2[0], id = _ref2[1];
+        if (id) {
+          selector = id.charAt(id.length - 1) === '*' ? "[id^=" + (this.wrapDomId(id.slice(0, -1))) + "]" : "#" + (this.wrapDomId(id));
+        }
+        handler = this.createHandler(name, id, selector, value);
+        _results.push(this.region.delegateEvent(this, name, selector, handler));
+      }
+      return _results;
+    };
+
+    View.prototype.createHandler = function(name, id, selector, value) {
+      var me;
+      me = this;
+      return function() {
+        var args, deferred, el, i;
+        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        el = $(this);
+        if (el.hasClass('disabled')) {
+          return;
+        }
+        if (selector && selector.charAt(0) !== '#') {
+          i = el.attr('id');
+          args.unshift(i.slice(id.length));
+        }
+        if (el.data('after-click') === 'defer') {
+          deferred = me.createDeferred();
+          el.addClass('disabled');
+          deferred.always(function() {
+            return el.removeClass('disabled');
+          });
+          args.unshift(deferred);
+        }
+        return me.loadDeferred.done(function() {
+          var method;
+          method = me.eventHandlers[value];
+          if (!method) {
+            throw new Error("No handler defined with name: " + value);
+          }
+          return method.apply(me, args);
+        });
+      };
+    };
+
+    View.prototype.getEl = function() {
+      if (this.region) {
+        return this.region.getEl(this);
+      } else {
+        return null;
+      }
+    };
+
+    View.prototype.$ = function(id) {
+      if (!this.region) {
+        throw new Error("Region is null");
+      }
+      return this.region.$$('#' + this.wrapDomId(id));
+    };
+
+    View.prototype.$$ = function(selector) {
+      if (!this.region) {
+        throw new Error("Region is null");
+      }
+      return this.getEl().find(selector);
+    };
+
+    View.prototype.close = function() {
+      return this.chain(function() {
+        var _ref2;
+        return (_ref2 = this.options.beforeClose) != null ? _ref2.apply(this) : void 0;
+      }, [
+        function() {
+          return this.region.undelegateEvents(this);
+        }, function() {
+          return this.unbindData();
+        }, function() {
+          return this.destroyComponents();
+        }, function() {
+          return this.unexportRegions();
+        }
+      ], function() {
+        var _ref2;
+        return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
+      });
+    };
+
+    View.prototype.render = function() {
+      if (!this.region) {
+        throw new Error('No region to render in');
+      }
+      return this.chain(this.loadDeferred, [this.unbindData, this.destroyComponents, this.unexportRegions], this.bindData, function() {
+        var _ref2;
+        return (_ref2 = this.options.beforeRender) != null ? _ref2.apply(this) : void 0;
+      }, this.beforeRender, this.serializeData, this.options.adjustData || function(data) {
+        return data;
+      }, this.executeTemplate, this.processIdReplacement, this.renderComponent, this.exportRegions, this.afterRender, function() {
+        var _ref2;
+        return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
+      }, function() {
+        return this;
+      });
+    };
+
+    View.prototype.beforeRender = function() {};
+
+    View.prototype.destroyComponents = function() {
+      var components, key, value;
+      components = this.components || {};
+      for (key in components) {
+        value = components[key];
+        View.ComponentManager.destroy(this, value, this.componentInfos[key]);
+      }
+      this.components = {};
+      return this.componentInfos = {};
+    };
+
+    View.prototype.serializeData = function() {
+      var data, key, value, _ref2;
+      data = {};
+      _ref2 = this.data;
+      for (key in _ref2) {
+        value = _ref2[key];
+        data[key] = value.toJSON();
+      }
+      return data;
+    };
+
+    View.prototype.executeTemplate = function(data, ignore, deferred) {
+      var html;
+      data.Global = this.app.global;
+      data.View = this;
+      html = this.template(data);
+      return this.getEl().html(html);
+    };
+
+    View.prototype.processIdReplacement = function() {
+      var attr, used, _k, _len2, _ref2, _results;
+      used = {};
+      this.$$('[id]').each((function(_this) {
+        return function(i, el) {
+          var id;
+          el = $(el);
+          id = el.attr('id');
+          if (used[id]) {
+            throw new Error("The id:" + id + " is used more than once.");
+          }
+          used[id] = true;
+          return el.attr('id', _this.wrapDomId(id));
+        };
+      })(this));
+      _ref2 = D.Config.attributesReferToId || [];
+      _results = [];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        attr = _ref2[_k];
+        _results.push(this.$$("[" + attr + "]").each((function(_this) {
+          return function(i, el) {
+            var value, withHash;
+            el = $(el);
+            value = el.attr(attr);
+            withHash = value.charAt(0) === '#';
+            if (withHash) {
+              return el.attr(attr, '#' + _this.wrapDomId(value.slice(1)));
+            } else {
+              return el.attr(attr, _this.wrapDomId(value));
+            }
+          };
+        })(this)));
+      }
+      return _results;
+    };
+
+    View.prototype.renderComponent = function() {
+      var component, components, promises;
+      components = this.getOptionResult(this.options.components) || [];
+      promises = (function() {
+        var _k, _len2, _results;
+        _results = [];
+        for (_k = 0, _len2 = components.length; _k < _len2; _k++) {
+          component = components[_k];
+          component = this.getOptionResult(component);
+          if (component) {
+            _results.push(View.ComponentManager.create(this, component));
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      }).call(this);
+      return this.chain(promises, (function(_this) {
+        return function(comps) {
+          var comp, id, _k, _len2, _results;
+          _results = [];
+          for (_k = 0, _len2 = comps.length; _k < _len2; _k++) {
+            comp = comps[_k];
+            if (!(comp)) {
+              continue;
+            }
+            id = comp.id;
+            _this.components[id] = comp.component;
+            _results.push(_this.componentInfos[id] = comp.info);
+          }
+          return _results;
+        };
+      })(this));
+    };
+
+    View.prototype.exportRegions = function() {
+      this.exportedRegions = {};
+      return this.$$('[data-region]').each((function(_this) {
+        return function(i, el) {
+          var id;
+          el = $(el);
+          id = el.data('region');
+          return _this.exportedRegions[id] = _this.module.addRegion(id, el);
+        };
+      })(this));
+    };
+
+    View.prototype.unexportRegions = function() {
+      var key, value;
+      return this.chain('remove regions', (function() {
+        var _ref2, _results;
+        _ref2 = this.exportedRegions;
+        _results = [];
+        for (key in _ref2) {
+          value = _ref2[key];
+          _results.push(value.close());
+        }
+        return _results;
+      }).call(this), (function() {
+        var _ref2, _results;
+        _ref2 = this.exportedRegions;
+        _results = [];
+        for (key in _ref2) {
+          value = _ref2[key];
+          _results.push(this.module.removeRegion(key));
+        }
+        return _results;
+      }).call(this));
+    };
+
+    View.prototype.afterRender = function() {};
+
+    View.prototype.listenTo = D.Event.listenTo;
+
+    View.prototype.stopListening = D.Event.stopListening;
+
+    return View;
+
+  })(Base);
+  D.Loader = Loader = (function(_super) {
+    __extends(Loader, _super);
+
+    Loader.TemplateCache = {};
+
+    Loader.analyse = function(name) {
+      var args, loaderName, _ref2;
+      if (!D.isString(name)) {
+        return {
+          loader: null,
+          name: name
+        };
+      }
+      _ref2 = name.split(':'), loaderName = _ref2[0], name = _ref2[1], args = 3 <= _ref2.length ? __slice.call(_ref2, 2) : [];
+      if (!name) {
+        name = loaderName;
+        loaderName = null;
+      }
+      return {
+        loader: loaderName,
+        name: name,
+        args: args
+      };
+    };
+
+    function Loader(app, name) {
+      this.app = app;
+      this.name = name != null ? name : 'default';
+      this.fileNames = D.Config.fileNames;
+      Loader.__super__.constructor.apply(this, arguments);
+    }
+
+    Loader.prototype.loadResource = function(path, plugin) {
+      var error, obj;
+      path = this.app.path(path);
+      if (plugin) {
+        path = plugin + '!' + path;
+      }
+      obj = this.createDeferred();
+      error = function(e) {
+        var _ref2;
+        if (((_ref2 = e.requireModules) != null ? _ref2[0] : void 0) === path) {
+          define(path, null);
+          require.undef(path);
+          require([path], function() {});
+          return obj.resolve(null);
+        } else {
+          obj.reject(null);
+          throw e;
+        }
+      };
+      require([path], (function(_this) {
+        return function(obj) {
+          if (D.isFunction(obj)) {
+            obj = obj(_this.app);
+          }
+          return obj.resolve(obj);
+        };
+      })(this), error);
+      return obj.promise();
+    };
+
+    Loader.prototype.loadModuleResource = function(module, path, plugin) {
+      return this.loadResource(D.joinPath(module.name, path), plugin);
+    };
+
+    Loader.prototype.loadModule = function(path, parentModule) {
+      var name;
+      name = Loader.analyse(path).name;
+      return this.chain(this.loadResource(D.joinPath(name, this.fileNames.module)), (function(_this) {
+        return function(options) {
+          return new Module(name, _this.app, _this, options);
+        };
+      })(this));
+    };
+
+    Loader.prototype.loadView = function(name, module, options) {
+      name = Loader.analyse(name).name;
+      return this.chain(this.loadModuleResource(module, this.fileNames.view + name), (function(_this) {
+        return function(options) {
+          return new View(name, module, _this, options);
+        };
+      })(this));
+    };
+
+    Loader.prototype.loadLayout = function(module, name, layout) {
+      if (layout == null) {
+        layout = {};
+      }
+      name = Loader.analyse(name).name;
+      return this.chain(this.loadModuleResource(module, name), (function(_this) {
+        return function(options) {
+          return new D.Module.Layout(name, module, _this, D.extend(layout, options));
+        };
+      })(this));
+    };
+
+    Loader.prototype.innerLoadTemplate = function(module, p) {
+      var path, template;
+      path = p + this.fileNames.templateSuffix;
+      template = Loader.TemplateCache[module.name + path];
+      if (!template) {
+        template = Loader.TemplateCache[module.name + path] = this.loadModuleResource(module, path, 'text');
+      }
+      return this.chain(template, function(t) {
+        if (D.isString(t)) {
+          t = Loader.TemplateCache[path] = Handlebars.compile(t);
+        }
+        return t;
+      });
+    };
+
+    Loader.prototype.loadTemplate = function(module) {
+      var path;
+      path = this.fileNames.templates;
+      return this.innerLoadTemplate(module, path);
+    };
+
+    Loader.prototype.loadSeparatedTemplate = function(view, name) {
+      var path;
+      path = this.fileNames.template + name;
+      return this.innerLoadTemplate(view.module, path);
+    };
+
+    Loader.prototype.loadModel = function(name, module) {
+      if (name == null) {
+        name = '';
+      }
+      if (name instanceof D.Model) {
+        return name;
+      }
+      if (D.isString(name)) {
+        name = {
+          url: name
+        };
+      }
+      return new D.Model(this.app, module, name);
+    };
+
+    Loader.prototype.loadHandlers = function(view, name) {
+      return view.options.handlers || {};
+    };
+
+    Loader.prototype.loadRouter = function(path) {
+      var name;
+      name = Loader.analyse(path).name;
+      path = D.joinPath(name, this.fileNames.router);
+      if (path.charAt(0) === '/') {
+        path = path.substring(1);
+      }
+      return this.loadResource(path);
+    };
+
+    return Loader;
+
+  })(D.Base);
+  Route = (function() {
+    Route.prototype.regExps = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
+
+    function Route(app, router, path, fn) {
+      var pattern;
+      this.app = app;
+      this.router = router;
+      this.path = path;
+      this.fn = fn;
+      pattern = path.replace(this.regExps[0], this.regExps[1]).replace(this.regExps[2], this.regExps[3]);
+      this.pattern = new RegExp("^" + pattern + "$", D.Config.caseSensitiveHash ? 'g' : 'gi');
+    }
+
+    Route.prototype.match = function(hash) {
+      return this.pattern.test(hash);
+    };
+
+    Route.prototype.handle = function(hash) {
+      var args, fns, i, route, routes;
+      args = this.pattern.exec(hash).slice(1);
+      routes = this.router.getDependencies(this.path);
+      routes.push(this);
+      fns = (function() {
+        var _k, _len2, _results;
+        _results = [];
+        for (i = _k = 0, _len2 = routes.length; _k < _len2; i = ++_k) {
+          route = routes[i];
+          _results.push(function(prev) {
+            return route.fn.apply(route, (i > 0 ? [prev].concat(args) : args));
+          });
+        }
+        return _results;
+      })();
+      return router.chain.apply(router, fns);
+    };
+
+    return Route;
+
+  })();
+  D.Router = Router = (function(_super) {
+    __extends(Router, _super);
+
+    function Router(app) {
+      this.app = app;
+      this.routes = [];
+      this.routeMap = {};
+      this.dependencies = {};
+      Router.__super__.constructor.call(this, 'ro');
+    }
+
+    Router.prototype.start = function(defaultPath) {
+      $(root).on('popstate.drizzlerouter', (function(_this) {
+        return function() {
+          var hash;
+          hash = root.location.hash.slice(1);
+          if (_this.previousHash === hash) {
+            return;
+          }
+          _this.previousHash = hash;
+          return _this.dispatch(hash);
+        };
+      })(this));
+      if (defaultPath) {
+        return this.navigate(defaultPath, true);
+      }
+    };
+
+    Router.prototype.stop = function() {
+      return $(root).off('.drizzlerouter');
+    };
+
+    Router.prototype.dispatch = function(hash) {
+      var route, _k, _len2, _ref2;
+      _ref2 = this.routes;
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        route = _ref2[_k];
+        if (route.match(hash)) {
+          return route.handle(hash);
+        }
+      }
+    };
+
+    Router.prototype.navigate = function(path, trigger) {
+      var _ref2;
+      root.history.pushState({}, root.document.title, "#" + path);
+      if (trigger) {
+        return (_ref2 = this.routeMap[path]) != null ? _ref2.handle(path) : void 0;
+      }
+    };
+
+    Router.prototype.mountRoutes = function() {
+      var path, paths;
+      paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.chain((function() {
+        var _k, _len2, _results;
+        _results = [];
+        for (_k = 0, _len2 = paths.length; _k < _len2; _k++) {
+          path = paths[_k];
+          _results.push(this.app.getLoader(path).loadRouter(path));
+        }
+        return _results;
+      }).call(this), function(routers) {
+        var i, router, _k, _len2, _results;
+        _results = [];
+        for (i = _k = 0, _len2 = routers.length; _k < _len2; i = ++_k) {
+          router = routers[i];
+          _results.push(this.addRouter(paths[i], router));
+        }
+        return _results;
+      });
+    };
+
+    Router.prototype.addRoute = function(path, router) {
+      var dependencies, key, p, route, routes, value, _results;
+      routes = this.getOptionResult(router.route);
+      dependencies = this.getOptionResult(router.deps);
+      for (key in dependencies) {
+        value = dependencies[key];
+        p = D.joinPath(path, key);
+        this.dependencies[p] = value.charAt(0) === '/' ? value.slice(1) : D.joinPath(path, value);
+      }
+      _results = [];
+      for (key in routes) {
+        value = routes[key];
+        p = D.joinPath(path, key);
+        route = new Route(this.app, this, p, router[value]);
+        this.routes.unshift(route);
+        _results.push(this.routeMap[p] = route);
+      }
+      return _results;
+    };
+
+    Router.prototype.getDependencies = function(path) {
+      var d, deps;
+      deps = [];
+      d = this.dependencies[path];
+      while (d != null) {
+        deps.unshift(this.routeMap[d]);
+        d = this.dependencies[d];
+      }
+      return deps;
+    };
+
+    return Router;
+
+  })(D.Base);
   Drizzle.Config = {
     scriptRoot: 'app',
     urlRoot: '',
     urlSuffix: '',
+    caseSensitiveHash: false,
     attributesReferToId: ['for', 'data-target', 'data-parent'],
     fileNames: {
       module: 'index',
@@ -257,7 +1476,8 @@ var __slice = [].slice,
       handler: 'handler-',
       model: 'model-',
       collection: 'collection-',
-      router: 'router'
+      router: 'router',
+      templateSuffix: '.html'
     },
     pagination: {
       defaultPageSize: 10,
@@ -443,7 +1663,7 @@ var __slice = [].slice,
       if (model.data.id) {
         urls.push(model.data.id);
       }
-      return urls.join('/').replace(/\/{2, }/g, '/');
+      return D.joinPath.apply(D, urls);
     },
     get: function(model, options) {
       return this.ajax({
@@ -477,6 +1697,21 @@ var __slice = [].slice,
       return D.Deferred.chain($.ajax(params), function(resp) {
         return model.setData(resp);
       });
+    }
+  };
+  D.Helpers = {
+    layout: function(app, Handlebars, options) {
+      if (this.View.isLayout) {
+        return options.fn(this);
+      } else {
+        return '';
+      }
+    },
+    view: function(app, Handlebars, name, options) {
+      if (this.View.isLayout || this.View.name !== name) {
+        return '';
+      }
+      return options.fn(this);
     }
   };
   return Drizzle;
