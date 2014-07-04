@@ -2,13 +2,13 @@ define
 
     data:
         top: data: [
-            id: 1, url: '#top/1', name: 'Overview'
+            id: 1, url: '#main/top/1', name: 'Overview'
         ,
-            id: 2, url: '#top/2', name: 'Reports', active: true
+            id: 2, url: '#main/top/2', name: 'Reports', active: true
         ,
-            id: 3, url: '#top/3', name: 'Analytics'
+            id: 3, url: '#main/top/3', name: 'Analytics'
         ,
-            id: 4, url: '#top/4', name: 'Export'
+            id: 4, url: '#main/top/4', name: 'Export'
         ]
 
     items:

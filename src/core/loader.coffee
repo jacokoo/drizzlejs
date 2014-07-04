@@ -87,5 +87,5 @@ D.Loader = class Loader extends D.Base
     loadRouter: (path) ->
         {name} = Loader.analyse path
         path = D.joinPath name, @fileNames.router
-        path = path.substring(1) if path.charAt(0) is '/'
+        path = path.slice(1) if path.charAt(0) is '/'
         @loadResource(path)

@@ -1,4 +1,4 @@
-D.Model = class Data extends D.Base
+D.Model = class Model extends D.Base
 
     constructor: (@app, @module, @options = {}) ->
         @data = @options.data or {}
@@ -15,6 +15,7 @@ D.Model = class Data extends D.Base
                 recordCountKey: options.recordCountKey or defaults.recordCountKey
 
         super 'd'
+        @module.container.delegateEvent @
 
     setData: (data) ->
         @data = if D.isFunction @options.parse then @options.parse data else data
@@ -62,7 +63,5 @@ D.Model = class Data extends D.Base
         d
 
 for item in ['get', 'post', 'put', 'del']
-    do (item) ->
-    D.Model::[item] = (options) -> D.Require[item] @, options
-
-D.Model.include D.Event
+    do (item) -> D.Model::[item] = (options) ->
+        @chain D.Require[item](@, options), -> @trigger 'sync'

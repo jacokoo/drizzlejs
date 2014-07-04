@@ -1,17 +1,17 @@
 D.Application = class Application extends D.Base
     constructor: (@options = {}) ->
-        @name = 'application'
-        @modules = new Module.Container('Default Module Container')
+        @modules = new Module.Container()
         @global = {}
         @loaders = {}
         @regions = []
 
         super 'a'
+        @modules.delegateEvent @
 
     initialize: ->
         @registerLoader new D.Loader(@), true
         @registerHelper key, value for key, value of D.Helpers
-        @setRegion new Region(@, null, $(document.body))
+        @setRegion new D.Region(@, null, $(document.body))
 
     registerLoader: (loader, isDefault) ->
         @loaders[loader.name] = loader
@@ -33,8 +33,7 @@ D.Application = class Application extends D.Base
     startRoute: (defaultPath, paths...) ->
         @router = new D.Router(@) unless @router
 
-        @chain @router.mountRoutes paths..., ->
-            @navigate defaultPath, true if defaultPath
+        @chain @router.mountRoutes(paths...), -> @router.start defaultPath
 
     navigate: (path, trigger) ->
         @router.navigate(path, trigger)

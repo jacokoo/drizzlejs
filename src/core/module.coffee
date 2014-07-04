@@ -1,5 +1,7 @@
 class ModuleContainer extends D.Base
-    constructor: (@name) ->
+    @include D.Event
+
+    constructor: ->
         @modules = {}
         super
 
@@ -43,6 +45,7 @@ D.Module = class Module extends D.Base
         @regions = {}
         super 'm'
         @container.add @
+        @container.delegateEvent @
 
     initialize: ->
         @extend @options.extend if @options.extend

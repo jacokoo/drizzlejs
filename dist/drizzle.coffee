@@ -33,7 +33,7 @@
         noConflict: ->
             root.Drizzle = old
             D
-        joinPath: (paths...) -> paths.join('/').replace(/\/{2, }/g, '/')
+        joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
 
     D.Deferred =
 
@@ -99,6 +99,7 @@
         off: (name, callback, context) ->
             return @ unless @registeredEvents and events = @registeredEvents[name]
             @registeredEvents[name] = (item for item in events when item.fn isnt callback or (context and context isnt item.context))
+            delete @registeredEvents[name] if @registeredEvents[name].length is 0
             @
 
         trigger: (name, args...) ->
@@ -106,27 +107,47 @@
             item.fn.apply item.context, args for item in events
             @
 
-        listenTo: (obj, name, callback) ->
-            @registeredListeners or= {}
-            (@registeredListeners[name] or= []).push fn: callback, obj: obj
-            obj.on name, callback, @
-            @
+        delegateEvent: (target) -> D.extend target,
+            on: (name, callback, context) =>
+                target.listenTo @, "#{name}.#{target.id}", callback, context
+                target
 
-        stopListening: (obj, name, callback) ->
-            return @ unless @registeredListeners
-            unless obj
-                value.obj.off key, value.fn, @ for key, value of @registeredListeners
-                return @
+            off: (args...) =>
+                if args.length > 0
+                    args.unshift "#{args.shift()}.#{target.id}"
+                args.unshift @
+                target.stopListening args...
+                target
 
-            for key, value of @registeredListeners
-                continue if name and name isnt key
-                @registeredListeners[key] = []
-                for item in value
-                    if item.obj isnt obj or (callback and callback isnt item.fn)
-                        @registeredListeners[key].push item
-                    else
-                        item.obj.off key, item.fn, @
-            @
+            trigger: (name, args...) =>
+                args.unshift "#{name}.#{target.id}"
+                @trigger args...
+                target
+
+            listenTo: (obj, name, callback, context) ->
+                ctx = context or @
+                @registeredListeners or= {}
+                (@registeredListeners[name] or= []).push fn: callback, obj: obj
+                obj.on name, callback, ctx
+                @
+
+            stopListening: (obj, name, callback) ->
+                return @ unless @registeredListeners
+                unless obj
+                    value.obj.off key, value.fn, @ for key, value of @registeredListeners
+                    @registeredListeners = {}
+                    return @
+
+                for key, value of @registeredListeners
+                    continue if name and name isnt key
+                    @registeredListeners[key] = []
+                    for item in value
+                        if item.obj isnt obj or (callback and callback isnt item.fn)
+                            @registeredListeners[key].push item
+                        else
+                            item.obj.off key, item.fn, @
+                    delete @registeredListeners[key] if @registeredListeners[key].length is 0
+                @
 
 
     D.Request =
@@ -195,18 +216,18 @@
 
     D.Application = class Application extends D.Base
         constructor: (@options = {}) ->
-            @name = 'application'
-            @modules = new Module.Container('Default Module Container')
+            @modules = new Module.Container()
             @global = {}
             @loaders = {}
             @regions = []
 
             super 'a'
+            @modules.delegateEvent @
 
         initialize: ->
             @registerLoader new D.Loader(@), true
             @registerHelper key, value for key, value of D.Helpers
-            @setRegion new Region(@, null, $(document.body))
+            @setRegion new D.Region(@, null, $(document.body))
 
         registerLoader: (loader, isDefault) ->
             @loaders[loader.name] = loader
@@ -228,8 +249,7 @@
         startRoute: (defaultPath, paths...) ->
             @router = new D.Router(@) unless @router
 
-            @chain @router.mountRoutes paths..., ->
-                @navigate defaultPath, true if defaultPath
+            @chain @router.mountRoutes(paths...), -> @router.start defaultPath
 
         navigate: (path, trigger) ->
             @router.navigate(path, trigger)
@@ -254,7 +274,7 @@
                 alert content or title
 
 
-    D.Model = class Data extends D.Base
+    D.Model = class Model extends D.Base
 
         constructor: (@app, @module, @options = {}) ->
             @data = @options.data or {}
@@ -271,6 +291,7 @@
                     recordCountKey: options.recordCountKey or defaults.recordCountKey
 
             super 'd'
+            @module.container.delegateEvent @
 
         setData: (data) ->
             @data = if D.isFunction @options.parse then @options.parse data else data
@@ -318,10 +339,8 @@
             d
 
     for item in ['get', 'post', 'put', 'del']
-        do (item) ->
-        D.Model::[item] = (options) -> D.Require[item] @, options
-
-    D.Model.include D.Event
+        do (item) -> D.Model::[item] = (options) ->
+            @chain D.Require[item](@, options), -> @trigger 'sync'
 
 
     D.Region = class Region extends D.Base
@@ -342,7 +361,7 @@
         # show the specified item which could be a view or a module
         show: (item, options) ->
             if @currentItem
-                if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.loader.analyse(item).name is @currentItem.name)
+                if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.Loader.analyse(item).name is @currentItem.name)
                     return @chain @currentItem.render(options), @currentItem
 
             @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
@@ -412,10 +431,10 @@
                 info.destructor?(view, component, info.options)
 
         constructor: (@name, @module, @loader, @options = {}) ->
-            @id = D.uniqueId 'v'
             @app = @module.app
             @eventHandlers = {}
-            super
+            super 'v'
+            @module.container.delegateEvent @
 
         initialize: ->
             @extend @options.extend if @options.extend
@@ -491,7 +510,7 @@
                 throw new Error 'The value defined in events must be a string' unless D.isString value
                 [name, id] = key.replace(/^\s+/g, '').replace(/\s+$/, '').split /\s+/
                 if id
-                    selector = if id.charAt(id.length - 1) is '*' then "[id^=#{@wrapDomId id.slice(0, -1)}]" else "##{@wrapDomId id}"
+                    selector = if id.charAt(id.length - 1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
                 handler = @createHandler name, id, selector, value
                 @region.delegateEvent @, name, selector, handler
 
@@ -625,13 +644,11 @@
 
         afterRender: ->
 
-        listenTo: D.Event.listenTo
-
-        stopListening: D.Event.stopListening
-
 
     class ModuleContainer extends D.Base
-        constructor: (@name) ->
+        @include D.Event
+
+        constructor: ->
             @modules = {}
             super
 
@@ -675,6 +692,7 @@
             @regions = {}
             super 'm'
             @container.add @
+            @container.delegateEvent @
 
         initialize: ->
             @extend @options.extend if @options.extend
@@ -869,7 +887,7 @@
         loadRouter: (path) ->
             {name} = Loader.analyse path
             path = D.joinPath name, @fileNames.router
-            path = path.substring(1) if path.charAt(0) is '/'
+            path = path.slice(1) if path.charAt(0) is '/'
             @loadResource(path)
 
 
@@ -884,54 +902,72 @@
             pattern = path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
             @pattern = new RegExp "^#{pattern}$", if D.Config.caseSensitiveHash then 'g' else 'gi'
 
-        match: (hash) -> @pattern.test hash
+        match: (hash) ->
+            @pattern.lastIndex = 0
+            @pattern.test hash
 
         handle: (hash) ->
+            @pattern.lastIndex = 0
             args = @pattern.exec(hash).slice 1
             routes = @router.getDependencies(@path)
             routes.push @
             fns = for route, i in routes
-                (prev) -> route.fn (if i > 0 then [prev].concat args else args)...
-            router.chain fns...
+                do (route, i) ->
+                    (prev) -> route.fn (if i > 0 then [prev].concat args else args)...
+            @router.chain fns...
 
     D.Router = class Router extends D.Base
         constructor: (@app) ->
             @routes = []
             @routeMap = {}
             @dependencies = {}
+            @started = false
             super 'ro'
 
+        getHash: -> root.location.hash.slice 1
+
         start: (defaultPath) ->
-            $(root).on 'popstate.drizzlerouter', =>
-                hash = root.location.hash.slice 1
+            return if @started
+            @started = true
+
+            $(root).on 'popstate.dr', =>
+                hash = @getHash()
                 return if @previousHash is hash
                 @previousHash = hash
                 @dispatch(hash)
-            @navigate defaultPath, true if defaultPath
 
-        stop: -> $(root).off '.drizzlerouter'
+            hash = @getHash()
+            if hash
+                @navigate hash, true
+            else if defaultPath
+                @navigate defaultPath, true
+
+        stop: ->
+            $(root).off '.dr'
+            @started = false
 
         dispatch: (hash) -> return route.handle hash for route in @routes when route.match hash
 
         navigate: (path, trigger) ->
             root.history.pushState {}, root.document.title, "##{path}"
-            @routeMap[path]?.handle path if trigger
+            @dispatch path if trigger
 
         mountRoutes: (paths...) -> @chain(
             @app.getLoader(path).loadRouter(path) for path in paths
             (routers) ->
-                @addRouter paths[i], router for router, i in routers
+
+                @addRoute paths[i], router for router, i in routers
         )
 
         addRoute: (path, router) ->
-            routes = @getOptionResult router.route
+            routes = @getOptionResult router.routes
             dependencies = @getOptionResult router.deps
             for key, value of dependencies
                 p = D.joinPath path, key
                 @dependencies[p] = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
 
             for key, value of routes
-                p = D.joinPath path, key
+                p = D.joinPath(path, key).replace /(^\/|\/$)/g, ''
                 route = new Route @app, @, p, router[value]
                 @routes.unshift route
                 @routeMap[p] = route

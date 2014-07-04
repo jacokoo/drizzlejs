@@ -21,7 +21,7 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, Data, Drizzle, Layout, Loader, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, old, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, old, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.0'
   };
@@ -63,7 +63,7 @@ var __slice = [].slice,
     joinPath: function() {
       var paths;
       paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return paths.join('/').replace(/\/{2, }/g, '/');
+      return paths.join('/').replace(/\/+/g, '/');
     }
   });
   D.Deferred = {
@@ -174,6 +174,9 @@ var __slice = [].slice,
         }
         return _results;
       })();
+      if (this.registeredEvents[name].length === 0) {
+        delete this.registeredEvents[name];
+      }
       return this;
     },
     trigger: function() {
@@ -188,46 +191,82 @@ var __slice = [].slice,
       }
       return this;
     },
-    listenTo: function(obj, name, callback) {
-      var _base;
-      this.registeredListeners || (this.registeredListeners = {});
-      ((_base = this.registeredListeners)[name] || (_base[name] = [])).push({
-        fn: callback,
-        obj: obj
-      });
-      obj.on(name, callback, this);
-      return this;
-    },
-    stopListening: function(obj, name, callback) {
-      var key, value, _j, _len1, _ref1, _ref2;
-      if (!this.registeredListeners) {
-        return this;
-      }
-      if (!obj) {
-        _ref1 = this.registeredListeners;
-        for (key in _ref1) {
-          value = _ref1[key];
-          value.obj.off(key, value.fn, this);
-        }
-        return this;
-      }
-      _ref2 = this.registeredListeners;
-      for (key in _ref2) {
-        value = _ref2[key];
-        if (name && name !== key) {
-          continue;
-        }
-        this.registeredListeners[key] = [];
-        for (_j = 0, _len1 = value.length; _j < _len1; _j++) {
-          item = value[_j];
-          if (item.obj !== obj || (callback && callback !== item.fn)) {
-            this.registeredListeners[key].push(item);
-          } else {
-            item.obj.off(key, item.fn, this);
+    delegateEvent: function(target) {
+      return D.extend(target, {
+        on: (function(_this) {
+          return function(name, callback, context) {
+            target.listenTo(_this, "" + name + "." + target.id, callback, context);
+            return target;
+          };
+        })(this),
+        off: (function(_this) {
+          return function() {
+            var args;
+            args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            if (args.length > 0) {
+              args.unshift("" + (args.shift()) + "." + target.id);
+            }
+            args.unshift(_this);
+            target.stopListening.apply(target, args);
+            return target;
+          };
+        })(this),
+        trigger: (function(_this) {
+          return function() {
+            var args, name;
+            name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+            args.unshift("" + name + "." + target.id);
+            _this.trigger.apply(_this, args);
+            return target;
+          };
+        })(this),
+        listenTo: function(obj, name, callback, context) {
+          var ctx, _base;
+          ctx = context || this;
+          this.registeredListeners || (this.registeredListeners = {});
+          ((_base = this.registeredListeners)[name] || (_base[name] = [])).push({
+            fn: callback,
+            obj: obj
+          });
+          obj.on(name, callback, ctx);
+          return this;
+        },
+        stopListening: function(obj, name, callback) {
+          var key, value, _j, _len1, _ref1, _ref2;
+          if (!this.registeredListeners) {
+            return this;
           }
+          if (!obj) {
+            _ref1 = this.registeredListeners;
+            for (key in _ref1) {
+              value = _ref1[key];
+              value.obj.off(key, value.fn, this);
+            }
+            this.registeredListeners = {};
+            return this;
+          }
+          _ref2 = this.registeredListeners;
+          for (key in _ref2) {
+            value = _ref2[key];
+            if (name && name !== key) {
+              continue;
+            }
+            this.registeredListeners[key] = [];
+            for (_j = 0, _len1 = value.length; _j < _len1; _j++) {
+              item = value[_j];
+              if (item.obj !== obj || (callback && callback !== item.fn)) {
+                this.registeredListeners[key].push(item);
+              } else {
+                item.obj.off(key, item.fn, this);
+              }
+            }
+            if (this.registeredListeners[key].length === 0) {
+              delete this.registeredListeners[key];
+            }
+          }
+          return this;
         }
-      }
-      return this;
+      });
     }
   };
   D.Request = {
@@ -357,12 +396,12 @@ var __slice = [].slice,
 
     function Application(options) {
       this.options = options != null ? options : {};
-      this.name = 'application';
-      this.modules = new Module.Container('Default Module Container');
+      this.modules = new Module.Container();
       this.global = {};
       this.loaders = {};
       this.regions = [];
       Application.__super__.constructor.call(this, 'a');
+      this.modules.delegateEvent(this);
     }
 
     Application.prototype.initialize = function() {
@@ -373,7 +412,7 @@ var __slice = [].slice,
         value = _ref1[key];
         this.registerHelper(key, value);
       }
-      return this.setRegion(new Region(this, null, $(document.body)));
+      return this.setRegion(new D.Region(this, null, $(document.body)));
     };
 
     Application.prototype.registerLoader = function(loader, isDefault) {
@@ -414,11 +453,9 @@ var __slice = [].slice,
       if (!this.router) {
         this.router = new D.Router(this);
       }
-      return this.chain((_ref1 = this.router).mountRoutes.apply(_ref1, __slice.call(paths).concat([function() {
-        if (defaultPath) {
-          return this.navigate(defaultPath, true);
-        }
-      }])));
+      return this.chain((_ref1 = this.router).mountRoutes.apply(_ref1, paths), function() {
+        return this.router.start(defaultPath);
+      });
     };
 
     Application.prototype.navigate = function(path, trigger) {
@@ -464,10 +501,10 @@ var __slice = [].slice,
     return Application;
 
   })(D.Base);
-  D.Model = Data = (function(_super) {
-    __extends(Data, _super);
+  D.Model = Model = (function(_super) {
+    __extends(Model, _super);
 
-    function Data(app, module, options) {
+    function Model(app, module, options) {
       var defaults, p;
       this.app = app;
       this.module = module;
@@ -485,10 +522,11 @@ var __slice = [].slice,
           recordCountKey: options.recordCountKey || defaults.recordCountKey
         };
       }
-      Data.__super__.constructor.call(this, 'd');
+      Model.__super__.constructor.call(this, 'd');
+      this.module.container.delegateEvent(this);
     }
 
-    Data.prototype.setData = function(data) {
+    Model.prototype.setData = function(data) {
       var p;
       this.data = D.isFunction(this.options.parse) ? this.options.parse(data) : data;
       if (p = this.pagination) {
@@ -500,15 +538,15 @@ var __slice = [].slice,
       }
     };
 
-    Data.prototype.url = function() {
+    Model.prototype.url = function() {
       return this.getOptionResult(this.options.url) || this.getOptionResult(this.url) || '';
     };
 
-    Data.prototype.toJSON = function() {
+    Model.prototype.toJSON = function() {
       return this.data;
     };
 
-    Data.prototype.getParams = function() {
+    Model.prototype.getParams = function() {
       var d, p;
       d = {};
       if (p = this.pagination) {
@@ -518,7 +556,7 @@ var __slice = [].slice,
       return D.extend(d, this.params, this.options.params);
     };
 
-    Data.prototype.clear = function() {
+    Model.prototype.clear = function() {
       var p;
       this.data = {};
       if (p = this.pagination) {
@@ -527,7 +565,7 @@ var __slice = [].slice,
       }
     };
 
-    Data.prototype.turnToPage = function(page, options) {
+    Model.prototype.turnToPage = function(page, options) {
       var p;
       if (!(p = this.pagination && page <= p.pageCount && page >= 1)) {
         return this.createRejectedDeferred();
@@ -536,23 +574,23 @@ var __slice = [].slice,
       return this.get(options);
     };
 
-    Data.prototype.firstPage = function(options) {
+    Model.prototype.firstPage = function(options) {
       return this.turnToPage(1, options);
     };
 
-    Data.prototype.lastPage = function(options) {
+    Model.prototype.lastPage = function(options) {
       return this.turnToPage(this.pagination.pageCount, options);
     };
 
-    Data.prototype.nextPage = function(options) {
+    Model.prototype.nextPage = function(options) {
       return this.turnToPage(this.pagination.page + 1, options);
     };
 
-    Data.prototype.prevPage = function(options) {
+    Model.prototype.prevPage = function(options) {
       return this.turnToPage(this.pagination.page - 1, options);
     };
 
-    Data.prototype.getPageInfo = function() {
+    Model.prototype.getPageInfo = function() {
       var d, p;
       if (!(p = this.pagination)) {
         return {};
@@ -572,19 +610,21 @@ var __slice = [].slice,
       return d;
     };
 
-    return Data;
+    return Model;
 
   })(D.Base);
   _ref1 = ['get', 'post', 'put', 'del'];
-  _fn1 = function(item) {};
+  _fn1 = function(item) {
+    return D.Model.prototype[item] = function(options) {
+      return this.chain(D.Require[item](this, options), function() {
+        return this.trigger('sync');
+      });
+    };
+  };
   for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
     item = _ref1[_j];
     _fn1(item);
-    D.Model.prototype[item] = function(options) {
-      return D.Require[item](this, options);
-    };
   }
-  D.Model.include(D.Event);
   D.Region = Region = (function(_super) {
     __extends(Region, _super);
 
@@ -616,7 +656,7 @@ var __slice = [].slice,
 
     Region.prototype.show = function(item, options) {
       if (this.currentItem) {
-        if ((D.isObject(item) && item.id === this.currentItem.id) || (D.isString(item) && D.loader.analyse(item).name === this.currentItem.name)) {
+        if ((D.isObject(item) && item.id === this.currentItem.id) || (D.isString(item) && D.Loader.analyse(item).name === this.currentItem.name)) {
           return this.chain(this.currentItem.render(options), this.currentItem);
         }
       }
@@ -750,10 +790,10 @@ var __slice = [].slice,
       this.module = module;
       this.loader = loader;
       this.options = options != null ? options : {};
-      this.id = D.uniqueId('v');
       this.app = this.module.app;
       this.eventHandlers = {};
-      View.__super__.constructor.apply(this, arguments);
+      View.__super__.constructor.call(this, 'v');
+      this.module.container.delegateEvent(this);
     }
 
     View.prototype.initialize = function() {
@@ -844,7 +884,7 @@ var __slice = [].slice,
         }
         _ref2 = key.replace(/^\s+/g, '').replace(/\s+$/, '').split(/\s+/), name = _ref2[0], id = _ref2[1];
         if (id) {
-          selector = id.charAt(id.length - 1) === '*' ? "[id^=" + (this.wrapDomId(id.slice(0, -1))) + "]" : "#" + (this.wrapDomId(id));
+          selector = id.charAt(id.length - 1) === '*' ? "[id^=" + (id = this.wrapDomId(id.slice(0, -1))) + "]" : "#" + (id = this.wrapDomId(id));
         }
         handler = this.createHandler(name, id, selector, value);
         _results.push(this.region.delegateEvent(this, name, selector, handler));
@@ -1084,18 +1124,15 @@ var __slice = [].slice,
 
     View.prototype.afterRender = function() {};
 
-    View.prototype.listenTo = D.Event.listenTo;
-
-    View.prototype.stopListening = D.Event.stopListening;
-
     return View;
 
   })(Base);
   ModuleContainer = (function(_super) {
     __extends(ModuleContainer, _super);
 
-    function ModuleContainer(name) {
-      this.name = name;
+    ModuleContainer.include(D.Event);
+
+    function ModuleContainer() {
       this.modules = {};
       ModuleContainer.__super__.constructor.apply(this, arguments);
     }
@@ -1175,6 +1212,7 @@ var __slice = [].slice,
       this.regions = {};
       Module.__super__.constructor.call(this, 'm');
       this.container.add(this);
+      this.container.delegateEvent(this);
     }
 
     Module.prototype.initialize = function() {
@@ -1531,7 +1569,7 @@ var __slice = [].slice,
       name = Loader.analyse(path).name;
       path = D.joinPath(name, this.fileNames.router);
       if (path.charAt(0) === '/') {
-        path = path.substring(1);
+        path = path.slice(1);
       }
       return this.loadResource(path);
     };
@@ -1553,11 +1591,13 @@ var __slice = [].slice,
     }
 
     Route.prototype.match = function(hash) {
+      this.pattern.lastIndex = 0;
       return this.pattern.test(hash);
     };
 
     Route.prototype.handle = function(hash) {
-      var args, fns, i, route, routes;
+      var args, fns, i, route, routes, _ref2;
+      this.pattern.lastIndex = 0;
       args = this.pattern.exec(hash).slice(1);
       routes = this.router.getDependencies(this.path);
       routes.push(this);
@@ -1566,13 +1606,15 @@ var __slice = [].slice,
         _results = [];
         for (i = _k = 0, _len2 = routes.length; _k < _len2; i = ++_k) {
           route = routes[i];
-          _results.push(function(prev) {
-            return route.fn.apply(route, (i > 0 ? [prev].concat(args) : args));
-          });
+          _results.push((function(route, i) {
+            return function(prev) {
+              return route.fn.apply(route, (i > 0 ? [prev].concat(args) : args));
+            };
+          })(route, i));
         }
         return _results;
       })();
-      return router.chain.apply(router, fns);
+      return (_ref2 = this.router).chain.apply(_ref2, fns);
     };
 
     return Route;
@@ -1586,14 +1628,24 @@ var __slice = [].slice,
       this.routes = [];
       this.routeMap = {};
       this.dependencies = {};
+      this.started = false;
       Router.__super__.constructor.call(this, 'ro');
     }
 
+    Router.prototype.getHash = function() {
+      return root.location.hash.slice(1);
+    };
+
     Router.prototype.start = function(defaultPath) {
-      $(root).on('popstate.drizzlerouter', (function(_this) {
+      var hash;
+      if (this.started) {
+        return;
+      }
+      this.started = true;
+      $(root).on('popstate.dr', (function(_this) {
         return function() {
           var hash;
-          hash = root.location.hash.slice(1);
+          hash = _this.getHash();
           if (_this.previousHash === hash) {
             return;
           }
@@ -1601,13 +1653,17 @@ var __slice = [].slice,
           return _this.dispatch(hash);
         };
       })(this));
-      if (defaultPath) {
+      hash = this.getHash();
+      if (hash) {
+        return this.navigate(hash, true);
+      } else if (defaultPath) {
         return this.navigate(defaultPath, true);
       }
     };
 
     Router.prototype.stop = function() {
-      return $(root).off('.drizzlerouter');
+      $(root).off('.dr');
+      return this.started = false;
     };
 
     Router.prototype.dispatch = function(hash) {
@@ -1622,10 +1678,9 @@ var __slice = [].slice,
     };
 
     Router.prototype.navigate = function(path, trigger) {
-      var _ref2;
       root.history.pushState({}, root.document.title, "#" + path);
       if (trigger) {
-        return (_ref2 = this.routeMap[path]) != null ? _ref2.handle(path) : void 0;
+        return this.dispatch(path);
       }
     };
 
@@ -1645,7 +1700,7 @@ var __slice = [].slice,
         _results = [];
         for (i = _k = 0, _len2 = routers.length; _k < _len2; i = ++_k) {
           router = routers[i];
-          _results.push(this.addRouter(paths[i], router));
+          _results.push(this.addRoute(paths[i], router));
         }
         return _results;
       });
@@ -1653,7 +1708,7 @@ var __slice = [].slice,
 
     Router.prototype.addRoute = function(path, router) {
       var dependencies, key, p, route, routes, value, _results;
-      routes = this.getOptionResult(router.route);
+      routes = this.getOptionResult(router.routes);
       dependencies = this.getOptionResult(router.deps);
       for (key in dependencies) {
         value = dependencies[key];
@@ -1663,7 +1718,7 @@ var __slice = [].slice,
       _results = [];
       for (key in routes) {
         value = routes[key];
-        p = D.joinPath(path, key);
+        p = D.joinPath(path, key).replace(/(^\/|\/$)/g, '');
         route = new Route(this.app, this, p, router[value]);
         this.routes.unshift(route);
         _results.push(this.routeMap[p] = route);

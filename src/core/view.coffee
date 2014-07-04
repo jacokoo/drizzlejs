@@ -29,10 +29,10 @@ D.View = class View extends Base
             info.destructor?(view, component, info.options)
 
     constructor: (@name, @module, @loader, @options = {}) ->
-        @id = D.uniqueId 'v'
         @app = @module.app
         @eventHandlers = {}
-        super
+        super 'v'
+        @module.container.delegateEvent @
 
     initialize: ->
         @extend @options.extend if @options.extend
@@ -108,7 +108,7 @@ D.View = class View extends Base
             throw new Error 'The value defined in events must be a string' unless D.isString value
             [name, id] = key.replace(/^\s+/g, '').replace(/\s+$/, '').split /\s+/
             if id
-                selector = if id.charAt(id.length - 1) is '*' then "[id^=#{@wrapDomId id.slice(0, -1)}]" else "##{@wrapDomId id}"
+                selector = if id.charAt(id.length - 1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
             handler = @createHandler name, id, selector, value
             @region.delegateEvent @, name, selector, handler
 
@@ -241,7 +241,3 @@ D.View = class View extends Base
             (@module.removeRegion key for key, value of @exportedRegions)
 
     afterRender: ->
-
-    listenTo: D.Event.listenTo
-
-    stopListening: D.Event.stopListening

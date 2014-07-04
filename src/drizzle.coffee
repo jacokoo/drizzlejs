@@ -28,7 +28,7 @@
         noConflict: ->
             root.Drizzle = old
             D
-        joinPath: (paths...) -> paths.join('/').replace(/\/{2, }/g, '/')
+        joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
 
     # @include util/deferred.coffee
 

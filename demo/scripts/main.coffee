@@ -12,6 +12,9 @@ require ['drizzle'], (D) ->
     window.app = app = new D.Application()
     app.show('viewport').done (viewport) ->
         {top, sidebar, content} = viewport.regions
-        top.show 'main/top'
-        sidebar.show 'main/sidebar'
-        content.show 'main/content'
+        app.setRegion content
+        app.chain [
+            top.show 'main/top'
+            sidebar.show 'main/sidebar'
+        ], ->
+            app.startRoute('index', '/', 'main/top')

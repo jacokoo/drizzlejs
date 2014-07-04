@@ -16,7 +16,7 @@ D.Region = class Region extends D.Base
     # show the specified item which could be a view or a module
     show: (item, options) ->
         if @currentItem
-            if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.loader.analyse(item).name is @currentItem.name)
+            if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.Loader.analyse(item).name is @currentItem.name)
                 return @chain @currentItem.render(options), @currentItem
 
         @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
