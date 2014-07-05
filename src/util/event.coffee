@@ -35,14 +35,14 @@ D.Event =
         listenTo: (obj, name, callback, context) ->
             ctx = context or @
             @registeredListeners or= {}
-            (@registeredListeners[name] or= []).push fn: callback, obj: obj
+            (@registeredListeners[name] or= []).push fn: callback, obj: obj, context: ctx
             obj.on name, callback, ctx
             @
 
         stopListening: (obj, name, callback) ->
             return @ unless @registeredListeners
             unless obj
-                value.obj.off key, value.fn, @ for key, value of @registeredListeners
+                item.obj.off key, item.fn, @ for item in value for key, value of @registeredListeners
                 @registeredListeners = {}
                 return @
 
@@ -53,6 +53,6 @@ D.Event =
                     if item.obj isnt obj or (callback and callback isnt item.fn)
                         @registeredListeners[key].push item
                     else
-                        item.obj.off key, item.fn, @
+                        item.obj.off key, item.fn, item.context
                 delete @registeredListeners[key] if @registeredListeners[key].length is 0
             @

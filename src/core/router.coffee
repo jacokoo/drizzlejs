@@ -31,6 +31,9 @@ D.Router = class Router extends D.Base
         @started = false
         super 'ro'
 
+    initialize: ->
+        @addRoute '/', D.Config.defaultRouter
+
     getHash: -> root.location.hash.slice 1
 
     start: (defaultPath) ->
@@ -62,7 +65,6 @@ D.Router = class Router extends D.Base
     mountRoutes: (paths...) -> @chain(
         @app.getLoader(path).loadRouter(path) for path in paths
         (routers) ->
-
             @addRoute paths[i], router for router, i in routers
     )
 

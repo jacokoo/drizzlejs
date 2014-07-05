@@ -2,7 +2,7 @@ define
 
     data:
         top: data: [
-            id: 1, url: '#main/top/1', name: 'Overview'
+            id: 1, url: '#module/content/view/render-flow', name: 'View Render Flow'
         ,
             id: 2, url: '#main/top/2', name: 'Reports', active: true
         ,

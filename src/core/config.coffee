@@ -25,3 +25,7 @@ Drizzle.Config =
         pageKey: '_page'
         pageSizeKey: '_pageSize'
         recordCountKey: 'recordCount'
+
+    defaultRouter:
+        routes: 'module/*name': 'showModule'
+        showModule: (name) -> @app.show name

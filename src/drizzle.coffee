@@ -12,7 +12,7 @@
 
     D = Drizzle = version: '<%= version %>'
 
-    old = root.Drizzle
+    oldReference = root.Drizzle
     idCounter = 0
 
     for item in ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
@@ -26,7 +26,7 @@
     D.extend D,
         uniqueId: (prefix) -> (if prefix then prefix else '') + ++idCounter
         noConflict: ->
-            root.Drizzle = old
+            root.Drizzle = oldReferrence
             D
         joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
 

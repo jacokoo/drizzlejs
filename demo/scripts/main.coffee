@@ -2,7 +2,7 @@ require.config
     baseUrl: 'scripts'
     paths:
         text: '../bower_components/requirejs-text/text'
-        jquery: '../bower_components/jquery/dist/jquery.min'
+        jquery: '../bower_components/jquery/dist/jquery'
         drizzle: 'drizzlejs/drizzle'
         handlebars: '../bower_components/handlebars/handlebars'
     shim:
@@ -10,7 +10,7 @@ require.config
 
 require ['drizzle'], (D) ->
     window.app = app = new D.Application()
-    app.show('viewport').done (viewport) ->
+    app.show('main/viewport').done (viewport) ->
         {top, sidebar, content} = viewport.regions
         app.setRegion content
         app.chain [

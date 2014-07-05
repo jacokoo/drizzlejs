@@ -17,7 +17,7 @@
 
     D = Drizzle = version: '0.2.0'
 
-    old = root.Drizzle
+    oldReference = root.Drizzle
     idCounter = 0
 
     for item in ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
@@ -31,13 +31,16 @@
     D.extend D,
         uniqueId: (prefix) -> (if prefix then prefix else '') + ++idCounter
         noConflict: ->
-            root.Drizzle = old
+            root.Drizzle = oldReferrence
             D
         joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
 
     D.Deferred =
 
-        createDeferred: -> $.Deferred()
+        createDeferred: ->
+            (D.deferredCount or= 1)
+            D.deferredCount++
+            $.Deferred()
 
         createRejectedDeferred: (args...) ->
             d = @createDeferred()
@@ -127,14 +130,14 @@
             listenTo: (obj, name, callback, context) ->
                 ctx = context or @
                 @registeredListeners or= {}
-                (@registeredListeners[name] or= []).push fn: callback, obj: obj
+                (@registeredListeners[name] or= []).push fn: callback, obj: obj, context: ctx
                 obj.on name, callback, ctx
                 @
 
             stopListening: (obj, name, callback) ->
                 return @ unless @registeredListeners
                 unless obj
-                    value.obj.off key, value.fn, @ for key, value of @registeredListeners
+                    item.obj.off key, item.fn, @ for item in value for key, value of @registeredListeners
                     @registeredListeners = {}
                     return @
 
@@ -145,7 +148,7 @@
                         if item.obj isnt obj or (callback and callback isnt item.fn)
                             @registeredListeners[key].push item
                         else
-                            item.obj.off key, item.fn, @
+                            item.obj.off key, item.fn, item.context
                     delete @registeredListeners[key] if @registeredListeners[key].length is 0
                 @
 
@@ -154,8 +157,8 @@
 
         url: (model) ->
             urls = [D.Config.urlRoot]
-            url.push model.module.options.urlPrefix if model.module.options.urlPrefix
-            url.push model.module.name
+            urls.push model.module.options.urlPrefix if model.module.options.urlPrefix
+            urls.push model.module.name
             base = model.url or ''
             base = base.apply model if D.isFunction base
 
@@ -172,7 +175,7 @@
         put: (model, options) -> @ajax type: 'PUT', model, model.data, options
         del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
 
-        ajax: (params, model, data, options) ->
+        ajax: (params, model, data, options = {}) ->
             url = @url model
             params = D.extend params,
                 contentType: 'application/json'
@@ -202,7 +205,7 @@
         extend: (mixins) ->
             return unless mixins
 
-            doExtend = (key, value) =>
+            doExtend = (key, value) ->
                 if Drizzle.isFunction value
                     old = @[key]
                     @[key] = (args...) ->
@@ -211,7 +214,7 @@
                 else
                     @[key] = value unless @[key]
 
-            doExtend key, value for key, value of mixins
+            doExtend.call @, key, value for key, value of mixins
 
 
     D.Application = class Application extends D.Base
@@ -300,7 +303,7 @@
                 p.pageCount = Math.ceil(p.recordCount / p.pageSize)
             @data = @data[@options.root] if @options.root
 
-        url: -> @getOptionResult(@options.url) or @getOptionResult(@url) or ''
+        url: -> @getOptionResult(@options.url) or ''
 
         toJSON: -> @data
 
@@ -340,7 +343,7 @@
 
     for item in ['get', 'post', 'put', 'del']
         do (item) -> D.Model::[item] = (options) ->
-            @chain D.Require[item](@, options), -> @trigger 'sync'
+            @chain D.Request[item](@, options), -> @trigger 'sync'
 
 
     D.Region = class Region extends D.Base
@@ -462,19 +465,20 @@
         bindData: -> @module.loadDeferred.done =>
             bind = @getOptionResult(@options.bind) or {}
             @data = {}
-            doBind = (model, binding) => @listenTo model, event, (args...) ->
+            doBind = (model, binding) =>
                 [event, handler] = binding.split '#'
-                throw new Error "Incorrect binding string format:#{binding}" unless name and handler
-                return @[handler]? args...
-                return @eventHandlers[handler]? args...
-                throw new Error "Can not find handler function for :#{handler}"
+                @listenTo model, event, (args...) ->
+                    throw new Error "Incorrect binding string format:#{binding}" unless event and handler
+                    return @[handler]? args...
+                    return @eventHandlers[handler]? args...
+                    throw new Error "Can not find handler function for :#{handler}"
 
             for key, value of bind
                 @data[key] = @module.data[key]
                 throw new Error "Model: #{key} doesn't exists" unless @data[key]
                 return unless value
                 bindings = value.replace(/\s+/g, '').split ','
-                doBind @data[key], bindings for binding in bindings
+                doBind @data[key], binding for binding in bindings
 
         unbindData: ->
             @stopListening()
@@ -570,7 +574,7 @@
                 @serializeData
                 @options.adjustData or (data) -> data
                 @executeTemplate
-                @processIdReplacement
+                @executeIdReplacement
                 @renderComponent
                 @exportRegions
                 @afterRender
@@ -593,13 +597,13 @@
             data[key] = value.toJSON() for key, value of @data
             data
 
-        executeTemplate: (data, ignore, deferred) ->
+        executeTemplate: (data) ->
             data.Global = @app.global
             data.View = @
             html = @template data
             @getEl().html html
 
-        processIdReplacement: ->
+        executeIdReplacement: ->
             used = {}
 
             @$$('[id]').each (i, el) =>
@@ -637,10 +641,10 @@
                 id = el.data 'region'
                 @exportedRegions[id] = @module.addRegion id, el
 
-        unexportRegions: ->
-            @chain 'remove regions',
-                (value.close() for key, value of @exportedRegions)
-                (@module.removeRegion key for key, value of @exportedRegions)
+        unexportRegions: -> @chain(
+            (value.close() for key, value of @exportedRegions)
+            (@module.removeRegion key for key, value of @exportedRegions)
+        )
 
         afterRender: ->
 
@@ -924,6 +928,9 @@
             @started = false
             super 'ro'
 
+        initialize: ->
+            @addRoute '/', D.Config.defaultRouter
+
         getHash: -> root.location.hash.slice 1
 
         start: (defaultPath) ->
@@ -955,7 +962,6 @@
         mountRoutes: (paths...) -> @chain(
             @app.getLoader(path).loadRouter(path) for path in paths
             (routers) ->
-
                 @addRoute paths[i], router for router, i in routers
         )
 
@@ -1008,6 +1014,10 @@
             pageKey: '_page'
             pageSizeKey: '_pageSize'
             recordCountKey: 'recordCount'
+
+        defaultRouter:
+            routes: 'module/*name': 'showModule'
+            showModule: (name) -> @app.show name
 
 
     D.Helpers =

@@ -2,8 +2,8 @@ D.Request =
 
     url: (model) ->
         urls = [D.Config.urlRoot]
-        url.push model.module.options.urlPrefix if model.module.options.urlPrefix
-        url.push model.module.name
+        urls.push model.module.options.urlPrefix if model.module.options.urlPrefix
+        urls.push model.module.name
         base = model.url or ''
         base = base.apply model if D.isFunction base
 
@@ -20,7 +20,7 @@ D.Request =
     put: (model, options) -> @ajax type: 'PUT', model, model.data, options
     del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
 
-    ajax: (params, model, data, options) ->
+    ajax: (params, model, data, options = {}) ->
         url = @url model
         params = D.extend params,
             contentType: 'application/json'

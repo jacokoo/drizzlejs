@@ -60,19 +60,20 @@ D.View = class View extends Base
     bindData: -> @module.loadDeferred.done =>
         bind = @getOptionResult(@options.bind) or {}
         @data = {}
-        doBind = (model, binding) => @listenTo model, event, (args...) ->
+        doBind = (model, binding) =>
             [event, handler] = binding.split '#'
-            throw new Error "Incorrect binding string format:#{binding}" unless name and handler
-            return @[handler]? args...
-            return @eventHandlers[handler]? args...
-            throw new Error "Can not find handler function for :#{handler}"
+            @listenTo model, event, (args...) ->
+                throw new Error "Incorrect binding string format:#{binding}" unless event and handler
+                return @[handler]? args...
+                return @eventHandlers[handler]? args...
+                throw new Error "Can not find handler function for :#{handler}"
 
         for key, value of bind
             @data[key] = @module.data[key]
             throw new Error "Model: #{key} doesn't exists" unless @data[key]
             return unless value
             bindings = value.replace(/\s+/g, '').split ','
-            doBind @data[key], bindings for binding in bindings
+            doBind @data[key], binding for binding in bindings
 
     unbindData: ->
         @stopListening()
@@ -168,7 +169,7 @@ D.View = class View extends Base
             @serializeData
             @options.adjustData or (data) -> data
             @executeTemplate
-            @processIdReplacement
+            @executeIdReplacement
             @renderComponent
             @exportRegions
             @afterRender
@@ -191,13 +192,13 @@ D.View = class View extends Base
         data[key] = value.toJSON() for key, value of @data
         data
 
-    executeTemplate: (data, ignore, deferred) ->
+    executeTemplate: (data) ->
         data.Global = @app.global
         data.View = @
         html = @template data
         @getEl().html html
 
-    processIdReplacement: ->
+    executeIdReplacement: ->
         used = {}
 
         @$$('[id]').each (i, el) =>
@@ -235,9 +236,9 @@ D.View = class View extends Base
             id = el.data 'region'
             @exportedRegions[id] = @module.addRegion id, el
 
-    unexportRegions: ->
-        @chain 'remove regions',
-            (value.close() for key, value of @exportedRegions)
-            (@module.removeRegion key for key, value of @exportedRegions)
+    unexportRegions: -> @chain(
+        (value.close() for key, value of @exportedRegions)
+        (@module.removeRegion key for key, value of @exportedRegions)
+    )
 
     afterRender: ->

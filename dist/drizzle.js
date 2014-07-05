@@ -21,11 +21,11 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, old, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.0'
   };
-  old = root.Drizzle;
+  oldReference = root.Drizzle;
   idCounter = 0;
   _ref = ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null'];
   _fn = function(item) {
@@ -57,7 +57,7 @@ var __slice = [].slice,
       return (prefix ? prefix : '') + ++idCounter;
     },
     noConflict: function() {
-      root.Drizzle = old;
+      root.Drizzle = oldReferrence;
       return D;
     },
     joinPath: function() {
@@ -68,6 +68,8 @@ var __slice = [].slice,
   });
   D.Deferred = {
     createDeferred: function() {
+      D.deferredCount || (D.deferredCount = 1);
+      D.deferredCount++;
       return $.Deferred();
     },
     createRejectedDeferred: function() {
@@ -226,13 +228,14 @@ var __slice = [].slice,
           this.registeredListeners || (this.registeredListeners = {});
           ((_base = this.registeredListeners)[name] || (_base[name] = [])).push({
             fn: callback,
-            obj: obj
+            obj: obj,
+            context: ctx
           });
           obj.on(name, callback, ctx);
           return this;
         },
         stopListening: function(obj, name, callback) {
-          var key, value, _j, _len1, _ref1, _ref2;
+          var key, value, _j, _k, _len1, _len2, _ref1, _ref2;
           if (!this.registeredListeners) {
             return this;
           }
@@ -240,7 +243,10 @@ var __slice = [].slice,
             _ref1 = this.registeredListeners;
             for (key in _ref1) {
               value = _ref1[key];
-              value.obj.off(key, value.fn, this);
+              for (_j = 0, _len1 = value.length; _j < _len1; _j++) {
+                item = value[_j];
+                item.obj.off(key, item.fn, this);
+              }
             }
             this.registeredListeners = {};
             return this;
@@ -252,12 +258,12 @@ var __slice = [].slice,
               continue;
             }
             this.registeredListeners[key] = [];
-            for (_j = 0, _len1 = value.length; _j < _len1; _j++) {
-              item = value[_j];
+            for (_k = 0, _len2 = value.length; _k < _len2; _k++) {
+              item = value[_k];
               if (item.obj !== obj || (callback && callback !== item.fn)) {
                 this.registeredListeners[key].push(item);
               } else {
-                item.obj.off(key, item.fn, this);
+                item.obj.off(key, item.fn, item.context);
               }
             }
             if (this.registeredListeners[key].length === 0) {
@@ -274,9 +280,9 @@ var __slice = [].slice,
       var base, urls;
       urls = [D.Config.urlRoot];
       if (model.module.options.urlPrefix) {
-        url.push(model.module.options.urlPrefix);
+        urls.push(model.module.options.urlPrefix);
       }
-      url.push(model.module.name);
+      urls.push(model.module.name);
       base = model.url || '';
       if (D.isFunction(base)) {
         base = base.apply(model);
@@ -313,6 +319,9 @@ var __slice = [].slice,
     },
     ajax: function(params, model, data, options) {
       var url;
+      if (options == null) {
+        options = {};
+      }
       url = this.url(model);
       params = D.extend(params, {
         contentType: 'application/json'
@@ -361,29 +370,28 @@ var __slice = [].slice,
       if (!mixins) {
         return;
       }
-      doExtend = (function(_this) {
-        return function(key, value) {
-          if (Drizzle.isFunction(value)) {
-            old = _this[key];
-            return _this[key] = function() {
-              var args;
-              args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-              if (old) {
-                args.unshift(old);
-              }
-              return value.apply(this, args);
-            };
-          } else {
-            if (!_this[key]) {
-              return _this[key] = value;
+      doExtend = function(key, value) {
+        var old;
+        if (Drizzle.isFunction(value)) {
+          old = this[key];
+          return this[key] = function() {
+            var args;
+            args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            if (old) {
+              args.unshift(old);
             }
+            return value.apply(this, args);
+          };
+        } else {
+          if (!this[key]) {
+            return this[key] = value;
           }
-        };
-      })(this);
+        }
+      };
       _results = [];
       for (key in mixins) {
         value = mixins[key];
-        _results.push(doExtend(key, value));
+        _results.push(doExtend.call(this, key, value));
       }
       return _results;
     };
@@ -539,7 +547,7 @@ var __slice = [].slice,
     };
 
     Model.prototype.url = function() {
-      return this.getOptionResult(this.options.url) || this.getOptionResult(this.url) || '';
+      return this.getOptionResult(this.options.url) || '';
     };
 
     Model.prototype.toJSON = function() {
@@ -616,7 +624,7 @@ var __slice = [].slice,
   _ref1 = ['get', 'post', 'put', 'del'];
   _fn1 = function(item) {
     return D.Model.prototype[item] = function(options) {
-      return this.chain(D.Require[item](this, options), function() {
+      return this.chain(D.Request[item](this, options), function() {
         return this.trigger('sync');
       });
     };
@@ -832,11 +840,12 @@ var __slice = [].slice,
           bind = _this.getOptionResult(_this.options.bind) || {};
           _this.data = {};
           doBind = function(model, binding) {
+            var event, handler, _ref2;
+            _ref2 = binding.split('#'), event = _ref2[0], handler = _ref2[1];
             return _this.listenTo(model, event, function() {
-              var args, event, handler, _base, _ref2;
+              var args, _base;
               args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-              _ref2 = binding.split('#'), event = _ref2[0], handler = _ref2[1];
-              if (!(name && handler)) {
+              if (!(event && handler)) {
                 throw new Error("Incorrect binding string format:" + binding);
               }
               return typeof this[handler] === "function" ? this[handler].apply(this, args) : void 0;
@@ -856,7 +865,7 @@ var __slice = [].slice,
             bindings = value.replace(/\s+/g, '').split(',');
             for (_k = 0, _len2 = bindings.length; _k < _len2; _k++) {
               binding = bindings[_k];
-              doBind(_this.data[key], bindings);
+              doBind(_this.data[key], binding);
             }
           }
         };
@@ -976,7 +985,7 @@ var __slice = [].slice,
         return (_ref2 = this.options.beforeRender) != null ? _ref2.apply(this) : void 0;
       }, this.beforeRender, this.serializeData, this.options.adjustData || function(data) {
         return data;
-      }, this.executeTemplate, this.processIdReplacement, this.renderComponent, this.exportRegions, this.afterRender, function() {
+      }, this.executeTemplate, this.executeIdReplacement, this.renderComponent, this.exportRegions, this.afterRender, function() {
         var _ref2;
         return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
       }, function() {
@@ -1008,7 +1017,7 @@ var __slice = [].slice,
       return data;
     };
 
-    View.prototype.executeTemplate = function(data, ignore, deferred) {
+    View.prototype.executeTemplate = function(data) {
       var html;
       data.Global = this.app.global;
       data.View = this;
@@ -1016,7 +1025,7 @@ var __slice = [].slice,
       return this.getEl().html(html);
     };
 
-    View.prototype.processIdReplacement = function() {
+    View.prototype.executeIdReplacement = function() {
       var attr, used, _k, _len2, _ref2, _results;
       used = {};
       this.$$('[id]').each((function(_this) {
@@ -1101,7 +1110,7 @@ var __slice = [].slice,
 
     View.prototype.unexportRegions = function() {
       var key, value;
-      return this.chain('remove regions', (function() {
+      return this.chain((function() {
         var _ref2, _results;
         _ref2 = this.exportedRegions;
         _results = [];
@@ -1632,6 +1641,10 @@ var __slice = [].slice,
       Router.__super__.constructor.call(this, 'ro');
     }
 
+    Router.prototype.initialize = function() {
+      return this.addRoute('/', D.Config.defaultRouter);
+    };
+
     Router.prototype.getHash = function() {
       return root.location.hash.slice(1);
     };
@@ -1762,6 +1775,14 @@ var __slice = [].slice,
       pageKey: '_page',
       pageSizeKey: '_pageSize',
       recordCountKey: 'recordCount'
+    },
+    defaultRouter: {
+      routes: {
+        'module/*name': 'showModule'
+      },
+      showModule: function(name) {
+        return this.app.show(name);
+      }
     }
   };
   D.Helpers = {

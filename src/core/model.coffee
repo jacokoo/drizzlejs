@@ -24,7 +24,7 @@ D.Model = class Model extends D.Base
             p.pageCount = Math.ceil(p.recordCount / p.pageSize)
         @data = @data[@options.root] if @options.root
 
-    url: -> @getOptionResult(@options.url) or @getOptionResult(@url) or ''
+    url: -> @getOptionResult(@options.url) or ''
 
     toJSON: -> @data
 
@@ -64,4 +64,4 @@ D.Model = class Model extends D.Base
 
 for item in ['get', 'post', 'put', 'del']
     do (item) -> D.Model::[item] = (options) ->
-        @chain D.Require[item](@, options), -> @trigger 'sync'
+        @chain D.Request[item](@, options), -> @trigger 'sync'

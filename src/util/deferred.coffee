@@ -1,6 +1,9 @@
 D.Deferred =
 
-    createDeferred: -> $.Deferred()
+    createDeferred: ->
+        (D.deferredCount or= 1)
+        D.deferredCount++
+        $.Deferred()
 
     createRejectedDeferred: (args...) ->
         d = @createDeferred()
