@@ -40,14 +40,9 @@ D.Router = class Router extends D.Base
         return if @started
         @started = true
 
-        $(root).on 'popstate.dr', =>
-            hash = @getHash()
-            return if @previousHash is hash
-            @previousHash = hash
-            @dispatch(hash)
+        $(root).on 'popstate.dr', => @dispatch @getHash()
 
-        hash = @getHash()
-        if hash
+        if hash = @getHash()
             @navigate hash, true
         else if defaultPath
             @navigate defaultPath, true
@@ -56,7 +51,11 @@ D.Router = class Router extends D.Base
         $(root).off '.dr'
         @started = false
 
-    dispatch: (hash) -> return route.handle hash for route in @routes when route.match hash
+    dispatch: (hash) ->
+        return if @previousHash is hash
+        @previousHash = hash
+
+        return route.handle hash for route in @routes when route.match hash
 
     navigate: (path, trigger) ->
         root.history.pushState {}, root.document.title, "##{path}"
@@ -72,8 +71,9 @@ D.Router = class Router extends D.Base
         routes = @getOptionResult router.routes
         dependencies = @getOptionResult router.deps
         for key, value of dependencies
-            p = D.joinPath path, key
-            @dependencies[p] = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
+            p = D.joinPath(path, key).replace /^\//, ''
+            v = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
+            @dependencies[p] = v.replace /^\//, ''
 
         for key, value of routes
             p = D.joinPath(path, key).replace /(^\/|\/$)/g, ''

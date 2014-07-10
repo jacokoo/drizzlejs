@@ -178,7 +178,7 @@
         ajax: (params, model, data, options = {}) ->
             url = @url model
             params = D.extend params,
-                contentType: 'application/json'
+                contentType: D.Config.defaultContentType
             , options
             data = D.extend data, options.data
             params.url = url
@@ -205,7 +205,7 @@
         extend: (mixins) ->
             return unless mixins
 
-            doExtend = (key, value) ->
+            doExtend = (key, value) =>
                 if Drizzle.isFunction value
                     old = @[key]
                     @[key] = (args...) ->
@@ -214,7 +214,7 @@
                 else
                     @[key] = value unless @[key]
 
-            doExtend.call @, key, value for key, value of mixins
+            doExtend key, value for key, value of mixins
 
 
     D.Application = class Application extends D.Base
@@ -296,12 +296,28 @@
             super 'd'
             @module.container.delegateEvent @
 
-        setData: (data) ->
+        set: (data) ->
             @data = if D.isFunction @options.parse then @options.parse data else data
             if p = @pagination
                 p.recordCount = @data[p.recordCountKey]
                 p.pageCount = Math.ceil(p.recordCount / p.pageSize)
             @data = @data[@options.root] if @options.root
+            @
+
+        append: (data) ->
+            if D.isObject @data
+                D.extend @data, data
+            else if D.isArray @data
+                @data = @data.concat if D.isArray(data) then data else [data]
+            @
+
+        find: (name, value) ->
+            return null unless D.isArray @data
+            item for item in @data when item[name] is value
+
+        findOne: (name, value) ->
+            return null unless D.isArray @data
+            return item for item in @data when item[name] is value
 
         url: -> @getOptionResult(@options.url) or ''
 
@@ -937,14 +953,9 @@
             return if @started
             @started = true
 
-            $(root).on 'popstate.dr', =>
-                hash = @getHash()
-                return if @previousHash is hash
-                @previousHash = hash
-                @dispatch(hash)
+            $(root).on 'popstate.dr', => @dispatch @getHash()
 
-            hash = @getHash()
-            if hash
+            if hash = @getHash()
                 @navigate hash, true
             else if defaultPath
                 @navigate defaultPath, true
@@ -953,7 +964,11 @@
             $(root).off '.dr'
             @started = false
 
-        dispatch: (hash) -> return route.handle hash for route in @routes when route.match hash
+        dispatch: (hash) ->
+            return if @previousHash is hash
+            @previousHash = hash
+
+            return route.handle hash for route in @routes when route.match hash
 
         navigate: (path, trigger) ->
             root.history.pushState {}, root.document.title, "##{path}"
@@ -969,8 +984,9 @@
             routes = @getOptionResult router.routes
             dependencies = @getOptionResult router.deps
             for key, value of dependencies
-                p = D.joinPath path, key
-                @dependencies[p] = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
+                p = D.joinPath(path, key).replace /^\//, ''
+                v = if value.charAt(0) is '/' then value.slice 1 else D.joinPath path, value
+                @dependencies[p] = v.replace /^\//, ''
 
             for key, value of routes
                 p = D.joinPath(path, key).replace /(^\/|\/$)/g, ''
@@ -991,6 +1007,7 @@
         scriptRoot: 'app'
         urlRoot: ''
         urlSuffix: ''
+        defaultContentType: 'application/json'
         caseSensitiveHash: false
         attributesReferToId: [
             'for' # for label

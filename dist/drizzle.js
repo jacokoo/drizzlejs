@@ -324,7 +324,7 @@ var __slice = [].slice,
       }
       url = this.url(model);
       params = D.extend(params, {
-        contentType: 'application/json'
+        contentType: D.Config.defaultContentType
       }, options);
       data = D.extend(data, options.data);
       params.url = url;
@@ -370,28 +370,30 @@ var __slice = [].slice,
       if (!mixins) {
         return;
       }
-      doExtend = function(key, value) {
-        var old;
-        if (Drizzle.isFunction(value)) {
-          old = this[key];
-          return this[key] = function() {
-            var args;
-            args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-            if (old) {
-              args.unshift(old);
+      doExtend = (function(_this) {
+        return function(key, value) {
+          var old;
+          if (Drizzle.isFunction(value)) {
+            old = _this[key];
+            return _this[key] = function() {
+              var args;
+              args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+              if (old) {
+                args.unshift(old);
+              }
+              return value.apply(this, args);
+            };
+          } else {
+            if (!_this[key]) {
+              return _this[key] = value;
             }
-            return value.apply(this, args);
-          };
-        } else {
-          if (!this[key]) {
-            return this[key] = value;
           }
-        }
-      };
+        };
+      })(this);
       _results = [];
       for (key in mixins) {
         value = mixins[key];
-        _results.push(doExtend.call(this, key, value));
+        _results.push(doExtend(key, value));
       }
       return _results;
     };
@@ -534,7 +536,7 @@ var __slice = [].slice,
       this.module.container.delegateEvent(this);
     }
 
-    Model.prototype.setData = function(data) {
+    Model.prototype.set = function(data) {
       var p;
       this.data = D.isFunction(this.options.parse) ? this.options.parse(data) : data;
       if (p = this.pagination) {
@@ -542,7 +544,47 @@ var __slice = [].slice,
         p.pageCount = Math.ceil(p.recordCount / p.pageSize);
       }
       if (this.options.root) {
-        return this.data = this.data[this.options.root];
+        this.data = this.data[this.options.root];
+      }
+      return this;
+    };
+
+    Model.prototype.append = function(data) {
+      if (D.isObject(this.data)) {
+        D.extend(this.data, data);
+      } else if (D.isArray(this.data)) {
+        this.data = this.data.concat(D.isArray(data) ? data : [data]);
+      }
+      return this;
+    };
+
+    Model.prototype.find = function(name, value) {
+      var _j, _len1, _ref1, _results;
+      if (!D.isArray(this.data)) {
+        return null;
+      }
+      _ref1 = this.data;
+      _results = [];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        item = _ref1[_j];
+        if (item[name] === value) {
+          _results.push(item);
+        }
+      }
+      return _results;
+    };
+
+    Model.prototype.findOne = function(name, value) {
+      var _j, _len1, _ref1;
+      if (!D.isArray(this.data)) {
+        return null;
+      }
+      _ref1 = this.data;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        item = _ref1[_j];
+        if (item[name] === value) {
+          return item;
+        }
       }
     };
 
@@ -1657,17 +1699,10 @@ var __slice = [].slice,
       this.started = true;
       $(root).on('popstate.dr', (function(_this) {
         return function() {
-          var hash;
-          hash = _this.getHash();
-          if (_this.previousHash === hash) {
-            return;
-          }
-          _this.previousHash = hash;
-          return _this.dispatch(hash);
+          return _this.dispatch(_this.getHash());
         };
       })(this));
-      hash = this.getHash();
-      if (hash) {
+      if (hash = this.getHash()) {
         return this.navigate(hash, true);
       } else if (defaultPath) {
         return this.navigate(defaultPath, true);
@@ -1681,6 +1716,10 @@ var __slice = [].slice,
 
     Router.prototype.dispatch = function(hash) {
       var route, _k, _len2, _ref2;
+      if (this.previousHash === hash) {
+        return;
+      }
+      this.previousHash = hash;
       _ref2 = this.routes;
       for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
         route = _ref2[_k];
@@ -1720,13 +1759,14 @@ var __slice = [].slice,
     };
 
     Router.prototype.addRoute = function(path, router) {
-      var dependencies, key, p, route, routes, value, _results;
+      var dependencies, key, p, route, routes, v, value, _results;
       routes = this.getOptionResult(router.routes);
       dependencies = this.getOptionResult(router.deps);
       for (key in dependencies) {
         value = dependencies[key];
-        p = D.joinPath(path, key);
-        this.dependencies[p] = value.charAt(0) === '/' ? value.slice(1) : D.joinPath(path, value);
+        p = D.joinPath(path, key).replace(/^\//, '');
+        v = value.charAt(0) === '/' ? value.slice(1) : D.joinPath(path, value);
+        this.dependencies[p] = v.replace(/^\//, '');
       }
       _results = [];
       for (key in routes) {
@@ -1757,6 +1797,7 @@ var __slice = [].slice,
     scriptRoot: 'app',
     urlRoot: '',
     urlSuffix: '',
+    defaultContentType: 'application/json',
     caseSensitiveHash: false,
     attributesReferToId: ['for', 'data-target', 'data-parent'],
     fileNames: {

@@ -23,7 +23,7 @@ D.Request =
     ajax: (params, model, data, options = {}) ->
         url = @url model
         params = D.extend params,
-            contentType: 'application/json'
+            contentType: D.Config.defaultContentType
         , options
         data = D.extend data, options.data
         params.url = url

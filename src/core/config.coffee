@@ -2,6 +2,7 @@ Drizzle.Config =
     scriptRoot: 'app'
     urlRoot: ''
     urlSuffix: ''
+    defaultContentType: 'application/json'
     caseSensitiveHash: false
     attributesReferToId: [
         'for' # for label

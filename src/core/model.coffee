@@ -17,12 +17,28 @@ D.Model = class Model extends D.Base
         super 'd'
         @module.container.delegateEvent @
 
-    setData: (data) ->
+    set: (data) ->
         @data = if D.isFunction @options.parse then @options.parse data else data
         if p = @pagination
             p.recordCount = @data[p.recordCountKey]
             p.pageCount = Math.ceil(p.recordCount / p.pageSize)
         @data = @data[@options.root] if @options.root
+        @
+
+    append: (data) ->
+        if D.isObject @data
+            D.extend @data, data
+        else if D.isArray @data
+            @data = @data.concat if D.isArray(data) then data else [data]
+        @
+
+    find: (name, value) ->
+        return null unless D.isArray @data
+        item for item in @data when item[name] is value
+
+    findOne: (name, value) ->
+        return null unless D.isArray @data
+        return item for item in @data when item[name] is value
 
     url: -> @getOptionResult(@options.url) or ''
 
