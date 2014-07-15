@@ -11,28 +11,30 @@ module.exports = (grunt) ->
 
     banner = coffeeBanner.replace /#/g, '//'
 
+    exts = ("    # @include ext/#{ext}.coffee" for ext in (grunt.option('ext') or '').split ',' when ext).join '\n\n'
+
     grunt.initConfig
         pkg: grunt.file.readJSON 'package.json'
 
-        clean: dist: 'dist'
+        clean:
+            dist: files: [dot: true, src: ['dist', '.tmp']]
+            tmp: '.tmp'
+            demo: ['demo/scripts/drizzlejs', 'demo/scripts/{**/*, *}.js']
 
-        coffeelint:
-            app: 'src/{**/*, *}.coffee'
-            options:
-                configFile: '.coffeelint'
+        template:
+            options: data:
+                version: '<%= pkg.version %>'
+                extModules: exts
+            drizzle:
+                src: '.tmp/drizzle.coffee'
+                dest: '.tmp/drizzle.coffee'
 
         preprocess: drizzle:
-            src: 'src/drizzle.coffee'
+            src: '.tmp/drizzle.coffee'
             dest: 'dist/drizzle.coffee'
 
         trimtrailingspaces: drizzle:
             src: 'dist/drizzle.coffee'
-
-        template:
-            options: data: version: '<%= pkg.version %>'
-            drizzle:
-                src: 'dist/drizzle.coffee'
-                dest: 'dist/drizzle.coffee'
 
         concat:
             coffee:
@@ -44,17 +46,41 @@ module.exports = (grunt) ->
                 src: 'dist/drizzle.js'
                 dest: 'dist/drizzle.js'
 
-        coffee: compile:
-            options: sourceMap: false, bare: true
-            src: 'dist/drizzle.coffee'
-            dest: 'dist/drizzle.js'
+        coffeelint:
+            drizle: 'dist/drizzle.coffee'
+            options:
+                configFile: '.coffeelint'
+
+        coffee:
+            drizzle:
+                options: sourceMap: true, bare: true
+                src: 'dist/drizzle.coffee'
+                dest: 'dist/drizzle.js'
+            demo:
+                expand: true
+                cwd: 'demo/scripts'
+                src: ['{**/,}*.coffee']
+                dest: 'demo/scripts'
+                ext: '.js'
 
         uglify:
             options:
-                sourceMap: false
+                sourceMap: true
                 sourceMapIn: 'dist/drizzle.js.map'
                 banner: banner
             drizzle:
                 files: 'dist/drizzle.min.js': ['dist/drizzle.js']
 
-    grunt.registerTask 'default', ['clean', 'coffeelint', 'preprocess', 'trimtrailingspaces', 'template', 'coffee', 'concat', 'uglify']
+        copy:
+            drizzle: files: [expand: true, cwd: 'src', src: ['**'], dest: '.tmp']
+            demo: files: [expand: true, cwd: 'dist', src: ['**'], dest: 'demo/scripts/drizzlejs']
+
+        shell: bower: command: 'bower install', options: execOptions: cwd: 'demo'
+
+        connect: demo: options: port: 8000, base: 'demo', keepalive: true
+
+    grunt.registerTask 'build', ['clean:dist', 'copy:drizzle', 'template', 'preprocess', 'trimtrailingspaces', 'coffeelint', 'coffee:drizzle', 'concat', 'uglify', 'clean:tmp']
+
+    grunt.registerTask 'default', ['build']
+
+    grunt.registerTask 'demo', ['build', 'clean:demo', 'coffee:demo', 'copy:demo', 'shell', 'connect']

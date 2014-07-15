@@ -21,7 +21,7 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.0'
   };
@@ -416,6 +416,7 @@ var __slice = [].slice,
 
     Application.prototype.initialize = function() {
       var key, value, _ref1;
+      this.registerLoader(new D.SimpleLoader(this));
       this.registerLoader(new D.Loader(this), true);
       _ref1 = D.Helpers;
       for (key in _ref1) {
@@ -488,6 +489,20 @@ var __slice = [].slice,
 
     Application.prototype.show = function(feature, options) {
       return this.region.show(feature, options);
+    };
+
+    Application.prototype.destory = function() {
+      var region;
+      return this.chain((function() {
+        var _j, _len1, _ref1, _results;
+        _ref1 = this.regions;
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          region = _ref1[_j];
+          _results.push(region.close());
+        }
+        return _results;
+      }).call(this));
     };
 
     Application.prototype.message = {
@@ -704,10 +719,22 @@ var __slice = [].slice,
       return this.el;
     };
 
+    Region.prototype.getCurrentItem = function() {
+      return this.currentItem;
+    };
+
+    Region.prototype.setCurrentItem = function(item) {
+      return this.currentItem = item;
+    };
+
     Region.prototype.show = function(item, options) {
-      if (this.currentItem) {
-        if ((D.isObject(item) && item.id === this.currentItem.id) || (D.isString(item) && D.Loader.analyse(item).name === this.currentItem.name)) {
-          return this.chain(this.currentItem.render(options), this.currentItem);
+      var cur;
+      if (options == null) {
+        options = {};
+      }
+      if (cur = this.getCurrentItem(item, options)) {
+        if ((D.isObject(item) && item.id === cur.id) || (D.isString(item) && D.Loader.analyse(item).name === cur.name)) {
+          return this.chain(cur.render(options), cur);
         }
       }
       return this.chain((D.isString(item) ? this.app.getLoader(item).loadModule(item) : item), function(item) {
@@ -722,29 +749,27 @@ var __slice = [].slice,
           }
           return item;
         }, function() {
-          return this.close();
+          return this.close(cur);
         }
       ], function(_arg) {
         var item;
         item = _arg[0];
         item.setRegion(this);
-        return this.currentItem = item;
+        this.setCurrentItem(item, options);
+        return item;
       }, function(item) {
         return item.render(options);
       });
     };
 
     Region.prototype.close = function() {
-      if (!this.currentItem) {
-        return this.createResolvedDeferred();
-      }
+      item = this.currentItem;
+      delete this.currentItem;
       return this.chain(function() {
-        return this.currentItem.close();
-      }, function() {
-        this.empty();
-        this.currentItem = null;
-        return this;
-      });
+        if (item) {
+          return item.close();
+        }
+      }, this);
     };
 
     Region.prototype.delegateEvent = function(item, name, selector, fn) {
@@ -765,8 +790,12 @@ var __slice = [].slice,
       return this.el.find(selector);
     };
 
+    Region.prototype.setHtml = function(html) {
+      return this.el.html(html);
+    };
+
     Region.prototype.empty = function() {
-      return this.getEl().empty();
+      return this.el.empty();
     };
 
     return Region;
@@ -933,7 +962,7 @@ var __slice = [].slice,
         if (!D.isString(value)) {
           throw new Error('The value defined in events must be a string');
         }
-        _ref2 = key.replace(/^\s+/g, '').replace(/\s+$/, '').split(/\s+/), name = _ref2[0], id = _ref2[1];
+        _ref2 = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = _ref2[0], id = _ref2[1];
         if (id) {
           selector = id.charAt(id.length - 1) === '*' ? "[id^=" + (id = this.wrapDomId(id.slice(0, -1))) + "]" : "#" + (id = this.wrapDomId(id));
         }
@@ -947,7 +976,7 @@ var __slice = [].slice,
       var me;
       me = this;
       return function() {
-        var args, deferred, el, i;
+        var args, deferred, el, i, _ref2;
         args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
         el = $(this);
         if (el.hasClass('disabled')) {
@@ -963,6 +992,9 @@ var __slice = [].slice,
           deferred.always(function() {
             return el.removeClass('disabled');
           });
+          if ((_ref2 = me.options.clickDeferred || D.Config.clickDeferred) != null) {
+            _ref2.call(this, deferred, el);
+          }
           args.unshift(deferred);
         }
         return me.loadDeferred.done(function() {
@@ -999,6 +1031,9 @@ var __slice = [].slice,
     };
 
     View.prototype.close = function() {
+      if (!this.region) {
+        return this.createResolvedDeferred(this);
+      }
       return this.chain(function() {
         var _ref2;
         return (_ref2 = this.options.beforeClose) != null ? _ref2.apply(this) : void 0;
@@ -1011,11 +1046,13 @@ var __slice = [].slice,
           return this.destroyComponents();
         }, function() {
           return this.unexportRegions();
+        }, function() {
+          return this.region.empty(this);
         }
       ], function() {
         var _ref2;
         return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
-      });
+      }, this);
     };
 
     View.prototype.render = function() {
@@ -1030,9 +1067,7 @@ var __slice = [].slice,
       }, this.executeTemplate, this.executeIdReplacement, this.renderComponent, this.exportRegions, this.afterRender, function() {
         var _ref2;
         return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
-      }, function() {
-        return this;
-      });
+      }, this);
     };
 
     View.prototype.beforeRender = function() {};
@@ -1064,7 +1099,7 @@ var __slice = [].slice,
       data.Global = this.app.global;
       data.View = this;
       html = this.template(data);
-      return this.getEl().html(html);
+      return this.region.setHtml(html, this);
     };
 
     View.prototype.executeIdReplacement = function() {
@@ -1241,6 +1276,11 @@ var __slice = [].slice,
       return delete this.bindData;
     };
 
+    Layout.prototype.setRegion = function() {
+      Layout.__super__.setRegion.apply(this, arguments);
+      return this.regionInfo = this.module.regionInfo;
+    };
+
     return Layout;
 
   })(D.View);
@@ -1409,9 +1449,7 @@ var __slice = [].slice,
       }, function() {
         var _ref2;
         return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
-      }, this.fetchDataAfterRender, function() {
-        return this;
-      });
+      }, this.fetchDataAfterRender, this);
     };
 
     Module.prototype.setRegion = function(region) {
@@ -1438,7 +1476,7 @@ var __slice = [].slice,
         return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
       }, function() {
         return this.container.remove(this.id);
-      });
+      }, this);
     };
 
     Module.prototype.fetchDataDuringRender = function() {
@@ -1497,9 +1535,9 @@ var __slice = [].slice,
       };
     };
 
-    function Loader(app, name) {
+    function Loader(app) {
       this.app = app;
-      this.name = name != null ? name : 'default';
+      this.name = 'default';
       this.fileNames = D.Config.fileNames;
       Loader.__super__.constructor.apply(this, arguments);
     }
@@ -1543,7 +1581,7 @@ var __slice = [].slice,
       name = Loader.analyse(path).name;
       return this.chain(this.loadResource(D.joinPath(name, this.fileNames.module)), (function(_this) {
         return function(options) {
-          return new Module(name, _this.app, _this, options);
+          return new D.Module(name, _this.app, _this, options);
         };
       })(this));
     };
@@ -1552,7 +1590,7 @@ var __slice = [].slice,
       name = Loader.analyse(name).name;
       return this.chain(this.loadModuleResource(module, this.fileNames.view + name), (function(_this) {
         return function(options) {
-          return new View(name, module, _this, options);
+          return new D.View(name, module, _this, options);
         };
       })(this));
     };
@@ -1628,6 +1666,30 @@ var __slice = [].slice,
     return Loader;
 
   })(D.Base);
+  D.SimpleLoader = SimpleLoader = (function(_super) {
+    __extends(SimpleLoader, _super);
+
+    function SimpleLoader() {
+      SimpleLoader.__super__.constructor.apply(this, arguments);
+      this.name = 'simple';
+    }
+
+    SimpleLoader.prototype.loadModule = function(path, parentModule) {
+      var name;
+      name = Loader.analyse(path).name;
+      return this.deferred(new D.Module(name, this.app, this, {
+        separatedTemplate: true
+      }));
+    };
+
+    SimpleLoader.prototype.loadView = function(name, module, item) {
+      name = Loader.analyse(name).name;
+      return this.deferred(new D.View(name, module, this, {}));
+    };
+
+    return SimpleLoader;
+
+  })(D.Loader);
   Route = (function() {
     Route.prototype.regExps = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
@@ -1824,7 +1886,8 @@ var __slice = [].slice,
       showModule: function(name) {
         return this.app.show(name);
       }
-    }
+    },
+    clickDeferred: function() {}
   };
   D.Helpers = {
     layout: function(app, Handlebars, options) {
@@ -1843,3 +1906,5 @@ var __slice = [].slice,
   };
   return Drizzle;
 });
+
+//# sourceMappingURL=drizzle.js.map

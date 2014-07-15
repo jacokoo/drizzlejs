@@ -4,3 +4,4 @@ npm-debug.log
 bower_components/
 Gruntfile.js
 demo/scripts/**/*.js
+demo/script/drizzlejs

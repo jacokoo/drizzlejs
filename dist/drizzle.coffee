@@ -4,7 +4,6 @@
 # Distributed under MIT license
 
 ((root, factory) ->
-
     if typeof define is 'function' and define.amd
         define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $, Handlebars
     else if module and module.exports
@@ -228,6 +227,7 @@
             @modules.delegateEvent @
 
         initialize: ->
+            @registerLoader new D.SimpleLoader(@)
             @registerLoader new D.Loader(@), true
             @registerHelper key, value for key, value of D.Helpers
             @setRegion new D.Region(@, null, $(document.body))
@@ -262,6 +262,9 @@
 
         show: (feature, options) ->
             @region.show feature, options
+
+        destory: ->
+            @chain (region.close() for region in @regions)
 
         #methods for notification
         message:
@@ -377,11 +380,15 @@
 
         getEl: -> @el
 
+        getCurrentItem: -> @currentItem
+
+        setCurrentItem: (item) -> @currentItem = item
+
         # show the specified item which could be a view or a module
-        show: (item, options) ->
-            if @currentItem
-                if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.Loader.analyse(item).name is @currentItem.name)
-                    return @chain @currentItem.render(options), @currentItem
+        show: (item, options = {}) ->
+            if cur = @getCurrentItem item, options
+                if (D.isObject(item) and item.id is cur.id) or (D.isString(item) and D.Loader.analyse(item).name is cur.name)
+                    return @chain cur.render(options), cur
 
             @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
                 throw new Error "Can not show item: #{item}" unless item.render and item.setRegion
@@ -390,21 +397,21 @@
                 item.region.close() if item.region
                 item
             , ->
-                @close()
+                @close cur
             ], ([item]) ->
                 item.setRegion @
-                @currentItem = item
+                @setCurrentItem item, options
+                item
             , (item) ->
                 item.render(options)
 
         close: ->
-            return @createResolvedDeferred() unless @currentItem
-            @chain ->
-                @currentItem.close()
-            , ->
-                @empty()
-                @currentItem = null
+            item = @currentItem
+            delete @currentItem
+            @chain(
+                -> item.close() if item
                 @
+            )
 
         delegateEvent: (item, name, selector, fn) ->
             n = "#{name}.events#{@id}#{item.id}"
@@ -416,7 +423,9 @@
         $$: (selector) ->
             @el.find selector
 
-        empty: -> @getEl().empty()
+        setHtml: (html) -> @el.html html
+
+        empty: -> @el.empty()
 
 
     D.View = class View extends Base
@@ -528,7 +537,7 @@
             events = @getOptionResult(@options.events) or {}
             for key, value of events
                 throw new Error 'The value defined in events must be a string' unless D.isString value
-                [name, id] = key.replace(/^\s+/g, '').replace(/\s+$/, '').split /\s+/
+                [name, id] = key.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
                 if id
                     selector = if id.charAt(id.length - 1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
                 handler = @createHandler name, id, selector, value
@@ -549,6 +558,7 @@
                     deferred = me.createDeferred()
                     el.addClass 'disabled'
                     deferred.always -> el.removeClass 'disabled'
+                    (me.options.clickDeferred or D.Config.clickDeferred)?.call @, deferred, el
                     args.unshift deferred
 
                 me.loadDeferred.done ->
@@ -567,16 +577,20 @@
             throw new Error "Region is null" unless @region
             @getEl().find selector
 
-        close: -> @chain(
-            -> @options.beforeClose?.apply @
-            [
-                -> @region.undelegateEvents(@)
-                -> @unbindData()
-                -> @destroyComponents()
-                -> @unexportRegions()
-            ]
-            -> @options.afterClose?.apply @
-        )
+        close: ->
+            return @createResolvedDeferred @ unless @region
+            @chain(
+                -> @options.beforeClose?.apply @
+                [
+                    -> @region.undelegateEvents(@)
+                    -> @unbindData()
+                    -> @destroyComponents()
+                    -> @unexportRegions()
+                    -> @region.empty @
+                ]
+                -> @options.afterClose?.apply @
+                @
+            )
 
         render: ->
             throw new Error 'No region to render in' unless @region
@@ -595,7 +609,7 @@
                 @exportRegions
                 @afterRender
                 -> @options.afterRender?.apply(@)
-                -> @
+                @
             )
 
         beforeRender: ->
@@ -617,7 +631,7 @@
             data.Global = @app.global
             data.View = @
             html = @template data
-            @getEl().html html
+            @region.setHtml html, @
 
         executeIdReplacement: ->
             used = {}
@@ -701,6 +715,10 @@
             @isLayout = true
             @loadDeferred = @chain [@loadTemplate(), @loadHandlers()]
             delete @bindData
+
+        setRegion: ->
+            super
+            @regionInfo = @module.regionInfo
 
     D.Module = class Module extends D.Base
         @Container = ModuleContainer
@@ -798,7 +816,7 @@
                     region.show value
                 -> @options.afterRender?.apply @
                 @fetchDataAfterRender
-                -> @
+                @
             )
 
         setRegion: (@region) ->
@@ -809,6 +827,7 @@
             -> value.close() for key, value of @regions
             -> @options.afterClose?.apply @
             -> @container.remove @id
+            @
         )
 
         fetchDataDuringRender: ->
@@ -830,7 +849,8 @@
                 loaderName = null
             loader: loaderName, name: name, args: args
 
-        constructor: (@app, @name = 'default') ->
+        constructor: (@app) ->
+            @name = 'default'
             @fileNames = D.Config.fileNames
             super
 
@@ -862,12 +882,12 @@
         loadModule: (path, parentModule) ->
             {name} = Loader.analyse path
             @chain @loadResource(D.joinPath name, @fileNames.module), (options) =>
-                new Module name, @app, @, options
+                new D.Module name, @app, @, options
 
         loadView: (name, module, options) ->
             {name} = Loader.analyse name
             @chain @loadModuleResource(module, @fileNames.view + name), (options) =>
-                new View name, module, @, options
+                new D.View name, module, @, options
 
         loadLayout: (module, name, layout = {}) ->
             {name} = Loader.analyse name
@@ -909,6 +929,19 @@
             path = D.joinPath name, @fileNames.router
             path = path.slice(1) if path.charAt(0) is '/'
             @loadResource(path)
+
+    D.SimpleLoader = class SimpleLoader extends D.Loader
+        constructor: ->
+            super
+            @name = 'simple'
+
+        loadModule: (path, parentModule) ->
+            {name} = Loader.analyse path
+            @deferred new D.Module(name, @app, @, separatedTemplate: true)
+
+        loadView: (name, module, item) ->
+            {name} = Loader.analyse name
+            @deferred new D.View(name, module, @, {})
 
 
     class Route
@@ -1036,6 +1069,8 @@
             routes: 'module/*name': 'showModule'
             showModule: (name) -> @app.show name
 
+        clickDeferred: ->
+
 
     D.Helpers =
         layout: (app, Handlebars, options) ->
@@ -1044,6 +1079,8 @@
         view: (app, Handlebars, name, options) ->
             return '' if @View.isLayout or @View.name isnt name
             options.fn @
+
+
 
 
     Drizzle

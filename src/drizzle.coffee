@@ -1,5 +1,4 @@
 ((root, factory) ->
-
     if typeof define is 'function' and define.amd
         define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $, Handlebars
     else if module and module.exports
@@ -55,5 +54,7 @@
     # @include core/config.coffee
 
     # @include util/helpers.coffee
+
+<%= extModules %>
 
     Drizzle
