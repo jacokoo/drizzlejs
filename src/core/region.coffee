@@ -13,11 +13,15 @@ D.Region = class Region extends D.Base
 
     getEl: -> @el
 
+    getCurrentItem: -> @currentItem
+
+    setCurrentItem: (item) -> @currentItem = item
+
     # show the specified item which could be a view or a module
-    show: (item, options) ->
-        if @currentItem
-            if (D.isObject(item) and item.id is @currentItem.id) or (D.isString(item) and D.Loader.analyse(item).name is @currentItem.name)
-                return @chain @currentItem.render(options), @currentItem
+    show: (item, options = {}) ->
+        if cur = @getCurrentItem item, options
+            if (D.isObject(item) and item.id is cur.id) or (D.isString(item) and D.Loader.analyse(item).name is cur.name)
+                return @chain cur.render(options), cur
 
         @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
             throw new Error "Can not show item: #{item}" unless item.render and item.setRegion
@@ -26,21 +30,21 @@ D.Region = class Region extends D.Base
             item.region.close() if item.region
             item
         , ->
-            @close()
+            @close cur
         ], ([item]) ->
             item.setRegion @
-            @currentItem = item
+            @setCurrentItem item, options
+            item
         , (item) ->
             item.render(options)
 
     close: ->
-        return @createResolvedDeferred() unless @currentItem
-        @chain ->
-            @currentItem.close()
-        , ->
-            @empty()
-            @currentItem = null
+        item = @currentItem
+        delete @currentItem
+        @chain(
+            -> item.close() if item
             @
+        )
 
     delegateEvent: (item, name, selector, fn) ->
         n = "#{name}.events#{@id}#{item.id}"
@@ -52,4 +56,6 @@ D.Region = class Region extends D.Base
     $$: (selector) ->
         @el.find selector
 
-    empty: -> @getEl().empty()
+    setHtml: (html) -> @el.html html
+
+    empty: -> @el.empty()

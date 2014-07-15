@@ -35,6 +35,10 @@ class Layout extends D.View
         @loadDeferred = @chain [@loadTemplate(), @loadHandlers()]
         delete @bindData
 
+    setRegion: ->
+        super
+        @regionInfo = @module.regionInfo
+
 D.Module = class Module extends D.Base
     @Container = ModuleContainer
     @Layout = Layout
@@ -131,7 +135,7 @@ D.Module = class Module extends D.Base
                 region.show value
             -> @options.afterRender?.apply @
             @fetchDataAfterRender
-            -> @
+            @
         )
 
     setRegion: (@region) ->
@@ -142,6 +146,7 @@ D.Module = class Module extends D.Base
         -> value.close() for key, value of @regions
         -> @options.afterClose?.apply @
         -> @container.remove @id
+        @
     )
 
     fetchDataDuringRender: ->

@@ -1,74 +1,52 @@
-define [
-    'jquery'
-    'underscore'
-    './region'
-], ($, _, Region) ->
+D.MultiRegion = class MultiRegion extends D.Region
+    constructor: ->
+        super
+        @items = {}
+        @elements = {}
 
-    class MultiRegion extends Region
-        constructor: ->
-            super
-            @items = {}
-            @elements = {}
+    activate: (item) ->
 
-        activate: (item) ->
+    createElement: (key, item) ->
+        el = $ '<div></div>'
+        @el.append el
+        el
 
-        createElement: (key, item) ->
-            el = $ '<div></div>'
-            @el.append el
-            el
+    getEl: (item) ->
+        return @el if not item
 
-        getEl: (item) ->
-            return @el if not item
+        key = item.regionInfo?.key
+        return null if not key
+        @elements[key] or (@elements[key] = @createElement(key, item))
 
+    close: (item) ->
+        if item
             key = item.regionInfo?.key
-            return null if not key
-            @elements[key] or (@elements[key] = @createElement(key, item))
-
-        close: (item) ->
-            if not item
-                return @chain 'close all items', ->
-                    v.close() for v in @items
-                ->
-                    @empty()
-                    @items = {}
-                    @elements = {}
-                    @
-
-            key = item.regionInfo?.key
-            return if not key
-
+            return @createResolvedDeferred @ if not key
             throw new Error('Trying to close an item which is not in the region') if @items[key].id isnt item.id
 
-            @chain 'close item:' + item.name, ->
-                item.close()
-            , ->
-                delete @items[key]
-                @elements[key].empty()
-                @currentItem = null
+            return @chain(
+                -> item.close()
+                -> delete @items[key]
                 @
+            )
 
-        showItem: (item, options, deferred) ->
-            unless item and item.render and item.setRegion
-                @logger.warn "try to show an item which is neither a view nor a module"
-                return deferred.reject item
+        @chain(
+            -> v.close() for k, v of @items
+            ->
+                @items = {}
+                @elements = {}
+            @
+        )
 
-            info = item.regionInfo or (item.regionInfo = {})
-            key = info.key or (info.key = _.uniqueId 'K')
+    getCurrentItem: (item, options = {}) ->
+        key = if D.isString(item) then options.regionKey else item.regionInfo?.key
+        if key then @items[key] else null
 
-            if @items[key] and @items[key].id is item.id
-                return @chain 'show item:' + item.name, item.render(options), ->
-                    deferred.resolve item
+    setCurrentItem: (item, options) ->
+        info = item.regionInfo or (item.regionInfo = {})
+        key = info.key or (info.key = options.regionKey or _.uniqueId 'K')
+        @items[key] = item
 
-            @chain 'show item:' + item.name,
-            [ ->
-                item.region.close(item) if item.region and item.region.id isnt @id
-            , ->
-                @close(@items[key]) if @items[key]
-            ]
-            , ->
-                @items[key] = item
-                item.setRegion @
-            , ->
-                item.render(options)
-            .done ->
-                deferred.resolve item
+    setHtml: (html, item) -> @getEl(item).html html
+
+    empty: (item) -> if item then @getEl(item).remove() else @el.empty()
