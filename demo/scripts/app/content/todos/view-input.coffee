@@ -8,7 +8,7 @@ define ['jquery', 'drizzle'], ($, D) ->
     handlers:
         addItem: (e) ->
             return unless e.keyCode is 13
-            t = $(e.target)
+            t = @$ 'input'
             text = t.val()
             return unless text
             @data.todos.append(id: D.uniqueId('todo'), text: text).trigger 'changed'

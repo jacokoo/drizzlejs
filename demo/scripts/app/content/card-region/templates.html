@@ -1,0 +1,27 @@
+{{#layout}}
+<h1>CardRegion, Extended from MultiRegion </h1>
+
+<div data-region="operators"></div>
+<div data-region="content" data-region-type="card"></div>
+{{/layout}}
+
+{{#view "operators"}}
+<ul class="nav nav-pills">
+  <li class="active"><a href="javascript:void 0" data-toggle="tab" id="show-default">Item 1</a></li>
+  <li><a href="javascript:void 0" data-toggle="tab" id="show-item2">Item 2</a></li>
+  <li><a href="javascript:void 0" data-toggle="tab" id="show-item3">Item 3</a></li>
+  <li><a href="javascript:void 0" data-toggle="tab" id="show-item4">Item 4</a></li>
+</ul>
+{{/view}}
+
+{{#view "item1"}}
+item1
+{{/view}}
+
+{{#view "item2"}}
+item2
+{{/view}}
+
+{{#view "item3"}}
+item3
+{{/view}}
