@@ -107,7 +107,7 @@ D.View = class View extends Base
         events = @getOptionResult(@options.events) or {}
         for key, value of events
             throw new Error 'The value defined in events must be a string' unless D.isString value
-            [name, id] = key.replace(/^\s+/g, '').replace(/\s+$/, '').split /\s+/
+            [name, id] = key.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
             if id
                 selector = if id.charAt(id.length - 1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
             handler = @createHandler name, id, selector, value
@@ -128,6 +128,7 @@ D.View = class View extends Base
                 deferred = me.createDeferred()
                 el.addClass 'disabled'
                 deferred.always -> el.removeClass 'disabled'
+                (me.options.clickDeferred or D.Config.clickDeferred)?.call @, deferred, el
                 args.unshift deferred
 
             me.loadDeferred.done ->
@@ -146,16 +147,20 @@ D.View = class View extends Base
         throw new Error "Region is null" unless @region
         @getEl().find selector
 
-    close: -> @chain(
-        -> @options.beforeClose?.apply @
-        [
-            -> @region.undelegateEvents(@)
-            -> @unbindData()
-            -> @destroyComponents()
-            -> @unexportRegions()
-        ]
-        -> @options.afterClose?.apply @
-    )
+    close: ->
+        return @createResolvedDeferred @ unless @region
+        @chain(
+            -> @options.beforeClose?.apply @
+            [
+                -> @region.undelegateEvents(@)
+                -> @unbindData()
+                -> @destroyComponents()
+                -> @unexportRegions()
+                -> @region.empty @
+            ]
+            -> @options.afterClose?.apply @
+            @
+        )
 
     render: ->
         throw new Error 'No region to render in' unless @region
@@ -174,7 +179,7 @@ D.View = class View extends Base
             @exportRegions
             @afterRender
             -> @options.afterRender?.apply(@)
-            -> @
+            @
         )
 
     beforeRender: ->
@@ -196,7 +201,7 @@ D.View = class View extends Base
         data.Global = @app.global
         data.View = @
         html = @template data
-        @getEl().html html
+        @region.setHtml html, @
 
     executeIdReplacement: ->
         used = {}

@@ -30,3 +30,5 @@ Drizzle.Config =
     defaultRouter:
         routes: 'module/*name': 'showModule'
         showModule: (name) -> @app.show name
+
+    clickDeferred: ->
