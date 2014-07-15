@@ -10,7 +10,8 @@ D.Loader = class Loader extends D.Base
             loaderName = null
         loader: loaderName, name: name, args: args
 
-    constructor: (@app, @name = 'default') ->
+    constructor: (@app) ->
+        @name = 'default'
         @fileNames = D.Config.fileNames
         super
 
@@ -42,12 +43,12 @@ D.Loader = class Loader extends D.Base
     loadModule: (path, parentModule) ->
         {name} = Loader.analyse path
         @chain @loadResource(D.joinPath name, @fileNames.module), (options) =>
-            new Module name, @app, @, options
+            new D.Module name, @app, @, options
 
     loadView: (name, module, options) ->
         {name} = Loader.analyse name
         @chain @loadModuleResource(module, @fileNames.view + name), (options) =>
-            new View name, module, @, options
+            new D.View name, module, @, options
 
     loadLayout: (module, name, layout = {}) ->
         {name} = Loader.analyse name
@@ -89,3 +90,16 @@ D.Loader = class Loader extends D.Base
         path = D.joinPath name, @fileNames.router
         path = path.slice(1) if path.charAt(0) is '/'
         @loadResource(path)
+
+D.SimpleLoader = class SimpleLoader extends D.Loader
+    constructor: ->
+        super
+        @name = 'simple'
+
+    loadModule: (path, parentModule) ->
+        {name} = Loader.analyse path
+        @deferred new D.Module(name, @app, @, separatedTemplate: true)
+
+    loadView: (name, module, item) ->
+        {name} = Loader.analyse name
+        @deferred new D.View(name, module, @, {})

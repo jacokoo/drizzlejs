@@ -9,6 +9,7 @@ D.Application = class Application extends D.Base
         @modules.delegateEvent @
 
     initialize: ->
+        @registerLoader new D.SimpleLoader(@)
         @registerLoader new D.Loader(@), true
         @registerHelper key, value for key, value of D.Helpers
         @setRegion new D.Region(@, null, $(document.body))
@@ -43,6 +44,9 @@ D.Application = class Application extends D.Base
 
     show: (feature, options) ->
         @region.show feature, options
+
+    destory: ->
+        @chain (region.close() for region in @regions)
 
     #methods for notification
     message:
