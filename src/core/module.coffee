@@ -111,7 +111,7 @@ D.Module = class Module extends D.Base
 
     addRegion: (name, el) ->
         type = el.data 'region-type'
-        @regions[name] = Region.create type, @app, @module, el
+        @regions[name] = Region.create type, @app, @, el
 
     removeRegion: (name) ->
         delete @regions[name]

@@ -21,7 +21,7 @@ D.MultiRegion = class MultiRegion extends D.Region
     close: (item) ->
         if item
             key = item.regionInfo?.key
-            return @createResolvedDeferred @ if not key
+            return @createResolvedDeferred @ unless key and @items[key]
             throw new Error('Trying to close an item which is not in the region') if @items[key].id isnt item.id
 
             return @chain(
@@ -40,7 +40,7 @@ D.MultiRegion = class MultiRegion extends D.Region
 
     getCurrentItem: (item, options = {}) ->
         key = if D.isString(item) then options.regionKey else item.regionInfo?.key
-        if key then @items[key] else null
+        if key then (if i = @items[key] then i else regionInfo: key: key) else null
 
     setCurrentItem: (item, options) ->
         info = item.regionInfo or (item.regionInfo = {})
