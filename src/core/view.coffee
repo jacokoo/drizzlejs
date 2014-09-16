@@ -128,7 +128,7 @@ D.View = class View extends Base
                 deferred = me.createDeferred()
                 el.addClass 'disabled'
                 deferred.always -> el.removeClass 'disabled'
-                (me.options.clickDeferred or D.Config.clickDeferred)?.call @, deferred, el
+                (me.options.clickDeferred or @app.options.clickDeferred)?.call @, deferred, el
                 args.unshift deferred
 
             me.loadDeferred.done ->
@@ -213,7 +213,7 @@ D.View = class View extends Base
             used[id] = true
             el.attr 'id', @wrapDomId id
 
-        for attr in D.Config.attributesReferToId or []
+        for attr in @app.options.attributesReferToId or []
             @$$("[#{attr}]").each (i, el) =>
                 el = $ el
                 value = el.attr attr

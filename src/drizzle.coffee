@@ -51,8 +51,6 @@
 
     # @include core/router.coffee
 
-    # @include core/config.coffee
-
     # @include util/helpers.coffee
 
 <%= extModules %>

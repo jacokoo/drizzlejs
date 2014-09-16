@@ -44,7 +44,7 @@ D.MultiRegion = class MultiRegion extends D.Region
 
     setCurrentItem: (item, options) ->
         info = item.regionInfo or (item.regionInfo = {})
-        key = info.key or (info.key = options.regionKey or _.uniqueId 'K')
+        key = info.key or (info.key = options.regionKey or D.uniqueId 'K')
         @items[key] = item
 
     setHtml: (html, item) -> @getEl(item).html html

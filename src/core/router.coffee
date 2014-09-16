@@ -7,7 +7,7 @@ class Route
     ]
     constructor: (@app, @router, @path, @fn) ->
         pattern = path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
-        @pattern = new RegExp "^#{pattern}$", if D.Config.caseSensitiveHash then 'g' else 'gi'
+        @pattern = new RegExp "^#{pattern}$", if @app.options.caseSensitiveHash then 'g' else 'gi'
 
     match: (hash) ->
         @pattern.lastIndex = 0
@@ -32,7 +32,7 @@ D.Router = class Router extends D.Base
         super 'ro'
 
     initialize: ->
-        @addRoute '/', D.Config.defaultRouter
+        @addRoute '/', @app.options.defaultRouter
 
     getHash: -> root.location.hash.slice 1
 

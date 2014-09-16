@@ -12,11 +12,11 @@ D.Loader = class Loader extends D.Base
 
     constructor: (@app) ->
         @name = 'default'
-        @fileNames = D.Config.fileNames
+        @fileNames = @app.options.fileNames
         super
 
     loadResource: (path, plugin) ->
-        path = D.joinPath D.Config.scriptRoot, path
+        path = D.joinPath @app.options.scriptRoot, path
         path = plugin + '!' + path if plugin
         deferred = @createDeferred()
 

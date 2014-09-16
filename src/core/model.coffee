@@ -5,7 +5,7 @@ D.Model = class Model extends D.Base
         @params = {}
 
         if options.pageable
-            defaults = D.Config.pagination
+            defaults = @app.options.pagination
             p = @pagination =
                 page: options.page or 1
                 pageCount: 0
