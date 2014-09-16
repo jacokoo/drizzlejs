@@ -1,7 +1,8 @@
 D.Request =
 
     url: (model) ->
-        urls = [D.Config.urlRoot]
+        options = model.app.options
+        urls = [options.urlRoot]
         urls.push model.module.options.urlPrefix if model.module.options.urlPrefix
         urls.push model.module.name
         base = model.url or ''
@@ -11,8 +12,10 @@ D.Request =
             paths.pop()
             base = base.slice 3
 
-        urls.push base
+        urls.push base if base
         urls.push model.data.id if model.data.id
+        if options.urlSuffix
+            urls.push urls.pop() + options.urlSuffix
         D.joinPath urls...
 
     get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
@@ -23,9 +26,9 @@ D.Request =
     ajax: (params, model, data, options = {}) ->
         url = @url model
         params = D.extend params,
-            contentType: D.Config.defaultContentType
+            contentType: model.app.options.defaultContentType
         , options
         data = D.extend data, options.data
         params.url = url
         params.data = data
-        D.Deferred.chain $.ajax(params), (resp) -> model.setData resp
+        model.chain $.ajax(params), ([resp]) -> model.set resp

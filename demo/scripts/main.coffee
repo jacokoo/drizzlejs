@@ -13,7 +13,10 @@ require.config
 require ['drizzle', 'bootstrap'], (D) ->
     D.Region.register 'multi', D.MultiRegion # just for demo
 
-    window.app = app = new D.Application()
+    window.app = app = new D.Application
+        urlRoot: 'data'
+        urlSuffix: '.json'
+
     app.show('main/viewport').done (viewport) ->
         {top, sidebar, content} = viewport.regions
         app.setRegion content

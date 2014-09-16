@@ -277,8 +277,9 @@ var __slice = [].slice,
   };
   D.Request = {
     url: function(model) {
-      var base, urls;
-      urls = [D.Config.urlRoot];
+      var base, options, urls;
+      options = model.app.options;
+      urls = [options.urlRoot];
       if (model.module.options.urlPrefix) {
         urls.push(model.module.options.urlPrefix);
       }
@@ -291,9 +292,14 @@ var __slice = [].slice,
         paths.pop();
         base = base.slice(3);
       }
-      urls.push(base);
+      if (base) {
+        urls.push(base);
+      }
       if (model.data.id) {
         urls.push(model.data.id);
+      }
+      if (options.urlSuffix) {
+        urls.push(urls.pop() + options.urlSuffix);
       }
       return D.joinPath.apply(D, urls);
     },
@@ -324,13 +330,15 @@ var __slice = [].slice,
       }
       url = this.url(model);
       params = D.extend(params, {
-        contentType: D.Config.defaultContentType
+        contentType: model.app.options.defaultContentType
       }, options);
       data = D.extend(data, options.data);
       params.url = url;
       params.data = data;
-      return D.Deferred.chain($.ajax(params), function(resp) {
-        return model.setData(resp);
+      return model.chain($.ajax(params), function(_arg) {
+        var resp;
+        resp = _arg[0];
+        return model.set(resp);
       });
     }
   };
