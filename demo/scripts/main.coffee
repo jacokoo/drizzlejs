@@ -3,7 +3,7 @@ require.config
     paths:
         text: '../bower_components/requirejs-text/text'
         jquery: '../bower_components/jquery/dist/jquery'
-        drizzle: 'drizzlejs/drizzle'
+        drizzle: 'drizzlejs/drizzle-all'
         handlebars: '../bower_components/handlebars/handlebars'
         bootstrap: '../bower_components/bootstrap/dist/js/bootstrap'
     shim:

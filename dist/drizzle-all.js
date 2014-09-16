@@ -21,7 +21,7 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, MultiRegion, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.1'
   };
@@ -1907,7 +1907,111 @@ var __slice = [].slice,
       return options.fn(this);
     }
   };
+  D.MultiRegion = MultiRegion = (function(_super) {
+    __extends(MultiRegion, _super);
+
+    function MultiRegion() {
+      MultiRegion.__super__.constructor.apply(this, arguments);
+      this.items = {};
+      this.elements = {};
+    }
+
+    MultiRegion.prototype.activate = function(item) {};
+
+    MultiRegion.prototype.createElement = function(key, item) {
+      var el;
+      el = $('<div></div>');
+      this.el.append(el);
+      return el;
+    };
+
+    MultiRegion.prototype.getEl = function(item) {
+      var key, _ref2;
+      if (!item) {
+        return this.el;
+      }
+      key = (_ref2 = item.regionInfo) != null ? _ref2.key : void 0;
+      if (!key) {
+        return null;
+      }
+      return this.elements[key] || (this.elements[key] = this.createElement(key, item));
+    };
+
+    MultiRegion.prototype.close = function(item) {
+      var key, _ref2;
+      if (item) {
+        key = (_ref2 = item.regionInfo) != null ? _ref2.key : void 0;
+        if (!(key && this.items[key])) {
+          return this.createResolvedDeferred(this);
+        }
+        if (this.items[key].id !== item.id) {
+          throw new Error('Trying to close an item which is not in the region');
+        }
+        return this.chain(function() {
+          return item.close();
+        }, function() {
+          return delete this.items[key];
+        }, this);
+      }
+      return this.chain(function() {
+        var k, v, _ref3, _results;
+        _ref3 = this.items;
+        _results = [];
+        for (k in _ref3) {
+          v = _ref3[k];
+          _results.push(v.close());
+        }
+        return _results;
+      }, function() {
+        this.items = {};
+        return this.elements = {};
+      }, this);
+    };
+
+    MultiRegion.prototype.getCurrentItem = function(item, options) {
+      var i, key, _ref2;
+      if (options == null) {
+        options = {};
+      }
+      key = D.isString(item) ? options.regionKey : (_ref2 = item.regionInfo) != null ? _ref2.key : void 0;
+      if (key) {
+        if (i = this.items[key]) {
+          return i;
+        } else {
+          return {
+            regionInfo: {
+              key: key
+            }
+          };
+        }
+      } else {
+        return null;
+      }
+    };
+
+    MultiRegion.prototype.setCurrentItem = function(item, options) {
+      var info, key;
+      info = item.regionInfo || (item.regionInfo = {});
+      key = info.key || (info.key = options.regionKey || D.uniqueId('K'));
+      return this.items[key] = item;
+    };
+
+    MultiRegion.prototype.setHtml = function(html, item) {
+      return this.getEl(item).html(html);
+    };
+
+    MultiRegion.prototype.empty = function(item) {
+      if (item) {
+        return this.getEl(item).remove();
+      } else {
+        return this.el.empty();
+      }
+    };
+
+    return MultiRegion;
+
+  })(D.Region);
   return Drizzle;
 });
 
-//# sourceMappingURL=drizzle.js.map
+//# sourceMappingURL=drizzle-all.js.map
