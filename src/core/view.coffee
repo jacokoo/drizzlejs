@@ -71,7 +71,7 @@ D.View = class View extends Base
         for key, value of bind
             @data[key] = @module.data[key]
             throw new Error "Model: #{key} doesn't exists" unless @data[key]
-            return unless value
+            continue unless value
             bindings = value.replace(/\s+/g, '').split ','
             doBind @data[key], binding for binding in bindings
 

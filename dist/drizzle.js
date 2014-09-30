@@ -952,7 +952,7 @@ var __slice = [].slice,
     View.prototype.bindData = function() {
       return this.module.loadDeferred.done((function(_this) {
         return function() {
-          var bind, binding, bindings, doBind, key, value, _k, _len2;
+          var bind, binding, bindings, doBind, key, value, _results;
           bind = _this.getOptionResult(_this.options.bind) || {};
           _this.data = {};
           doBind = function(model, binding) {
@@ -969,6 +969,7 @@ var __slice = [].slice,
               throw new Error("Can not find handler function for :" + handler);
             });
           };
+          _results = [];
           for (key in bind) {
             value = bind[key];
             _this.data[key] = _this.module.data[key];
@@ -976,14 +977,20 @@ var __slice = [].slice,
               throw new Error("Model: " + key + " doesn't exists");
             }
             if (!value) {
-              return;
+              continue;
             }
             bindings = value.replace(/\s+/g, '').split(',');
-            for (_k = 0, _len2 = bindings.length; _k < _len2; _k++) {
-              binding = bindings[_k];
-              doBind(_this.data[key], binding);
-            }
+            _results.push((function() {
+              var _k, _len2, _results1;
+              _results1 = [];
+              for (_k = 0, _len2 = bindings.length; _k < _len2; _k++) {
+                binding = bindings[_k];
+                _results1.push(doBind(this.data[key], binding));
+              }
+              return _results1;
+            }).call(_this));
           }
+          return _results;
         };
       })(this));
     };
