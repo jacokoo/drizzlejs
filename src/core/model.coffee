@@ -9,7 +9,7 @@ D.Model = class Model extends D.Base
             p = @pagination =
                 page: options.page or 1
                 pageCount: 0
-                pageSize: options.pageSize or defaults.pageSize
+                pageSize: options.pageSize or defaults.defaultPageSize
                 pageKey: options.pageKey or defaults.pageKey
                 pageSizeKey: options.pageSizeKey or defaults.pageSizeKey
                 recordCountKey: options.recordCountKey or defaults.recordCountKey
