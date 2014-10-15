@@ -586,7 +586,7 @@ var __slice = [].slice,
         p = this.pagination = {
           page: options.page || 1,
           pageCount: 0,
-          pageSize: options.pageSize || defaults.pageSize,
+          pageSize: options.pageSize || defaults.defaultPageSize,
           pageKey: options.pageKey || defaults.pageKey,
           pageSizeKey: options.pageSizeKey || defaults.pageSizeKey,
           recordCountKey: options.recordCountKey || defaults.recordCountKey
@@ -677,7 +677,7 @@ var __slice = [].slice,
 
     Model.prototype.turnToPage = function(page, options) {
       var p;
-      if (!(p = this.pagination && page <= p.pageCount && page >= 1)) {
+      if (!((p = this.pagination) && page <= p.pageCount && page >= 1)) {
         return this.createRejectedDeferred();
       }
       p.page = page;
@@ -685,10 +685,18 @@ var __slice = [].slice,
     };
 
     Model.prototype.firstPage = function(options) {
+      var p;
+      if ((p = this.pagination) && p.page === 1) {
+        return this.createRejectedDeferred();
+      }
       return this.turnToPage(1, options);
     };
 
     Model.prototype.lastPage = function(options) {
+      var p;
+      if ((p = this.pagination) && p.page === p.pageCount) {
+        return this.createRejectedDeferred();
+      }
       return this.turnToPage(this.pagination.pageCount, options);
     };
 
@@ -1044,7 +1052,7 @@ var __slice = [].slice,
           deferred.always(function() {
             return el.removeClass('disabled');
           });
-          if ((_ref2 = me.options.clickDeferred || this.app.options.clickDeferred) != null) {
+          if ((_ref2 = me.options.clickDeferred || me.app.options.clickDeferred) != null) {
             _ref2.call(this, deferred, el);
           }
           args.unshift(deferred);
