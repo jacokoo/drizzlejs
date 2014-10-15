@@ -59,12 +59,16 @@ D.Model = class Model extends D.Base
             p.pageCount = 0
 
     turnToPage: (page, options) ->
-        return @createRejectedDeferred() unless p = @pagination and page <= p.pageCount and page >= 1
+        return @createRejectedDeferred() unless (p = @pagination) and page <= p.pageCount and page >= 1
         p.page = page
         @get options
 
-    firstPage: (options) -> @turnToPage 1, options
-    lastPage: (options) -> @turnToPage @pagination.pageCount, options
+    firstPage: (options) ->
+        return @createRejectedDeferred() if (p = @pagination) and p.page is 1
+        @turnToPage 1, options
+    lastPage: (options) ->
+        return @createRejectedDeferred() if (p = @pagination) and p.page is p.pageCount
+        @turnToPage @pagination.pageCount, options
     nextPage: (options) -> @turnToPage @pagination.page + 1, options
     prevPage: (options) -> @turnToPage @pagination.page - 1, options
 
