@@ -128,7 +128,7 @@ D.View = class View extends Base
                 deferred = me.createDeferred()
                 el.addClass 'disabled'
                 deferred.always -> el.removeClass 'disabled'
-                (me.options.clickDeferred or @app.options.clickDeferred)?.call @, deferred, el
+                (me.options.clickDeferred or me.app.options.clickDeferred)?.call @, deferred, el
                 args.unshift deferred
 
             me.loadDeferred.done ->
