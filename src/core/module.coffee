@@ -128,11 +128,13 @@ D.Module = class Module extends D.Base
             @fetchDataDuringRender
             -> @layout.render()
             -> @options.afterLayoutRender?.apply @
-            -> for value in @inRegionItems
-                key = value.regionInfo.region
-                region = @regions[key]
-                throw new Error "Can not find region: #{key}" unless region
-                region.show value
+            ->
+                defers = for value in @inRegionItems
+                    key = value.regionInfo.region
+                    region = @regions[key]
+                    throw new Error "Can not find region: #{key}" unless region
+                    region.show value
+                $.when defers...
             -> @options.afterRender?.apply @
             @fetchDataAfterRender
             @

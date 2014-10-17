@@ -9,7 +9,7 @@ D.Request =
         base = base.apply model if D.isFunction base
 
         while base.indexOf('../') is 0
-            paths.pop()
+            urls.pop()
             base = base.slice 3
 
         urls.push base if base
@@ -31,4 +31,6 @@ D.Request =
         data = D.extend data, options.data
         params.url = url
         params.data = data
-        model.chain $.ajax(params), ([resp]) -> model.set resp
+        model.chain $.ajax(params), ([resp, status, xhr]) ->
+            model.set resp
+            xhr

@@ -42,6 +42,8 @@ D.Model = class Model extends D.Base
 
     url: -> @getOptionResult(@options.url) or ''
 
+    getFullUrl: -> D.Request.url @
+
     toJSON: -> @data
 
     getParams: ->
@@ -84,4 +86,6 @@ D.Model = class Model extends D.Base
 
 for item in ['get', 'post', 'put', 'del']
     do (item) -> D.Model::[item] = (options) ->
-        @chain D.Request[item](@, options), -> @trigger 'sync'
+        @chain D.Request[item](@, options), ([..., xhr]) ->
+            @trigger 'sync'
+            xhr

@@ -27,7 +27,14 @@
         noConflict: ->
             root.Drizzle = oldReferrence
             D
-        joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
+        joinPath: (paths...) ->
+            path = paths.join('/')
+            s = ''
+            if path.indexOf('http') is 0
+                s = path.slice 0, 7
+                path = path.slice 7
+            path = path.replace(/\/+/g, '/')
+            s + path
 
     # @include util/deferred.coffee
 

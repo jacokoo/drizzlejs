@@ -61,9 +61,16 @@ var __slice = [].slice,
       return D;
     },
     joinPath: function() {
-      var paths;
+      var path, paths, s;
       paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return paths.join('/').replace(/\/+/g, '/');
+      path = paths.join('/');
+      s = '';
+      if (path.indexOf('http') === 0) {
+        s = path.slice(0, 7);
+        path = path.slice(7);
+      }
+      path = path.replace(/\/+/g, '/');
+      return s + path;
     }
   });
   D.Deferred = {
@@ -289,7 +296,7 @@ var __slice = [].slice,
         base = base.apply(model);
       }
       while (base.indexOf('../') === 0) {
-        paths.pop();
+        urls.pop();
         base = base.slice(3);
       }
       if (base) {
@@ -336,9 +343,10 @@ var __slice = [].slice,
       params.url = url;
       params.data = data;
       return model.chain($.ajax(params), function(_arg) {
-        var resp;
-        resp = _arg[0];
-        return model.set(resp);
+        var resp, status, xhr;
+        resp = _arg[0], status = _arg[1], xhr = _arg[2];
+        model.set(resp);
+        return xhr;
       });
     }
   };
@@ -652,6 +660,10 @@ var __slice = [].slice,
       return this.getOptionResult(this.options.url) || '';
     };
 
+    Model.prototype.getFullUrl = function() {
+      return D.Request.url(this);
+    };
+
     Model.prototype.toJSON = function() {
       return this.data;
     };
@@ -734,8 +746,11 @@ var __slice = [].slice,
   _ref1 = ['get', 'post', 'put', 'del'];
   _fn1 = function(item) {
     return D.Model.prototype[item] = function(options) {
-      return this.chain(D.Request[item](this, options), function() {
-        return this.trigger('sync');
+      return this.chain(D.Request[item](this, options), function(_arg) {
+        var xhr;
+        xhr = _arg[_arg.length - 1];
+        this.trigger('sync');
+        return xhr;
       });
     };
   };
@@ -1493,19 +1508,23 @@ var __slice = [].slice,
         var _ref2;
         return (_ref2 = this.options.afterLayoutRender) != null ? _ref2.apply(this) : void 0;
       }, function() {
-        var key, region, value, _k, _len2, _ref2, _results;
-        _ref2 = this.inRegionItems;
-        _results = [];
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          value = _ref2[_k];
-          key = value.regionInfo.region;
-          region = this.regions[key];
-          if (!region) {
-            throw new Error("Can not find region: " + key);
+        var defers, key, region, value;
+        defers = (function() {
+          var _k, _len2, _ref2, _results;
+          _ref2 = this.inRegionItems;
+          _results = [];
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            value = _ref2[_k];
+            key = value.regionInfo.region;
+            region = this.regions[key];
+            if (!region) {
+              throw new Error("Can not find region: " + key);
+            }
+            _results.push(region.show(value));
           }
-          _results.push(region.show(value));
-        }
-        return _results;
+          return _results;
+        }).call(this);
+        return $.when.apply($, defers);
       }, function() {
         var _ref2;
         return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;

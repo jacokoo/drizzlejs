@@ -32,7 +32,14 @@
         noConflict: ->
             root.Drizzle = oldReferrence
             D
-        joinPath: (paths...) -> paths.join('/').replace(/\/+/g, '/')
+        joinPath: (paths...) ->
+            path = paths.join('/')
+            s = ''
+            if path.indexOf('http') is 0
+                s = path.slice 0, 7
+                path = path.slice 7
+            path = path.replace(/\/+/g, '/')
+            s + path
 
     D.Deferred =
 
@@ -163,7 +170,7 @@
             base = base.apply model if D.isFunction base
 
             while base.indexOf('../') is 0
-                paths.pop()
+                urls.pop()
                 base = base.slice 3
 
             urls.push base if base
@@ -185,7 +192,9 @@
             data = D.extend data, options.data
             params.url = url
             params.data = data
-            model.chain $.ajax(params), ([resp]) -> model.set resp
+            model.chain $.ajax(params), ([resp, status, xhr]) ->
+                model.set resp
+                xhr
 
 
     Drizzle.Base = class Base
@@ -363,6 +372,8 @@
 
         url: -> @getOptionResult(@options.url) or ''
 
+        getFullUrl: -> D.Request.url @
+
         toJSON: -> @data
 
         getParams: ->
@@ -405,7 +416,9 @@
 
     for item in ['get', 'post', 'put', 'del']
         do (item) -> D.Model::[item] = (options) ->
-            @chain D.Request[item](@, options), -> @trigger 'sync'
+            @chain D.Request[item](@, options), ([..., xhr]) ->
+                @trigger 'sync'
+                xhr
 
 
     D.Region = class Region extends D.Base
@@ -852,11 +865,13 @@
                 @fetchDataDuringRender
                 -> @layout.render()
                 -> @options.afterLayoutRender?.apply @
-                -> for value in @inRegionItems
-                    key = value.regionInfo.region
-                    region = @regions[key]
-                    throw new Error "Can not find region: #{key}" unless region
-                    region.show value
+                ->
+                    defers = for value in @inRegionItems
+                        key = value.regionInfo.region
+                        region = @regions[key]
+                        throw new Error "Can not find region: #{key}" unless region
+                        region.show value
+                    $.when defers...
                 -> @options.afterRender?.apply @
                 @fetchDataAfterRender
                 @
