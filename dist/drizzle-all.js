@@ -1,4 +1,4 @@
-// DrizzleJS v0.2.4
+// DrizzleJS v0.2.5
 // -------------------------------------
 // Copyright (c) 2014 Jaco Koo <jaco.koo@guyong.in>
 // Distributed under MIT license
@@ -23,7 +23,7 @@ var __slice = [].slice,
 })(this, function(root, $, Handlebars) {
   var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, MultiRegion, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
-    version: '0.2.4'
+    version: '0.2.5'
   };
   oldReference = root.Drizzle;
   idCounter = 0;
