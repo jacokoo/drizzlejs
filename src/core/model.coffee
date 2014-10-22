@@ -32,6 +32,18 @@ D.Model = class Model extends D.Base
             @data = @data.concat if D.isArray(data) then data else [data]
         @
 
+    setForm: (form) ->
+        return unless form and form.serializeArray
+        data = {}
+        for item in form.serializeArray()
+            o = data[item.name]
+            if o is undefined
+                data[item.name] = item.value
+            else
+                o = data[item.name] = [data[item.name]] unless D.isArray(o)
+                o.push data.value
+        @data = data
+
     find: (name, value) ->
         return null unless D.isArray @data
         item for item in @data when item[name] is value
@@ -84,7 +96,7 @@ D.Model = class Model extends D.Base
         d.end = d.total if d.end > d.total
         d
 
-for item in ['get', 'post', 'put', 'del']
+for item in ['get', 'post', 'put', 'del', 'save']
     do (item) -> D.Model::[item] = (options) ->
         @chain D.Request[item](@, options), ([..., xhr]) ->
             @trigger 'sync'

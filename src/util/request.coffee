@@ -22,6 +22,7 @@ D.Request =
     post: (model, options) -> @ajax type: 'POST', model, model.data, options
     put: (model, options) -> @ajax type: 'PUT', model, model.data, options
     del: (model, options) -> @ajax type: 'DELETE', model, model.data, options
+    save: (model, options) -> if model.data.id then @put(model, options) else @post(model, options)
 
     ajax: (params, model, data, options = {}) ->
         url = @url model

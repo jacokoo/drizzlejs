@@ -330,6 +330,13 @@ var __slice = [].slice,
         type: 'DELETE'
       }, model, model.data, options);
     },
+    save: function(model, options) {
+      if (model.data.id) {
+        return this.put(model, options);
+      } else {
+        return this.post(model, options);
+      }
+    },
     ajax: function(params, model, data, options) {
       var url;
       if (options == null) {
@@ -626,6 +633,28 @@ var __slice = [].slice,
       return this;
     };
 
+    Model.prototype.setForm = function(form) {
+      var data, o, _j, _len1, _ref1;
+      if (!(form && form.serializeArray)) {
+        return;
+      }
+      data = {};
+      _ref1 = form.serializeArray();
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        item = _ref1[_j];
+        o = data[item.name];
+        if (o === void 0) {
+          data[item.name] = item.value;
+        } else {
+          if (!D.isArray(o)) {
+            o = data[item.name] = [data[item.name]];
+          }
+          o.push(data.value);
+        }
+      }
+      return this.data = data;
+    };
+
     Model.prototype.find = function(name, value) {
       var _j, _len1, _ref1, _results;
       if (!D.isArray(this.data)) {
@@ -743,7 +772,7 @@ var __slice = [].slice,
     return Model;
 
   })(D.Base);
-  _ref1 = ['get', 'post', 'put', 'del'];
+  _ref1 = ['get', 'post', 'put', 'del', 'save'];
   _fn1 = function(item) {
     return D.Model.prototype[item] = function(options) {
       return this.chain(D.Request[item](this, options), function(_arg) {
