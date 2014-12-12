@@ -1015,6 +1015,8 @@
             @deferred new D.View(name, module, @, {})
 
 
+    pushStateSupported = root.history and 'pushState' in root.history
+
     class Route
         regExps: [
             /:([\w\d]+)/g
@@ -1056,8 +1058,8 @@
         start: (defaultPath) ->
             return if @started
             @started = true
-
-            $(root).on 'popstate.dr', => @dispatch @getHash()
+            key = if pushStateSupported then 'popstate.dr' else 'hashchange.dr'
+            $(root).on key, => @dispatch @getHash()
 
             if hash = @getHash()
                 @navigate hash, true
@@ -1075,7 +1077,11 @@
             return route.handle hash for route in @routes when route.match hash
 
         navigate: (path, trigger) ->
-            root.history.pushState {}, root.document.title, "##{path}"
+            if pushStateSupported
+                root.history.pushState {}, root.document.title, "##{path}"
+            else
+                root.location.replace "##{path}"
+
             @dispatch path if trigger
 
         mountRoutes: (paths...) -> @chain(
@@ -1094,6 +1100,7 @@
 
             for key, value of routes
                 p = D.joinPath(path, key).replace /(^\/|\/$)/g, ''
+                throw new Error("Route [#{key}: #{value}] is not defined") unless D.isFunction(router[value])
                 route = new Route @app, @, p, router[value]
                 @routes.unshift route
                 @routeMap[p] = route

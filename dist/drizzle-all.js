@@ -5,7 +5,8 @@
 
 var __slice = [].slice,
   __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 (function(root, factory) {
   var $, Handlebars;
@@ -21,7 +22,7 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, MultiRegion, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, MultiRegion, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, pushStateSupported, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
     version: '0.2.5'
   };
@@ -1798,6 +1799,7 @@ var __slice = [].slice,
     return SimpleLoader;
 
   })(D.Loader);
+  pushStateSupported = root.history && __indexOf.call(root.history, 'pushState') >= 0;
   Route = (function() {
     Route.prototype.regExps = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
@@ -1862,12 +1864,13 @@ var __slice = [].slice,
     };
 
     Router.prototype.start = function(defaultPath) {
-      var hash;
+      var hash, key;
       if (this.started) {
         return;
       }
       this.started = true;
-      $(root).on('popstate.dr', (function(_this) {
+      key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
+      $(root).on(key, (function(_this) {
         return function() {
           return _this.dispatch(_this.getHash());
         };
@@ -1900,7 +1903,11 @@ var __slice = [].slice,
     };
 
     Router.prototype.navigate = function(path, trigger) {
-      root.history.pushState({}, root.document.title, "#" + path);
+      if (pushStateSupported) {
+        root.history.pushState({}, root.document.title, "#" + path);
+      } else {
+        root.location.replace("#" + path);
+      }
       if (trigger) {
         return this.dispatch(path);
       }
@@ -1942,6 +1949,9 @@ var __slice = [].slice,
       for (key in routes) {
         value = routes[key];
         p = D.joinPath(path, key).replace(/(^\/|\/$)/g, '');
+        if (!D.isFunction(router[value])) {
+          throw new Error("Route [" + key + ": " + value + "] is not defined");
+        }
         route = new Route(this.app, this, p, router[value]);
         this.routes.unshift(route);
         _results.push(this.routeMap[p] = route);
