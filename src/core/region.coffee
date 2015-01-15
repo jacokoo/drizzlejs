@@ -21,6 +21,7 @@ D.Region = class Region extends D.Base
     show: (item, options = {}) ->
         if cur = @getCurrentItem item, options
             if (D.isObject(item) and item.id is cur.id) or (D.isString(item) and D.Loader.analyse(item).name is cur.name)
+                return @createResolvedDeferred(cur) if options.forceRender is false
                 return @chain cur.render(options), cur
 
         @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->

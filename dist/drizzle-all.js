@@ -1,6 +1,6 @@
-// DrizzleJS v0.2.5
+// DrizzleJS v0.2.7
 // -------------------------------------
-// Copyright (c) 2014 Jaco Koo <jaco.koo@guyong.in>
+// Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 // Distributed under MIT license
 
 var __slice = [].slice,
@@ -24,7 +24,7 @@ var __slice = [].slice,
 })(this, function(root, $, Handlebars) {
   var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, MultiRegion, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, pushStateSupported, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
-    version: '0.2.5'
+    version: '0.2.7'
   };
   oldReference = root.Drizzle;
   idCounter = 0;
@@ -832,6 +832,9 @@ var __slice = [].slice,
       }
       if (cur = this.getCurrentItem(item, options)) {
         if ((D.isObject(item) && item.id === cur.id) || (D.isString(item) && D.Loader.analyse(item).name === cur.name)) {
+          if (options.forceRender === false) {
+            return this.createResolvedDeferred(cur);
+          }
           return this.chain(cur.render(options), cur);
         }
       }
@@ -1690,7 +1693,12 @@ var __slice = [].slice,
       name = Loader.analyse(path).name;
       return this.chain(this.loadResource(D.joinPath(name, this.fileNames.module)), (function(_this) {
         return function(options) {
-          return new D.Module(name, _this.app, _this, options);
+          var module;
+          module = new D.Module(name, _this.app, _this, options);
+          if (parentModule) {
+            module.module = parentModule;
+          }
+          return module;
         };
       })(this));
     };
@@ -1784,11 +1792,15 @@ var __slice = [].slice,
     }
 
     SimpleLoader.prototype.loadModule = function(path, parentModule) {
-      var name;
+      var module, name;
       name = Loader.analyse(path).name;
-      return this.deferred(new D.Module(name, this.app, this, {
+      module = new D.Module(name, this.app, this, {
         separatedTemplate: true
-      }));
+      });
+      if (parentModule) {
+        module.parentModule = parentModule;
+      }
+      return this.deferred(module);
     };
 
     SimpleLoader.prototype.loadView = function(name, module, item) {

@@ -1,6 +1,6 @@
-# DrizzleJS v0.2.5
+# DrizzleJS v0.2.7
 # -------------------------------------
-# Copyright (c) 2014 Jaco Koo <jaco.koo@guyong.in>
+# Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 # Distributed under MIT license
 
 ((root, factory) ->
@@ -14,7 +14,7 @@
         root.Drizzle = factory root, $
 ) this, (root, $, Handlebars) ->
 
-    D = Drizzle = version: '0.2.5'
+    D = Drizzle = version: '0.2.7'
 
     oldReference = root.Drizzle
     idCounter = 0
@@ -457,6 +457,7 @@
         show: (item, options = {}) ->
             if cur = @getCurrentItem item, options
                 if (D.isObject(item) and item.id is cur.id) or (D.isString(item) and D.Loader.analyse(item).name is cur.name)
+                    return @createResolvedDeferred(cur) if options.forceRender is false
                     return @chain cur.render(options), cur
 
             @chain (if D.isString(item) then @app.getLoader(item).loadModule(item) else item), (item) ->
@@ -950,10 +951,13 @@
         loadModuleResource: (module, path, plugin) ->
             @loadResource D.joinPath(module.name, path), plugin
 
+
         loadModule: (path, parentModule) ->
             {name} = Loader.analyse path
             @chain @loadResource(D.joinPath name, @fileNames.module), (options) =>
-                new D.Module name, @app, @, options
+                module = new D.Module name, @app, @, options
+                module.module = parentModule if parentModule
+                module
 
         loadView: (name, module, options) ->
             {name} = Loader.analyse name
@@ -1008,7 +1012,9 @@
 
         loadModule: (path, parentModule) ->
             {name} = Loader.analyse path
-            @deferred new D.Module(name, @app, @, separatedTemplate: true)
+            module = new D.Module(name, @app, @, separatedTemplate: true)
+            module.parentModule = parentModule if parentModule
+            @deferred module
 
         loadView: (name, module, item) ->
             {name} = Loader.analyse name

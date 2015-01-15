@@ -40,10 +40,13 @@ D.Loader = class Loader extends D.Base
     loadModuleResource: (module, path, plugin) ->
         @loadResource D.joinPath(module.name, path), plugin
 
+
     loadModule: (path, parentModule) ->
         {name} = Loader.analyse path
         @chain @loadResource(D.joinPath name, @fileNames.module), (options) =>
-            new D.Module name, @app, @, options
+            module = new D.Module name, @app, @, options
+            module.module = parentModule if parentModule
+            module
 
     loadView: (name, module, options) ->
         {name} = Loader.analyse name
@@ -98,7 +101,9 @@ D.SimpleLoader = class SimpleLoader extends D.Loader
 
     loadModule: (path, parentModule) ->
         {name} = Loader.analyse path
-        @deferred new D.Module(name, @app, @, separatedTemplate: true)
+        module = new D.Module(name, @app, @, separatedTemplate: true)
+        module.parentModule = parentModule if parentModule
+        @deferred module
 
     loadView: (name, module, item) ->
         {name} = Loader.analyse name
