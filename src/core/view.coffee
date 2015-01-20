@@ -159,11 +159,13 @@ D.View = class View extends Base
                 -> @region.empty @
             ]
             -> @options.afterClose?.apply @
+            -> delete @region
             @
         )
 
-    render: ->
+    render: (options = {}) ->
         throw new Error 'No region to render in' unless @region
+        @renderOptions = options
 
         @chain(
             @loadDeferred

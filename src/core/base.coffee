@@ -1,5 +1,4 @@
 Drizzle.Base = class Base
-
     @include: (mixins...) ->
         @::[key] = value for key, value of mixin for mixin in mixins
         @

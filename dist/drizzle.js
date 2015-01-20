@@ -1,8 +1,10 @@
-// DrizzleJS v0.2.7
-// -------------------------------------
-// Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
-// Distributed under MIT license
 
+/*!
+ * DrizzleJS v0.2.8
+ * -------------------------------------
+ * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
+ * Distributed under MIT license
+ */
 var __slice = [].slice,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -24,7 +26,7 @@ var __slice = [].slice,
 })(this, function(root, $, Handlebars) {
   var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, pushStateSupported, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
   D = Drizzle = {
-    version: '0.2.7'
+    version: '0.2.8'
   };
   oldReference = root.Drizzle;
   idCounter = 0;
@@ -1160,13 +1162,19 @@ var __slice = [].slice,
       ], function() {
         var _ref2;
         return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
+      }, function() {
+        return delete this.region;
       }, this);
     };
 
-    View.prototype.render = function() {
+    View.prototype.render = function(options) {
+      if (options == null) {
+        options = {};
+      }
       if (!this.region) {
         throw new Error('No region to render in');
       }
+      this.renderOptions = options;
       return this.chain(this.loadDeferred, [this.unbindData, this.destroyComponents, this.unexportRegions], this.bindData, function() {
         var _ref2;
         return (_ref2 = this.options.beforeRender) != null ? _ref2.apply(this) : void 0;

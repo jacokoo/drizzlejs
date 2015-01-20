@@ -1,5 +1,4 @@
 D.Model = class Model extends D.Base
-
     constructor: (@app, @module, @options = {}) ->
         @data = @options.data or {}
         @params = {}

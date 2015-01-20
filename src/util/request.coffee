@@ -1,5 +1,4 @@
 D.Request =
-
     url: (model) ->
         options = model.app.options
         urls = [options.urlRoot]

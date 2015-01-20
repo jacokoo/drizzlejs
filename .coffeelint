@@ -14,7 +14,7 @@
         "name": "no_trailing_whitespace",
         "level": "error",
         "allowed_in_comments": false,
-        "allowed_in_empty_lines": true
+        "allowed_in_empty_lines": false
     },
     "max_line_length": {
         "name": "max_line_length",
@@ -24,7 +24,7 @@
     },
     "line_endings": {
         "name": "line_endings",
-        "level": "ignore",
+        "level": "error",
         "value": "unix"
     },
     "no_trailing_semicolons": {
@@ -122,6 +122,10 @@
     },
     "no_interpolation_in_single_quotes": {
         "name": "no_interpolation_in_single_quotes",
+        "level": "ignore"
+    },
+    "ensure_comprehensions": {
+        "name": "ensure_comprehensions",
         "level": "ignore"
     }
 }

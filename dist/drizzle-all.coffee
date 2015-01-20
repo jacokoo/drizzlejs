@@ -1,7 +1,9 @@
-# DrizzleJS v0.2.7
+###!
+# DrizzleJS v0.2.8
 # -------------------------------------
 # Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 # Distributed under MIT license
+###
 
 ((root, factory) ->
     if typeof define is 'function' and define.amd
@@ -14,7 +16,7 @@
         root.Drizzle = factory root, $
 ) this, (root, $, Handlebars) ->
 
-    D = Drizzle = version: '0.2.7'
+    D = Drizzle = version: '0.2.8'
 
     oldReference = root.Drizzle
     idCounter = 0
@@ -42,7 +44,6 @@
             s + path
 
     D.Deferred =
-
         createDeferred: ->
             (D.deferredCount or= 1)
             D.deferredCount++
@@ -57,7 +58,6 @@
             d = @createDeferred()
             d.resolve args...
             d
-
 
         deferred: (fn, args...) ->
             fn = fn.apply @, args if D.isFunction fn
@@ -160,7 +160,6 @@
 
 
     D.Request =
-
         url: (model) ->
             options = model.app.options
             urls = [options.urlRoot]
@@ -199,7 +198,6 @@
 
 
     Drizzle.Base = class Base
-
         @include: (mixins...) ->
             @::[key] = value for key, value of mixin for mixin in mixins
             @
@@ -330,7 +328,6 @@
 
 
     D.Model = class Model extends D.Base
-
         constructor: (@app, @module, @options = {}) ->
             @data = @options.data or {}
             @params = {}
@@ -659,11 +656,13 @@
                     -> @region.empty @
                 ]
                 -> @options.afterClose?.apply @
+                -> delete @region
                 @
             )
 
-        render: ->
+        render: (options = {}) ->
             throw new Error 'No region to render in' unless @region
+            @renderOptions = options
 
             @chain(
                 @loadDeferred

@@ -1,5 +1,4 @@
 D.Deferred =
-
     createDeferred: ->
         (D.deferredCount or= 1)
         D.deferredCount++
@@ -14,7 +13,6 @@ D.Deferred =
         d = @createDeferred()
         d.resolve args...
         d
-
 
     deferred: (fn, args...) ->
         fn = fn.apply @, args if D.isFunction fn
