@@ -1,0 +1,30 @@
+layout
+    ul.nav.nav-sidebar(data-region='top')
+    ul.nav.nav-sidebar(data-region='middle')
+    ul.nav.nav-sidebar(data-region='bottom')
+
+view('top')
+    each(top)
+        li(class='active')&if(active)
+            a(id='item-' + id href=url)
+                echo(name)
+
+view('middle')
+    li
+        a(href) Nav item
+    li
+        a(href) Nav item again
+    li
+        a(href) One more nav
+    li
+        a(href) Another nav item
+    li
+        a(href) More navigation
+
+view('bottom')
+    li
+        a(href) Nav item again
+    li
+        a(href) One more nav
+    li
+        a(href) Another nav item

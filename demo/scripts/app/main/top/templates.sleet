@@ -1,0 +1,21 @@
+layout
+    div.container-fluid
+        div.navbar-header
+            button.navbar-toggle(type='button' data-toggle='collapse' data-target='.navbar-collapse')
+                span.sr-only Toggle navigation
+                span.icon-bar
+                span.icon-bar
+                span.icon-bar
+            a.navbar-brand(href='#index') Drizzle Demo
+        div.navbar-collapse.collapse
+            ul.nav.navbar-nav.navbar-right
+                li
+                    a(href='#') Dashboard
+                li
+                    a(href='#') Settings
+                li
+                    a(href='#') Profile
+                li
+                    a(href='#') Help
+            form.navbar-form.navbar-right
+                input.form-control(type='text' placeholder='Search...')

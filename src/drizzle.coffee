@@ -1,46 +1,50 @@
 ((root, factory) ->
     if typeof define is 'function' and define.amd
-        define ['jquery', 'handlebars'], ($, Handlebars) -> factory root, $, Handlebars
+        define ['handlebars.runtime', 'diff-dom'], (Handlebars, diffDOM) ->
+            factory root, Handlebars['default'], diffDOM
     else if module and module.exports
-        $ = require 'jquery'
-        Handlebars = require 'handlebars'
-        module.exports = factory root, $, Handlebars
+        Handlebars = require 'handlebars.runtime'
+        diffDOM = require 'diff-dom'
+        module.exports = factory root, Handlebars, diffDOM
     else
-        root.Drizzle = factory root, $
-) this, (root, $, Handlebars) ->
+        root.Drizzle = factory root, Handlebars, diffDOM
+) this, (root, Handlebars, diffDOM) ->
 
     D = Drizzle = version: '<%= version %>'
 
-    oldReference = root.Drizzle
     idCounter = 0
+    toString = Object.prototype.toString
+    types = [
+        'Function', 'Object', 'String', 'Array', 'Number'
+        'Boolean', 'Date', 'RegExp', 'Undefined', 'Null'
+    ]
+    compose = (args...) ->
+        args.join('/').replace(/\/{2,}/g, '/').replace(/^\/|\/$/g, '')
 
-    for item in ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null']
-        do (item) -> D["is#{item}"] = (obj) -> Object.prototype.toString.call(obj) is "[object #{item}]"
+    for item in types
+        do (item) -> D["is#{item}"] = (obj) -> toString.call(obj) is "[object #{item}]"
 
     D.extend = (target, mixins...) ->
-        return target unless D.isObject target
+        return target unless target
         target[key] = value for key, value of mixin for mixin in mixins
         target
 
-    D.extend D,
-        uniqueId: (prefix) -> (if prefix then prefix else '') + ++idCounter
-        noConflict: ->
-            root.Drizzle = oldReferrence
-            D
-        joinPath: (paths...) ->
-            path = paths.join('/')
-            s = ''
-            if path.indexOf('http') is 0
-                s = path.slice 0, 7
-                path = path.slice 7
-            path = path.replace(/\/+/g, '/')
-            s + path
+    D.include = (target, mixins...) ->
+        return target unless D.isFunction target
+        target::[key] = value for key, value of mixin for mixin in mixins
+        target
 
-    # @include util/deferred.coffee
+    D.uniqueId = (prefix) -> (if prefix then prefix else '') + ++idCounter
+
+    # @include util/adapter.coffee
+
+    # @include util/promise.coffee
 
     # @include util/event.coffee
 
     # @include util/request.coffee
+
+    # @include util/factory.coffee
 
     # @include core/base.coffee
 

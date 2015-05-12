@@ -1,15 +1,9 @@
 D.Region = class Region extends D.Base
-    @types = {}
-    @register: (name, clazz) -> @types[name] = clazz
-    @create: (type, app, module, el) ->
-        clazz = @types[type] or Region
-        new clazz(app, module, el)
-
-    constructor: (@app, @module, el) ->
+    constructor: (@app, @module, el, @name = 'region') ->
         @el = if el instanceof $ then el else $ el
-        super 'r'
+        super 'R'
 
-        throw new Error "Can not find DOM element: #{el}" if @el.size() is 0
+        @error "Can not find DOM element: #{el}" if @el.size() is 0
 
     getEl: -> @el
 

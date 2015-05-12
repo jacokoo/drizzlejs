@@ -1,6 +1,6 @@
 define
 
-    data: todos: data: []
+    store: todos: data: []
 
     items:
         input: 'input'

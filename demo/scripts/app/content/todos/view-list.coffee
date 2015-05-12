@@ -1,6 +1,6 @@
 define ['jquery'], ($) ->
 
-    bind: todos: 'changed#render'
+    bind: todos: true
 
     events:
         'change chk-*': 'completeIt'
@@ -9,8 +9,8 @@ define ['jquery'], ($) ->
     handlers:
         completeIt: (id, e) ->
             @data.todos.findOne('id', id).completed = $(e.target).is(':checked')
-            @data.todos.trigger 'changed'
+            @data.todos.changed()
 
         removeIt: (id) ->
             data = (item for item in @data.todos.data when item.id isnt id)
-            @data.todos.set(data).trigger 'changed'
+            @data.todos.set(data)

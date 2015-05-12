@@ -47,7 +47,7 @@ recurse = (rootdir, callback, subdir) ->
 exts =
     all: []
     specified: []
-recurse 'src/ext', (..., file) -> exts.all.push "    # @include ext/#{file}"
+# recurse 'src/ext', (..., file) -> exts.all.push "    # @include ext/#{file}"
 
 extSpecified = getArg '--ext'
 if extSpecified and extSpecified isnt true

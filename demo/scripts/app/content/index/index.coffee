@@ -1,6 +1,6 @@
 define
 
-    data:
+    store:
         list: autoLoad: true
 
     items:

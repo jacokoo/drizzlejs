@@ -1,4 +1,4 @@
-defaultOptions =
+DefaultConfigs =
     scriptRoot: 'app'
     urlRoot: ''
     urlSuffix: ''
@@ -17,11 +17,21 @@ defaultOptions =
         template: 'template-'     # seprated template file name prefix
         router: 'router'
 
-    actionPromised: (promise) ->
+    pagination:
+        defaultPageSize: 10
+        pageKey: '_page'
+        pageSizeKey: '_pageSize'
+        recordCountKey: 'recordCount'
+
+    defaultRouter:
+        routes: 'module/*name': 'showModule'
+        showModule: (name) -> @app.show name
+
+    clickDeferred: ->
 
 D.Application = class Application extends D.Base
     constructor: (options = {}) ->
-        opt = D.extend {}, defaultOptions, options
+        opt = D.extend {}, DefaultConfigs, options
         @modules = {}
         @global = {}
         @loaders = {}
@@ -33,7 +43,7 @@ D.Application = class Application extends D.Base
         @registerLoader new D.SimpleLoader(@)
         @registerLoader new D.Loader(@), true
         @registerHelper key, value for key, value of D.Helpers
-        @setRegion new D.Region(@, null, @options.defaultRegion)
+        @setRegion new D.Region(@, null, $(@options.defaultRegion))
 
     registerLoader: (loader, isDefault) ->
         @loaders[loader.name] = loader
@@ -52,23 +62,25 @@ D.Application = class Application extends D.Base
         @region = region
         @regions.unshift @region
 
+    startRoute: (defaultPath, paths...) ->
+        @router = new D.Router(@) unless @router
+
+        @chain @router.mountRoutes(paths...), -> @router.start defaultPath
+
+    navigate: (path, trigger) ->
+        @router.navigate(path, trigger)
+
     load: (names...) ->
-        @Promise.chain (@getLoader(name).loadModule name for name in names)
+        @chain (@getLoader(name).loadModule name for name in names)
 
     show: (name, options) ->
         @region.show name, options
 
     destory: ->
-        @Promise.chain (region.close() for region in @regions)
+        @chain (region.close() for region in @regions)
         @off()
 
-    startRoute: (defaultPath, paths...) ->
-        @router = new D.Router(@) unless @router
-        @Promise.chain @router.mountRoutes(paths...), -> @router.start defaultPath
-
-    navigate: (path, trigger) ->
-        @router.navigate(path, trigger)
-
+    #methods for notification
     message:
         success: (title, content) ->
             alert content or title

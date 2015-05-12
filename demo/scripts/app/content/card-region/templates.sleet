@@ -1,0 +1,17 @@
+layout
+    h1 CardRegion, Extended from MultiRegion
+    div(data-region='operators')
+    div(data-region='content' data-region-type='card')
+view('operators')
+    ul.nav.nav-pills
+        li.active
+            a#show-default(href='javascript:void 0' data-toggle='tab') Item 1
+        li
+            a#show-item2(href='javascript:void 0' data-toggle='tab') Item 2
+        li
+            a#show-item3(href='javascript:void 0' data-toggle='tab') Item 3
+        li
+            a#show-item4(href='javascript:void 0' data-toggle='tab') Item 4
+view('item1') item1
+view('item2') item2
+view('item3') item3

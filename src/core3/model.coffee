@@ -14,7 +14,7 @@ D.Model = class Model extends D.Base
                 recordCountKey: options.recordCountKey or defaults.recordCountKey
 
         super 'd'
-        @module.container.delegateEvent @
+        @app.delegateEvent @
 
     set: (data) ->
         @data = if D.isFunction @options.parse then @options.parse data else data

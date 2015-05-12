@@ -1,6 +1,6 @@
 define
 
-    bind: top: ''
+    bind: top: false
 
     events:
         'click item-*': 'menuItemClicked'

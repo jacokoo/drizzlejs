@@ -1,31 +1,38 @@
 {{#layout}}
-<h1>The Render Flow Of View <a href="javascript:void 0" id="render" data-after-click="defer" class="btn btn-sm btn-info">Start Render</a></h1>
-
-<div class="row">
-  <div class="col-md-6" data-region="demo"> </div>
-  <div class="col-md-6" data-region="log"> </div>
-</div>
+    <h1>The Render Flow Of View
+        <a id="render" class="btn btn-sm btn-info" href="javascript:void 0" data-after-click="defer">Start Render</a>
+    </h1>
+    <div class="row">
+        <div class="col-md-6" data-region="demo"></div>
+        <div class="col-md-6" data-region="log"></div>
+    </div>
 {{/layout}}
-
 {{#view "demo"}}
-<h4>The template of this view is renderred and appended to region.</h4>
-<p>Data from logs:</p>
-<div class="well">
-  <ul>
-    {{#each logs}}
-    <li>{{index}}&nbsp; - &nbsp; {{message}}</li>
-    {{/each}}
-  </ul>
-</div>
+    <h4>The template of this view is renderred and appended to region.</h4>
+    <p>Data from logs:</p>
+    <div class="well">
+        <ul>
+            {{#each logs}}
+                <li>
+                    {{index}}
+                    &nbsp; - &nbsp;
+                    {{message}}
+                </li>
+            {{/each}}
+        </ul>
+    </div>
 {{/view}}
-
 {{#view "log"}}
-<h4>Logs</h4>
-<div class="well">
-  <ul>
-    {{#each logs}}
-    <li>{{index}}&nbsp; - &nbsp; {{message}}</li>
-    {{/each}}
-  </ul>
-</div>
+    <h4>Logs</h4>
+    <div class="well">
+        <ul>
+            {{#each logs}}
+                <li>
+                    {{index}}
+                    &nbsp; - &nbsp;
+                    {{message}}
+                </li>
+            {{/each}}
+        </ul>
+    </div>
 {{/view}}

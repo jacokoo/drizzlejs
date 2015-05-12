@@ -1,13 +1,16 @@
 define
 
-    bind: todos: 'changed#render'
+    bind: todos: true
 
-    adjustData: (data) ->
-        data.total = data.todos.length
-        data.completed = 0
-        data.completed++ for item in data.todos when item.completed is true
-        data.left = data.total - data.completed
-        data
+    dataForTemplate:
+        info: (data) ->
+            todos = data.todos or []
+            completed = 0
+            completed++ for item in todos or [] when item.completed is true
+
+            total: todos.length
+            completed: completed
+            left: todos.length - completed
 
     events:
         'click remove': 'removeCompleted'

@@ -1,23 +1,26 @@
-Drizzle.Base = class Base
-    @include: (mixins...) ->
-        @::[key] = value for key, value of mixin for mixin in mixins
-        @
-
-    @include Drizzle.Deferred
-
-    constructor: (idPrefix) ->
-        @id = Drizzle.uniqueId(idPrefix)
+D.Base = class Base
+    constructor: (idPrefix, @options = {}) ->
+        @id = D.uniqueId(idPrefix)
+        @Promise = new D.Promise @
         @initialize()
 
     initialize: ->
 
-    getOptionResult: (value) -> if D.isFunction value then value.apply @ else value
+    getOptionValue: (key) ->
+        value = @options[key]
+        if D.isFunction value then value.apply @ else value
+
+    error: (message) ->
+        throw message unless D.isString message
+        msg = if @module then "[#{@module.name}:" else '['
+        msg += "#{@name}] #{message}"
+        throw new Error msg
 
     extend: (mixins) ->
         return unless mixins
 
         doExtend = (key, value) =>
-            if Drizzle.isFunction value
+            if D.isFunction value
                 old = @[key]
                 @[key] = (args...) ->
                     args.unshift old if old

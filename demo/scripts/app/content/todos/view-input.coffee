@@ -1,6 +1,6 @@
 define ['jquery', 'drizzle'], ($, D) ->
 
-    bind: todos: ''
+    bind: todos: false
 
     events:
         'keypress input': 'addItem'
@@ -9,7 +9,7 @@ define ['jquery', 'drizzle'], ($, D) ->
         addItem: (e) ->
             return unless e.keyCode is 13
             t = @$ 'input'
-            text = t.val()
+            text = t.value
             return unless text
-            @data.todos.append(id: D.uniqueId('todo'), text: text).trigger 'changed'
-            t.val ''
+            @data.todos.append(id: D.uniqueId('todo'), text: text)
+            t.value = ''

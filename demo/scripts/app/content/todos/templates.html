@@ -1,36 +1,58 @@
 {{#layout}}
-<div class="row">
-  <div class="col-md-6 col-md-offset-3">
-    <h1 class="text-center"> Todos By Drizzlejs </h1> <hr/>
-    <div class="row"> <div data-region="input" class="col-md-12"> </div></div> <br/>
-    <div class="row"> <div data-region="list" class="col-md-12"> </div></div> <br/>
-    <div class="row"> <div data-region="status" class="col-md-12"> </div></div> <br/>
-  </div>
-</div>
-{{/layout}}
-
-{{#view "input"}}
-<input id="input" class="form-control"/>
-{{/view}}
-
-{{#view "list"}}
-<div class="list-group">
-  {{#each todos}}
-  <a href="javascript:void 0" class="list-group-item">
-    <div class="checkbox">
-      <label> <input id="chk-{{id}}" type="checkbox" value="" {{#if completed}}checked{{/if}}>
-        {{#if completed}} <del>{{text}}</del> {{else}} {{text}} {{/if}}
-      </label>
-      <span id="rm-{{id}}" class="glyphicon glyphicon-remove pull-right"></span>
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <h1 class="text-center">Todos By Drizzlejs</h1>
+            <hr/>
+            <div class="row">
+                <div class="col-md-12" data-region="input"></div>
+            </div>
+            <br/>
+            <div class="row">
+                <div class="col-md-12" data-region="list"></div>
+            </div>
+            <br/>
+            <div class="row">
+                <div class="col-md-12" data-region="status"></div>
+            </div>
+            <br/>
+        </div>
     </div>
-  </a>
-  {{/each}}
-</div>
+{{/layout}}
+{{#view "input"}}
+    <input id="input" class="form-control"/>
 {{/view}}
-
+{{#view "list"}}
+    <div class="list-group">
+        {{#each todos}}
+            <a class="list-group-item" href="javascript:void 0">
+                <div class="checkbox">
+                    <label>
+                        <input {{#if completed}} checked="true"{{/if}} id="chk-{{id}}" type="checkbox" value="value"/>
+                        {{#if completed}}
+                            <del>
+                                {{text}}
+                            </del>
+                            {{else}}
+                            {{text}}
+                        {{/if}}
+                    </label>
+                    <span class="glyphicon glyphicon-remove pull-right" id="rm-{{id}}"></span>
+                </div>
+            </a>
+        {{/each}}
+    </div>
+{{/view}}
 {{#view "status"}}
-<div class="well">
-  <span>{{left}} left / {{total}} in total</span>
-  <a id="remove" class="pull-right" style="cursor: pointer;">clear completed ({{completed}})</a>
-</div>
+    <div class="well">
+        <span>
+            {{info.left}}
+            left /
+            {{info.total}}
+            in total
+        </span>
+        <a id="remove" class="pull-right" style="cursor: pointer;">clear completed (
+            {{info.completed}}
+            )
+        </a>
+    </div>
 {{/view}}

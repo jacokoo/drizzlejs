@@ -1,25 +1,44 @@
 {{#layout}}
-<ul class="nav nav-sidebar" data-region="top"></ul>
-<ul class="nav nav-sidebar" data-region="middle"></ul>
-<ul class="nav nav-sidebar" data-region="bottom"></ul>
+    <ul class="nav nav-sidebar" data-region="top"></ul>
+    <ul class="nav nav-sidebar" data-region="middle"></ul>
+    <ul class="nav nav-sidebar" data-region="bottom"></ul>
 {{/layout}}
 
 {{#view "top"}}
-{{#each top}}
-<li {{#if active}} class="active" {{/if}}><a id="item-{{id}}" href="{{url}}">{{name}}</a></li>
-{{/each}}
+    {{#each top}}
+        <li class="{{#if active}}active{{/if}}">
+            <a id="item-{{id}}" href="{{url}}">
+                {{name}}
+            </a>
+        </li>
+    {{/each}}
 {{/view}}
 
 {{#view "middle"}}
-<li><a href="">Nav item</a></li>
-<li><a href="">Nav item again</a></li>
-<li><a href="">One more nav</a></li>
-<li><a href="">Another nav item</a></li>
-<li><a href="">More navigation</a></li>
+    <li>
+        <a href="href">Nav item</a>
+    </li>
+    <li>
+        <a href="href">Nav item again</a>
+    </li>
+    <li>
+        <a href="href">One more nav</a>
+    </li>
+    <li>
+        <a href="href">Another nav item</a>
+    </li>
+    <li>
+        <a href="href">More navigation</a>
+    </li>
 {{/view}}
-
 {{#view "bottom"}}
-<li><a href="">Nav item again</a></li>
-<li><a href="">One more nav</a></li>
-<li><a href="">Another nav item</a></li>
+    <li>
+        <a href="href">Nav item again</a>
+    </li>
+    <li>
+        <a href="href">One more nav</a>
+    </li>
+    <li>
+        <a href="href">Another nav item</a>
+    </li>
 {{/view}}

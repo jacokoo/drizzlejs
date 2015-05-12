@@ -1,8 +1,6 @@
 (function() {
     'use strict';
-    var define, flat, modules, require;
-
-    modules = {};
+    var define, flat, modules = {}, require, toString = Object.prototype.toString.call;
 
     flat = function(name, ctx) {
         var n, names, paths;
@@ -23,11 +21,11 @@
 
     define = function(name, deps, obj) {
         var a;
-        if (Object.prototype.toString.call(deps) !== '[object Array]') {
+        if (toString(deps) !== '[object Array]') {
             obj = deps;
             deps = [];
         }
-        if (Object.prototype.toString.call(obj) !== '[object Function]') {
+        if (toString(obj) !== '[object Function]') {
             a = obj;
             obj = function() {
                 return a;
@@ -42,7 +40,7 @@
     require = function(deps, obj, ctx) {
         var array, ms, name, o, i;
         array = true;
-        if (Object.prototype.toString.call(deps) === '[object String]') {
+        if (toString(deps) === '[object String]') {
             deps = [deps];
             array = false;
         }
@@ -62,6 +60,7 @@
         for (i = 0; i < deps.length; i ++) {
             name = flat(deps[i], ctx);
             o = modules[name];
+            if (!o) throw new Error('Module [' + o + '] is not defined')
             if (o.inited) {
                 ms.push(o.result);
             } else {

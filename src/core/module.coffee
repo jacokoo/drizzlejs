@@ -1,158 +1,119 @@
-class ModuleContainer extends D.Base
-    @include D.Event
-
-    constructor: ->
-        @modules = {}
-        super
-
-    checkId: (id) ->
-        throw new Error "id: #{id} is invalid" unless id and D.isString id
-        throw new Error "id: #{id} is already used" if @modules[id]
-
-    get: (id) ->
-        @modules[id]
-
-    changeId: (from, to) ->
-        return if from is to
-        @checkId to
-
-        module = @modules[from]
-        throw new Error "module id: #{from} not exists" if not module
-        delete @modules[from]
-        module.id = to
-        @modules[to] = module
-
-    add: (module) ->
-        @checkId module.id
-        @modules[module.id] = module
-
-    remove: (id) ->
-        delete @modules[id]
-
 class Layout extends D.View
     initialize: ->
         @isLayout = true
-        @loadDeferred = @chain [@loadTemplate(), @loadHandlers()]
-        delete @bindData
-
-    setRegion: ->
-        super
-        @regionInfo = @module.regionInfo
+        @loadedPromise = @loadTemplate()
 
 D.Module = class Module extends D.Base
-    @Container = ModuleContainer
     @Layout = Layout
-    constructor: (@name, @app, @loader, @options = {}) ->
-        [..., @baseName] = @name.split '/'
-        @container = @options.container or @app.modules
-        @separatedTemplate = @options.separatedTemplate is true
+    constructor: (@name, @app, @loader, options = {}) ->
+        @separatedTemplate = options.separatedTemplate is true
         @regions = {}
-        super 'm'
-        @container.add @
-        @container.delegateEvent @
+        super 'M', options
+        @app.modules[@id] = @
+        @app.delegateEvent @
 
     initialize: ->
         @extend @options.extend if @options.extend
-        @loadDeferred = @createDeferred()
-        @chain [@loadTemplate(), @loadLayout(), @loadData(), @loadItems()], -> @loadDeferred.resolve()
+        @loadedPromise = @Promise.chain [@loadTemplate(), @loadItems()]
+
+        @initLayout()
+        @initStore()
+
+    initLayout: ->
+        layout = @getOptionValue('layout') or {}
+        @layout = new Layout('layout', @, @loader, layout)
+
+    initStore: ->
+        @store = {}
+        @autoLoadBeforeRender = []
+        @autoLoadAfterRender = []
+        doItem = (name, value) =>
+            value = value.call @ if D.isFunction value
+            if value and value.autoLoad
+                (if value.autoLoad is true then @autoLoadBeforeRender else @autoLoadAfterRender).push name
+            @store[name] = new D.Model @app, @, value
+
+        doItem key, value for key, value of @getOptionValue('store') or {}
 
     loadTemplate: ->
         return if @separatedTemplate
-        @chain @loader.loadTemplate(@), (template) -> @template = template
-
-    loadLayout: ->
-        layout = @getOptionResult @options.layout
-        name = if D.isString layout then layout else layout?.name
-        name or= 'layout'
-        @chain @app.getLoader(name).loadLayout(@, name, layout), (obj) =>
-            @layout = obj
-
-    loadData: ->
-        @data = {}
-        promises = []
-        items = @getOptionResult(@options.data) or {}
-        @autoLoadDuringRender = []
-        @autoLoadAfterRender = []
-
-        doLoad = (id, value) =>
-            name = D.Loader.analyse(id).name
-            value = @getOptionResult value
-            if value
-                if value.autoLoad is 'after' or value.autoLoad is 'afterRender'
-                    @autoLoadAfterRender.push name
-                else if value.autoLoad
-                    @autoLoadDuringRender.push name
-            promises.push @chain @app.getLoader(id).loadModel(value, @), (d) -> @data[name] = d
-
-        doLoad id, value for id, value of items
-
-        @chain promises
+        @Promise.chain @loader.loadTemplate(@), (template) -> @template = template
 
     loadItems: ->
         @items = {}
-        @inRegionItems = []
+        @inRegionItems = {}
 
-        promises = []
-        items = @getOptionResult(@options.items) or []
-        doLoad = (name, item) =>
-            item = @getOptionResult item
-            item = region: item if item and D.isString item
-            isModule = item.isModule
+        doItem = (name, options) =>
+            options = options.call @ if D.isFunction options
+            options = region: options if D.isString options
+            method = if options.isModule then 'loadModule' else 'loadView'
+            @Promise.chain @app.getLoader(name)[method](name, @, options), (obj) ->
+                obj.moduleOptions = options
+                @items[name] = obj
+                @inRegionItems[name] = obj if options.region
 
-            p = @chain @app.getLoader(name)[if isModule then 'loadModule' else 'loadView'](name, @, item), (obj) =>
-                @items[obj.name] = obj
-                obj.regionInfo = item
-                @inRegionItems.push obj if item.region
-            promises.push p
+        @Promise.chain (doItem key, value for key, value of @getOptionValue('items') or {})
 
-        doLoad name, item for name, item of items
+    setRegion: (@region) ->
+        @Promise.chain(
+            -> @layout.setRegion @region
+            -> @layout.render()
+            @initRegions
+        )
 
-        @chain promises
-
-    addRegion: (name, el) ->
-        type = el.data 'region-type'
-        @regions[name] = Region.create type, @app, @, el
-
-    removeRegion: (name) ->
-        delete @regions[name]
+    close: ->
+        @Promise.chain(
+            -> @options.beforeClose?.call @
+            @beforeClose
+            -> @layout.close()
+            @closeRegions
+            @afterClose
+            -> @options.afterClose?.call @
+            -> delete @app.modules[@id]
+            @
+        )
 
     render: (options = {}) ->
-        throw new Error 'No region to render in' unless @region
+        @error 'No region' unless @region
         @renderOptions = options
-        @container.changeId @id, options.id if options.id
 
-        @chain(
-            @loadDeferred
-            -> @options.beforeRender?.apply @
-            -> @layout.setRegion @region
-            @fetchDataDuringRender
-            -> @layout.render()
-            -> @options.afterLayoutRender?.apply @
-            ->
-                defers = for value in @inRegionItems
-                    key = value.regionInfo.region
-                    region = @regions[key]
-                    throw new Error "Can not find region: #{key}" unless region
-                    region.show value
-                $.when defers...
-            -> @options.afterRender?.apply @
+        @Promise.chain(
+            @loadedPromise
+            -> @options.beforeRender?.call @
+            @beforeRender
+            @fetchDataBeforeRender
+            @renderItems
+            @afterRender
+            -> @options.afterRender?.call @
             @fetchDataAfterRender
             @
         )
 
-    setRegion: (@region) ->
+    closeRegions: ->
+        regions = @regions
+        delete @regions
+        (value.close() for key, value of regions or {})
 
-    close: -> @chain(
-        -> @options.beforeClose?.apply @
-        -> @layout.close()
-        -> value.close() for key, value of @regions
-        -> @options.afterClose?.apply @
-        -> @container.remove @id
-        @
-    )
+    initRegions: ->
+        @closeRegions() if @regions
+        @regions = {}
+        for item in @layout.$$('[data-region]')
+            id = item.getAttribute 'data-region'
+            type = item.getAttribute 'region-type'
+            @regions[id] = D.Region.create type, @app, @, item, id
 
-    fetchDataDuringRender: ->
-        @chain (@data[id].get?() for id in @autoLoadDuringRender)
+    renderItems: ->
+        for key, value of @inRegionItems
+            @error "Region:#{key} is not defined" unless @regions[key]
+            @regions[key].show value
+
+    fetchDataBeforeRender: ->
+        @Promise.chain (D.Request.get @store[name] for name in @autoLoadBeforeRender)
 
     fetchDataAfterRender: ->
-        @chain (@data[id].get?() for id in @autoLoadAfterRender)
+        @Promise.chain (D.Request.get @store[name] for name in @autoLoadAfterRender)
+
+    beforeRender: ->
+    afterRender: ->
+    beforeClose: ->
+    afterClose: ->

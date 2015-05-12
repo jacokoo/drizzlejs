@@ -1,38 +1,37 @@
 D.View = class View extends Base
     @ComponentManager =
         handlers: {}
-        register: (name, creator, destructor = ( -> ), initializer = ( -> )) ->
-            @handlers[name] =
-                creator: creator, destructor: destructor, initializer: initializer, initialized: false
+        componentCache: {}
+        createDefaultHandler: (name) ->
+            creator: (view, el, options) -> el[name] options
+            destructor: (view, component, options) -> component[name] 'destroy'
+        register: (name, creator, destructor = ( -> )) ->
+            @handlers[name] = creator: creator, destructor: destructor
 
         create: (view, options = {}) ->
-            {id, name, selector} = options
-            opt = options.options
-            throw new Error 'Component name can not be null' unless name
-            throw new Error 'Component id can not be null' unless id
+            {id, name, selector, options: opt} = options
+            view.error 'Component name can not be null' unless name
+            view.error 'No component handler for name:' + name unless @handlers[name] or el[name]
 
-            dom = if selector then view.$$(selector) else if id then view.$(id) else view.getEl()
-            handler = @handlers[name] or creator: (view, el, options) ->
-                throw new Error "No component handler for name: #{name}" unless el[name]
-                el[name] options
-            , destructor: (view, component, info) ->
-                component[name] 'destroy'
-            , initialized: true
+            handler = @handlers[name] or createDefaultHandler(name)
+            dom = if selector then view.$$(selector) else view.$(id)
+            dom = view.getEl() if dom.size() is 0 and not selector
+            id = D.uniqueId() unless id
 
-            obj = if not handler.initialized and handler.initializer then handler.initializer() else null
-            handler.initialized = true
-            view.chain obj, handler.creator(view, dom, opt), (comp) ->
-                id: id, component: comp, info:
-                    destructor: handler.destructor, options: opt
+            view.Promise.chain handler.creator(view, dom, opt), (comp) ->
+                componentCache[view.id + id] = handler: handler, id: id, options: opt
+                id: id, component: comp
 
-        destroy: (view, component, info) ->
-            info.destructor?(view, component, info.options)
+        destroy: (id, view, component) ->
+            info = @componentCache[view.id + id]
+            delete @componentCache[view.id + id]
+            info.handler.destructor?(view, component, info.options)
 
     constructor: (@name, @module, @loader, @options = {}) ->
         @app = @module.app
         @eventHandlers = {}
         super 'v'
-        @module.container.delegateEvent @
+        @app.delegateEvent @
 
     initialize: ->
         @extend @options.extend if @options.extend
@@ -109,7 +108,7 @@ D.View = class View extends Base
             throw new Error 'The value defined in events must be a string' unless D.isString value
             [name, id] = key.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
             if id
-                selector = if id.charAt(id.length - 1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
+                selector = if id.slice(-1) is '*' then "[id^=#{id = @wrapDomId id.slice(0, -1)}]" else "##{id = @wrapDomId id}"
             handler = @createHandler name, id, selector, value
             @region.delegateEvent @, name, selector, handler
 
@@ -140,11 +139,11 @@ D.View = class View extends Base
         if @region then @region.getEl @ else null
 
     $: (id) ->
-        throw new Error "Region is null" unless @region
+        @error 'Region is null' unless @region
         @region.$$ '#' + @wrapDomId id
 
     $$: (selector) ->
-        throw new Error "Region is null" unless @region
+        @error 'Region is null' unless @region
         @getEl().find selector
 
     close: ->
@@ -164,7 +163,7 @@ D.View = class View extends Base
         )
 
     render: (options = {}) ->
-        throw new Error 'No region to render in' unless @region
+        @error 'Region is null' unless @region
         @renderOptions = options
 
         @chain(
@@ -186,14 +185,6 @@ D.View = class View extends Base
 
     beforeRender: ->
 
-    destroyComponents: ->
-        components = @components or {}
-        for key, value of components
-            View.ComponentManager.destroy @, value, @componentInfos[key]
-
-        @components = {}
-        @componentInfos = {}
-
     serializeData: ->
         data = {}
         data[key] = value.toJSON() for key, value of @data
@@ -211,7 +202,7 @@ D.View = class View extends Base
         @$$('[id]').each (i, el) =>
             el = $ el
             id = el.attr 'id'
-            throw new Error "The id:#{id} is used more than once." if used[id]
+            @error "The id:#{id} is used more than once." if used[id]
             used[id] = true
             el.attr 'id', @wrapDomId id
 
@@ -226,15 +217,16 @@ D.View = class View extends Base
                     el.attr attr, @wrapDomId value
 
     renderComponent: ->
-        components = @getOptionResult(@options.components) or []
+        components = @getOptionValue('components') or []
         promises = for component in components
-            component = @getOptionResult component
+            component = component.apply @ if D.isFunction component
             View.ComponentManager.create @, component if component
         @chain promises, (comps) =>
-            for comp in comps when comp
-                id = comp.id
-                @components[id] = comp.component
-                @componentInfos[id] = comp.info
+            @components[id] = component for {id, component} in comps when comp
+
+    destroyComponents: ->
+        View.ComponentManager.destroy key, @, value for key, value of @components or {}
+        @components = {}
 
     exportRegions: ->
         @exportedRegions = {}

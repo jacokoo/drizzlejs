@@ -15,7 +15,7 @@ D.Request =
         urls.push model.data.id if model.data.id
         if options.urlSuffix
             urls.push urls.pop() + options.urlSuffix
-        D.joinPath urls...
+        compose urls...
 
     get: (model, options) -> @ajax type: 'GET', model, model.getParams(), options
     post: (model, options) -> @ajax type: 'POST', model, model.data, options
@@ -31,6 +31,6 @@ D.Request =
         data = D.extend data, options.data
         params.url = url
         params.data = data
-        model.chain $.ajax(params), ([resp, status, xhr]) ->
+        model.Promise.chain A.ajax(params), (resp) ->
             model.set resp
-            xhr
+            model
