@@ -15,7 +15,7 @@ D.View = class View extends Base
 
             handler = @handlers[name] or createDefaultHandler(name)
             dom = if selector then view.$$(selector) else view.$(id)
-            dom = view.getEl() if dom.size() is 0 and not selector
+            dom = view.getEl() if not dom and dom.length is 0 and not selector
             id = D.uniqueId() unless id
 
             view.Promise.chain handler.creator(view, dom, opt), (comp) ->
@@ -68,7 +68,7 @@ D.View = class View extends Base
     $$: (selector) -> @region.$$ selector
 
     setRegion: (@region) ->
-        @virtualEl = @getEl(@).cloneNode()
+        @virtualEl = @getEl().cloneNode()
         @bindEvents()
 
     close: ->
