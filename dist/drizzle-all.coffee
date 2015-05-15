@@ -332,15 +332,15 @@
             @data = @options.data or {}
             @params = {}
 
-            if options.pageable
+            if @options.pageable
                 defaults = @app.options.pagination
                 p = @pagination =
-                    page: options.page or 1
+                    page: @options.page or 1
                     pageCount: 0
-                    pageSize: options.pageSize or defaults.defaultPageSize
-                    pageKey: options.pageKey or defaults.pageKey
-                    pageSizeKey: options.pageSizeKey or defaults.pageSizeKey
-                    recordCountKey: options.recordCountKey or defaults.recordCountKey
+                    pageSize: @options.pageSize or defaults.defaultPageSize
+                    pageKey: @options.pageKey or defaults.pageKey
+                    pageSizeKey: @options.pageSizeKey or defaults.pageSizeKey
+                    recordCountKey: @options.recordCountKey or defaults.recordCountKey
 
             super 'd'
             @module.container.delegateEvent @
@@ -1030,7 +1030,7 @@
             '(.*)'
         ]
         constructor: (@app, @router, @path, @fn) ->
-            pattern = path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
+            pattern = @path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
             @pattern = new RegExp "^#{pattern}$", if @app.options.caseSensitiveHash then 'g' else 'gi'
 
         match: (hash) ->

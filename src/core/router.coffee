@@ -8,7 +8,7 @@ class Route
         '(.*)'
     ]
     constructor: (@app, @router, @path, @fn) ->
-        pattern = path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
+        pattern = @path.replace(@regExps[0], @regExps[1]).replace(@regExps[2], @regExps[3])
         @pattern = new RegExp "^#{pattern}$", if @app.options.caseSensitiveHash then 'g' else 'gi'
 
     match: (hash) ->

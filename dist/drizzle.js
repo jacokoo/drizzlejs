@@ -5,10 +5,10 @@
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
  */
-var __slice = [].slice,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+var slice = [].slice,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 (function(root, factory) {
   var $, Handlebars;
@@ -24,30 +24,30 @@ var __slice = [].slice,
     return root.Drizzle = factory(root, $);
   }
 })(this, function(root, $, Handlebars) {
-  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, idCounter, item, oldReference, pushStateSupported, _fn, _fn1, _i, _j, _len, _len1, _ref, _ref1;
+  var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, fn1, fn2, idCounter, item, j, k, len, len1, oldReference, pushStateSupported, ref, ref1;
   D = Drizzle = {
     version: '0.2.8'
   };
   oldReference = root.Drizzle;
   idCounter = 0;
-  _ref = ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null'];
-  _fn = function(item) {
+  ref = ['Function', 'Object', 'String', 'Array', 'Number', 'Boolean', 'Date', 'RegExp', 'Undefined', 'Null'];
+  fn1 = function(item) {
     return D["is" + item] = function(obj) {
       return Object.prototype.toString.call(obj) === ("[object " + item + "]");
     };
   };
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    item = _ref[_i];
-    _fn(item);
+  for (j = 0, len = ref.length; j < len; j++) {
+    item = ref[j];
+    fn1(item);
   }
   D.extend = function() {
-    var key, mixin, mixins, target, value, _j, _len1;
-    target = arguments[0], mixins = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    var k, key, len1, mixin, mixins, target, value;
+    target = arguments[0], mixins = 2 <= arguments.length ? slice.call(arguments, 1) : [];
     if (!D.isObject(target)) {
       return target;
     }
-    for (_j = 0, _len1 = mixins.length; _j < _len1; _j++) {
-      mixin = mixins[_j];
+    for (k = 0, len1 = mixins.length; k < len1; k++) {
+      mixin = mixins[k];
       for (key in mixin) {
         value = mixin[key];
         target[key] = value;
@@ -65,7 +65,7 @@ var __slice = [].slice,
     },
     joinPath: function() {
       var path, paths, s;
-      paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      paths = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       path = paths.join('/');
       s = '';
       if (path.indexOf('http') === 0) {
@@ -84,21 +84,21 @@ var __slice = [].slice,
     },
     createRejectedDeferred: function() {
       var args, d;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       d = this.createDeferred();
       d.reject.apply(d, args);
       return d;
     },
     createResolvedDeferred: function() {
       var args, d;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       d = this.createDeferred();
       d.resolve.apply(d, args);
       return d;
     },
     deferred: function() {
       var args, fn, obj;
-      fn = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      fn = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       if (D.isFunction(fn)) {
         fn = fn.apply(this, args);
       }
@@ -111,7 +111,7 @@ var __slice = [].slice,
     },
     chain: function() {
       var doItem, gots, obj, rings;
-      rings = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      rings = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       obj = this.createDeferred();
       if (rings.length === 0) {
         obj.resolve();
@@ -128,20 +128,20 @@ var __slice = [].slice,
             return gots.push(data);
           };
           return (D.isArray(item) ? (promises = (function() {
-            var _j, _len1, _results;
-            _results = [];
-            for (_j = 0, _len1 = item.length; _j < _len1; _j++) {
-              inArray = item[_j];
+            var k, len1, results;
+            results = [];
+            for (k = 0, len1 = item.length; k < len1; k++) {
+              inArray = item[k];
               args = [inArray];
               if (i > 0) {
                 args.push(gots[i - 1]);
               }
-              _results.push(this.deferred.apply(this, args));
+              results.push(this.deferred.apply(this, args));
             }
-            return _results;
+            return results;
           }).call(_this), $.when.apply($, promises)) : (args = [item], i > 0 ? args.push(gots[i - 1]) : void 0, _this.deferred.apply(_this, args))).done(function() {
             var data;
-            data = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            data = 1 <= arguments.length ? slice.call(arguments, 0) : [];
             gotResult(data);
             if (rings.length === 0) {
               return obj.resolve(gots[gots.length - 1]);
@@ -150,7 +150,7 @@ var __slice = [].slice,
             }
           }).fail(function() {
             var data;
-            data = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            data = 1 <= arguments.length ? slice.call(arguments, 0) : [];
             gotResult(data);
             return obj.reject.apply(obj, gots);
           });
@@ -162,9 +162,9 @@ var __slice = [].slice,
   };
   D.Event = {
     on: function(name, callback, context) {
-      var _base;
+      var base1;
       this.registeredEvents || (this.registeredEvents = {});
-      ((_base = this.registeredEvents)[name] || (_base[name] = [])).push({
+      ((base1 = this.registeredEvents)[name] || (base1[name] = [])).push({
         fn: callback,
         context: context
       });
@@ -176,15 +176,15 @@ var __slice = [].slice,
         return this;
       }
       this.registeredEvents[name] = (function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
-          item = events[_j];
+        var k, len1, results;
+        results = [];
+        for (k = 0, len1 = events.length; k < len1; k++) {
+          item = events[k];
           if (item.fn !== callback || (context && context !== item.context)) {
-            _results.push(item);
+            results.push(item);
           }
         }
-        return _results;
+        return results;
       })();
       if (this.registeredEvents[name].length === 0) {
         delete this.registeredEvents[name];
@@ -192,13 +192,13 @@ var __slice = [].slice,
       return this;
     },
     trigger: function() {
-      var args, events, name, _j, _len1;
-      name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      var args, events, k, len1, name;
+      name = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       if (!(this.registeredEvents && (events = this.registeredEvents[name]))) {
         return this;
       }
-      for (_j = 0, _len1 = events.length; _j < _len1; _j++) {
-        item = events[_j];
+      for (k = 0, len1 = events.length; k < len1; k++) {
+        item = events[k];
         item.fn.apply(item.context, args);
       }
       return this;
@@ -207,16 +207,16 @@ var __slice = [].slice,
       return D.extend(target, {
         on: (function(_this) {
           return function(name, callback, context) {
-            target.listenTo(_this, "" + name + "." + target.id, callback, context);
+            target.listenTo(_this, name + "." + target.id, callback, context);
             return target;
           };
         })(this),
         off: (function(_this) {
           return function() {
             var args;
-            args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+            args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
             if (args.length > 0) {
-              args.unshift("" + (args.shift()) + "." + target.id);
+              args.unshift((args.shift()) + "." + target.id);
             }
             args.unshift(_this);
             target.stopListening.apply(target, args);
@@ -226,17 +226,17 @@ var __slice = [].slice,
         trigger: (function(_this) {
           return function() {
             var args, name;
-            name = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
-            args.unshift("" + name + "." + target.id);
+            name = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+            args.unshift(name + "." + target.id);
             _this.trigger.apply(_this, args);
             return target;
           };
         })(this),
         listenTo: function(obj, name, callback, context) {
-          var ctx, _base;
+          var base1, ctx;
           ctx = context || this;
           this.registeredListeners || (this.registeredListeners = {});
-          ((_base = this.registeredListeners)[name] || (_base[name] = [])).push({
+          ((base1 = this.registeredListeners)[name] || (base1[name] = [])).push({
             fn: callback,
             obj: obj,
             context: ctx
@@ -245,31 +245,31 @@ var __slice = [].slice,
           return this;
         },
         stopListening: function(obj, name, callback) {
-          var key, value, _j, _k, _len1, _len2, _ref1, _ref2;
+          var k, key, l, len1, len2, ref1, ref2, value;
           if (!this.registeredListeners) {
             return this;
           }
           if (!obj) {
-            _ref1 = this.registeredListeners;
-            for (key in _ref1) {
-              value = _ref1[key];
-              for (_j = 0, _len1 = value.length; _j < _len1; _j++) {
-                item = value[_j];
+            ref1 = this.registeredListeners;
+            for (key in ref1) {
+              value = ref1[key];
+              for (k = 0, len1 = value.length; k < len1; k++) {
+                item = value[k];
                 item.obj.off(key, item.fn, this);
               }
             }
             this.registeredListeners = {};
             return this;
           }
-          _ref2 = this.registeredListeners;
-          for (key in _ref2) {
-            value = _ref2[key];
+          ref2 = this.registeredListeners;
+          for (key in ref2) {
+            value = ref2[key];
             if (name && name !== key) {
               continue;
             }
             this.registeredListeners[key] = [];
-            for (_k = 0, _len2 = value.length; _k < _len2; _k++) {
-              item = value[_k];
+            for (l = 0, len2 = value.length; l < len2; l++) {
+              item = value[l];
               if (item.obj !== obj || (callback && callback !== item.fn)) {
                 this.registeredListeners[key].push(item);
               } else {
@@ -352,9 +352,9 @@ var __slice = [].slice,
       data = D.extend(data, options.data);
       params.url = url;
       params.data = data;
-      return model.chain($.ajax(params), function(_arg) {
+      return model.chain($.ajax(params), function(arg) {
         var resp, status, xhr;
-        resp = _arg[0], status = _arg[1], xhr = _arg[2];
+        resp = arg[0], status = arg[1], xhr = arg[2];
         model.set(resp);
         return xhr;
       });
@@ -362,10 +362,10 @@ var __slice = [].slice,
   };
   Drizzle.Base = Base = (function() {
     Base.include = function() {
-      var key, mixin, mixins, value, _j, _len1;
-      mixins = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      for (_j = 0, _len1 = mixins.length; _j < _len1; _j++) {
-        mixin = mixins[_j];
+      var k, key, len1, mixin, mixins, value;
+      mixins = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      for (k = 0, len1 = mixins.length; k < len1; k++) {
+        mixin = mixins[k];
         for (key in mixin) {
           value = mixin[key];
           this.prototype[key] = value;
@@ -392,7 +392,7 @@ var __slice = [].slice,
     };
 
     Base.prototype.extend = function(mixins) {
-      var doExtend, key, value, _results;
+      var doExtend, key, results, value;
       if (!mixins) {
         return;
       }
@@ -403,7 +403,7 @@ var __slice = [].slice,
             old = _this[key];
             return _this[key] = function() {
               var args;
-              args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+              args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
               if (old) {
                 args.unshift(old);
               }
@@ -416,12 +416,12 @@ var __slice = [].slice,
           }
         };
       })(this);
-      _results = [];
+      results = [];
       for (key in mixins) {
         value = mixins[key];
-        _results.push(doExtend(key, value));
+        results.push(doExtend(key, value));
       }
-      return _results;
+      return results;
     };
 
     return Base;
@@ -461,8 +461,8 @@ var __slice = [].slice,
     },
     clickDeferred: function() {}
   };
-  D.Application = Application = (function(_super) {
-    __extends(Application, _super);
+  D.Application = Application = (function(superClass) {
+    extend(Application, superClass);
 
     function Application(options) {
       if (options == null) {
@@ -478,12 +478,12 @@ var __slice = [].slice,
     }
 
     Application.prototype.initialize = function() {
-      var key, value, _ref1;
+      var key, ref1, value;
       this.registerLoader(new D.SimpleLoader(this));
       this.registerLoader(new D.Loader(this), true);
-      _ref1 = D.Helpers;
-      for (key in _ref1) {
-        value = _ref1[key];
+      ref1 = D.Helpers;
+      for (key in ref1) {
+        value = ref1[key];
         this.registerHelper(key, value);
       }
       return this.setRegion(new D.Region(this, null, $(document.body)));
@@ -501,7 +501,7 @@ var __slice = [].slice,
       app = this;
       return Handlebars.registerHelper(name, function() {
         var args;
-        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
         return fn.apply(this, [app, Handlebars].concat(args));
       });
     };
@@ -522,12 +522,12 @@ var __slice = [].slice,
     };
 
     Application.prototype.startRoute = function() {
-      var defaultPath, paths, _ref1;
-      defaultPath = arguments[0], paths = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      var defaultPath, paths, ref1;
+      defaultPath = arguments[0], paths = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       if (!this.router) {
         this.router = new D.Router(this);
       }
-      return this.chain((_ref1 = this.router).mountRoutes.apply(_ref1, paths), function() {
+      return this.chain((ref1 = this.router).mountRoutes.apply(ref1, paths), function() {
         return this.router.start(defaultPath);
       });
     };
@@ -538,15 +538,15 @@ var __slice = [].slice,
 
     Application.prototype.load = function() {
       var name, names;
-      names = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      names = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       return this.chain((function() {
-        var _j, _len1, _results;
-        _results = [];
-        for (_j = 0, _len1 = names.length; _j < _len1; _j++) {
-          name = names[_j];
-          _results.push(this.getLoader(name).loadModule(name));
+        var k, len1, results;
+        results = [];
+        for (k = 0, len1 = names.length; k < len1; k++) {
+          name = names[k];
+          results.push(this.getLoader(name).loadModule(name));
         }
-        return _results;
+        return results;
       }).call(this));
     };
 
@@ -557,14 +557,14 @@ var __slice = [].slice,
     Application.prototype.destory = function() {
       var region;
       return this.chain((function() {
-        var _j, _len1, _ref1, _results;
-        _ref1 = this.regions;
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          region = _ref1[_j];
-          _results.push(region.close());
+        var k, len1, ref1, results;
+        ref1 = this.regions;
+        results = [];
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          region = ref1[k];
+          results.push(region.close());
         }
-        return _results;
+        return results;
       }).call(this));
     };
 
@@ -589,25 +589,25 @@ var __slice = [].slice,
     return Application;
 
   })(D.Base);
-  D.Model = Model = (function(_super) {
-    __extends(Model, _super);
+  D.Model = Model = (function(superClass) {
+    extend(Model, superClass);
 
-    function Model(app, module, options) {
+    function Model(app1, module1, options1) {
       var defaults, p;
-      this.app = app;
-      this.module = module;
-      this.options = options != null ? options : {};
+      this.app = app1;
+      this.module = module1;
+      this.options = options1 != null ? options1 : {};
       this.data = this.options.data || {};
       this.params = {};
-      if (options.pageable) {
+      if (this.options.pageable) {
         defaults = this.app.options.pagination;
         p = this.pagination = {
-          page: options.page || 1,
+          page: this.options.page || 1,
           pageCount: 0,
-          pageSize: options.pageSize || defaults.defaultPageSize,
-          pageKey: options.pageKey || defaults.pageKey,
-          pageSizeKey: options.pageSizeKey || defaults.pageSizeKey,
-          recordCountKey: options.recordCountKey || defaults.recordCountKey
+          pageSize: this.options.pageSize || defaults.defaultPageSize,
+          pageKey: this.options.pageKey || defaults.pageKey,
+          pageSizeKey: this.options.pageSizeKey || defaults.pageSizeKey,
+          recordCountKey: this.options.recordCountKey || defaults.recordCountKey
         };
       }
       Model.__super__.constructor.call(this, 'd');
@@ -637,14 +637,14 @@ var __slice = [].slice,
     };
 
     Model.prototype.setForm = function(form) {
-      var data, o, _j, _len1, _ref1;
+      var data, k, len1, o, ref1;
       if (!(form && form.serializeArray)) {
         return;
       }
       data = {};
-      _ref1 = form.serializeArray();
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        item = _ref1[_j];
+      ref1 = form.serializeArray();
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        item = ref1[k];
         o = data[item.name];
         if (o === void 0) {
           data[item.name] = item.value;
@@ -659,29 +659,29 @@ var __slice = [].slice,
     };
 
     Model.prototype.find = function(name, value) {
-      var _j, _len1, _ref1, _results;
+      var k, len1, ref1, results;
       if (!D.isArray(this.data)) {
         return null;
       }
-      _ref1 = this.data;
-      _results = [];
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        item = _ref1[_j];
+      ref1 = this.data;
+      results = [];
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        item = ref1[k];
         if (item[name] === value) {
-          _results.push(item);
+          results.push(item);
         }
       }
-      return _results;
+      return results;
     };
 
     Model.prototype.findOne = function(name, value) {
-      var _j, _len1, _ref1;
+      var k, len1, ref1;
       if (!D.isArray(this.data)) {
         return null;
       }
-      _ref1 = this.data;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        item = _ref1[_j];
+      ref1 = this.data;
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        item = ref1[k];
         if (item[name] === value) {
           return item;
         }
@@ -775,23 +775,23 @@ var __slice = [].slice,
     return Model;
 
   })(D.Base);
-  _ref1 = ['get', 'post', 'put', 'del', 'save'];
-  _fn1 = function(item) {
+  ref1 = ['get', 'post', 'put', 'del', 'save'];
+  fn2 = function(item) {
     return D.Model.prototype[item] = function(options) {
-      return this.chain(D.Request[item](this, options), function(_arg) {
+      return this.chain(D.Request[item](this, options), function(arg) {
         var xhr;
-        xhr = _arg[_arg.length - 1];
+        xhr = arg[arg.length - 1];
         this.trigger('sync');
         return xhr;
       });
     };
   };
-  for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-    item = _ref1[_j];
-    _fn1(item);
+  for (k = 0, len1 = ref1.length; k < len1; k++) {
+    item = ref1[k];
+    fn2(item);
   }
-  D.Region = Region = (function(_super) {
-    __extends(Region, _super);
+  D.Region = Region = (function(superClass) {
+    extend(Region, superClass);
 
     Region.types = {};
 
@@ -805,9 +805,9 @@ var __slice = [].slice,
       return new clazz(app, module, el);
     };
 
-    function Region(app, module, el) {
-      this.app = app;
-      this.module = module;
+    function Region(app1, module1, el) {
+      this.app = app1;
+      this.module = module1;
       this.el = el instanceof $ ? el : $(el);
       Region.__super__.constructor.call(this, 'r');
       if (this.el.size() === 0) {
@@ -854,9 +854,9 @@ var __slice = [].slice,
         }, function() {
           return this.close(cur);
         }
-      ], function(_arg) {
+      ], function(arg) {
         var item;
-        item = _arg[0];
+        item = arg[0];
         item.setRegion(this);
         this.setCurrentItem(item, options);
         return item;
@@ -877,7 +877,7 @@ var __slice = [].slice,
 
     Region.prototype.delegateEvent = function(item, name, selector, fn) {
       var n;
-      n = "" + name + ".events" + this.id + item.id;
+      n = name + ".events" + this.id + item.id;
       if (selector) {
         return this.el.on(n, selector, fn);
       } else {
@@ -904,8 +904,8 @@ var __slice = [].slice,
     return Region;
 
   })(D.Base);
-  D.View = View = (function(_super) {
-    __extends(View, _super);
+  D.View = View = (function(superClass) {
+    extend(View, superClass);
 
     View.ComponentManager = {
       handlers: {},
@@ -967,11 +967,11 @@ var __slice = [].slice,
       }
     };
 
-    function View(name, module, loader, options) {
-      this.name = name;
-      this.module = module;
-      this.loader = loader;
-      this.options = options != null ? options : {};
+    function View(name1, module1, loader1, options1) {
+      this.name = name1;
+      this.module = module1;
+      this.loader = loader1;
+      this.options = options1 != null ? options1 : {};
       this.app = this.module.app;
       this.eventHandlers = {};
       View.__super__.constructor.call(this, 'v');
@@ -1010,24 +1010,24 @@ var __slice = [].slice,
     View.prototype.bindData = function() {
       return this.module.loadDeferred.done((function(_this) {
         return function() {
-          var bind, binding, bindings, doBind, key, value, _results;
+          var bind, binding, bindings, doBind, key, results, value;
           bind = _this.getOptionResult(_this.options.bind) || {};
           _this.data = {};
           doBind = function(model, binding) {
-            var event, handler, _ref2;
-            _ref2 = binding.split('#'), event = _ref2[0], handler = _ref2[1];
+            var event, handler, ref2;
+            ref2 = binding.split('#'), event = ref2[0], handler = ref2[1];
             return _this.listenTo(model, event, function() {
-              var args, _base;
-              args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+              var args, base1;
+              args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
               if (!(event && handler)) {
                 throw new Error("Incorrect binding string format:" + binding);
               }
               return typeof this[handler] === "function" ? this[handler].apply(this, args) : void 0;
-              return typeof (_base = this.eventHandlers)[handler] === "function" ? _base[handler].apply(_base, args) : void 0;
+              return typeof (base1 = this.eventHandlers)[handler] === "function" ? base1[handler].apply(base1, args) : void 0;
               throw new Error("Can not find handler function for :" + handler);
             });
           };
-          _results = [];
+          results = [];
           for (key in bind) {
             value = bind[key];
             _this.data[key] = _this.module.data[key];
@@ -1038,17 +1038,17 @@ var __slice = [].slice,
               continue;
             }
             bindings = value.replace(/\s+/g, '').split(',');
-            _results.push((function() {
-              var _k, _len2, _results1;
-              _results1 = [];
-              for (_k = 0, _len2 = bindings.length; _k < _len2; _k++) {
-                binding = bindings[_k];
-                _results1.push(doBind(this.data[key], binding));
+            results.push((function() {
+              var l, len2, results1;
+              results1 = [];
+              for (l = 0, len2 = bindings.length; l < len2; l++) {
+                binding = bindings[l];
+                results1.push(doBind(this.data[key], binding));
               }
-              return _results1;
+              return results1;
             }).call(_this));
           }
-          return _results;
+          return results;
         };
       })(this));
     };
@@ -1062,32 +1062,32 @@ var __slice = [].slice,
       return "" + this.id + id;
     };
 
-    View.prototype.setRegion = function(region) {
-      var events, handler, id, key, name, selector, value, _ref2, _results;
-      this.region = region;
+    View.prototype.setRegion = function(region1) {
+      var events, handler, id, key, name, ref2, results, selector, value;
+      this.region = region1;
       events = this.getOptionResult(this.options.events) || {};
-      _results = [];
+      results = [];
       for (key in events) {
         value = events[key];
         if (!D.isString(value)) {
           throw new Error('The value defined in events must be a string');
         }
-        _ref2 = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = _ref2[0], id = _ref2[1];
+        ref2 = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = ref2[0], id = ref2[1];
         if (id) {
           selector = id.charAt(id.length - 1) === '*' ? "[id^=" + (id = this.wrapDomId(id.slice(0, -1))) + "]" : "#" + (id = this.wrapDomId(id));
         }
         handler = this.createHandler(name, id, selector, value);
-        _results.push(this.region.delegateEvent(this, name, selector, handler));
+        results.push(this.region.delegateEvent(this, name, selector, handler));
       }
-      return _results;
+      return results;
     };
 
     View.prototype.createHandler = function(name, id, selector, value) {
       var me;
       me = this;
       return function() {
-        var args, deferred, el, i, _ref2;
-        args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+        var args, deferred, el, i, ref2;
+        args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
         el = $(this);
         if (el.hasClass('disabled')) {
           return;
@@ -1102,8 +1102,8 @@ var __slice = [].slice,
           deferred.always(function() {
             return el.removeClass('disabled');
           });
-          if ((_ref2 = me.options.clickDeferred || me.app.options.clickDeferred) != null) {
-            _ref2.call(this, deferred, el);
+          if ((ref2 = me.options.clickDeferred || me.app.options.clickDeferred) != null) {
+            ref2.call(this, deferred, el);
           }
           args.unshift(deferred);
         }
@@ -1145,8 +1145,8 @@ var __slice = [].slice,
         return this.createResolvedDeferred(this);
       }
       return this.chain(function() {
-        var _ref2;
-        return (_ref2 = this.options.beforeClose) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.beforeClose) != null ? ref2.apply(this) : void 0;
       }, [
         function() {
           return this.region.undelegateEvents(this);
@@ -1160,8 +1160,8 @@ var __slice = [].slice,
           return this.region.empty(this);
         }
       ], function() {
-        var _ref2;
-        return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.afterClose) != null ? ref2.apply(this) : void 0;
       }, function() {
         return delete this.region;
       }, this);
@@ -1176,13 +1176,13 @@ var __slice = [].slice,
       }
       this.renderOptions = options;
       return this.chain(this.loadDeferred, [this.unbindData, this.destroyComponents, this.unexportRegions], this.bindData, function() {
-        var _ref2;
-        return (_ref2 = this.options.beforeRender) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.beforeRender) != null ? ref2.apply(this) : void 0;
       }, this.beforeRender, this.serializeData, this.options.adjustData || function(data) {
         return data;
       }, this.executeTemplate, this.executeIdReplacement, this.renderComponent, this.exportRegions, this.afterRender, function() {
-        var _ref2;
-        return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.afterRender) != null ? ref2.apply(this) : void 0;
       }, this);
     };
 
@@ -1200,11 +1200,11 @@ var __slice = [].slice,
     };
 
     View.prototype.serializeData = function() {
-      var data, key, value, _ref2;
+      var data, key, ref2, value;
       data = {};
-      _ref2 = this.data;
-      for (key in _ref2) {
-        value = _ref2[key];
+      ref2 = this.data;
+      for (key in ref2) {
+        value = ref2[key];
         data[key] = value.toJSON();
       }
       return data;
@@ -1219,7 +1219,7 @@ var __slice = [].slice,
     };
 
     View.prototype.executeIdReplacement = function() {
-      var attr, used, _k, _len2, _ref2, _results;
+      var attr, l, len2, ref2, results, used;
       used = {};
       this.$$('[id]').each((function(_this) {
         return function(i, el) {
@@ -1233,11 +1233,11 @@ var __slice = [].slice,
           return el.attr('id', _this.wrapDomId(id));
         };
       })(this));
-      _ref2 = this.app.options.attributesReferToId || [];
-      _results = [];
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        attr = _ref2[_k];
-        _results.push(this.$$("[" + attr + "]").each((function(_this) {
+      ref2 = this.app.options.attributesReferToId || [];
+      results = [];
+      for (l = 0, len2 = ref2.length; l < len2; l++) {
+        attr = ref2[l];
+        results.push(this.$$("[" + attr + "]").each((function(_this) {
           return function(i, el) {
             var value, withHash;
             el = $(el);
@@ -1251,40 +1251,40 @@ var __slice = [].slice,
           };
         })(this)));
       }
-      return _results;
+      return results;
     };
 
     View.prototype.renderComponent = function() {
       var component, components, promises;
       components = this.getOptionResult(this.options.components) || [];
       promises = (function() {
-        var _k, _len2, _results;
-        _results = [];
-        for (_k = 0, _len2 = components.length; _k < _len2; _k++) {
-          component = components[_k];
+        var l, len2, results;
+        results = [];
+        for (l = 0, len2 = components.length; l < len2; l++) {
+          component = components[l];
           component = this.getOptionResult(component);
           if (component) {
-            _results.push(View.ComponentManager.create(this, component));
+            results.push(View.ComponentManager.create(this, component));
           } else {
-            _results.push(void 0);
+            results.push(void 0);
           }
         }
-        return _results;
+        return results;
       }).call(this);
       return this.chain(promises, (function(_this) {
         return function(comps) {
-          var comp, id, _k, _len2, _results;
-          _results = [];
-          for (_k = 0, _len2 = comps.length; _k < _len2; _k++) {
-            comp = comps[_k];
+          var comp, id, l, len2, results;
+          results = [];
+          for (l = 0, len2 = comps.length; l < len2; l++) {
+            comp = comps[l];
             if (!(comp)) {
               continue;
             }
             id = comp.id;
             _this.components[id] = comp.component;
-            _results.push(_this.componentInfos[id] = comp.info);
+            results.push(_this.componentInfos[id] = comp.info);
           }
-          return _results;
+          return results;
         };
       })(this));
     };
@@ -1304,23 +1304,23 @@ var __slice = [].slice,
     View.prototype.unexportRegions = function() {
       var key, value;
       return this.chain((function() {
-        var _ref2, _results;
-        _ref2 = this.exportedRegions;
-        _results = [];
-        for (key in _ref2) {
-          value = _ref2[key];
-          _results.push(value.close());
+        var ref2, results;
+        ref2 = this.exportedRegions;
+        results = [];
+        for (key in ref2) {
+          value = ref2[key];
+          results.push(value.close());
         }
-        return _results;
+        return results;
       }).call(this), (function() {
-        var _ref2, _results;
-        _ref2 = this.exportedRegions;
-        _results = [];
-        for (key in _ref2) {
-          value = _ref2[key];
-          _results.push(this.module.removeRegion(key));
+        var ref2, results;
+        ref2 = this.exportedRegions;
+        results = [];
+        for (key in ref2) {
+          value = ref2[key];
+          results.push(this.module.removeRegion(key));
         }
-        return _results;
+        return results;
       }).call(this));
     };
 
@@ -1329,8 +1329,8 @@ var __slice = [].slice,
     return View;
 
   })(Base);
-  ModuleContainer = (function(_super) {
-    __extends(ModuleContainer, _super);
+  ModuleContainer = (function(superClass) {
+    extend(ModuleContainer, superClass);
 
     ModuleContainer.include(D.Event);
 
@@ -1379,8 +1379,8 @@ var __slice = [].slice,
     return ModuleContainer;
 
   })(D.Base);
-  Layout = (function(_super) {
-    __extends(Layout, _super);
+  Layout = (function(superClass) {
+    extend(Layout, superClass);
 
     function Layout() {
       return Layout.__super__.constructor.apply(this, arguments);
@@ -1400,20 +1400,20 @@ var __slice = [].slice,
     return Layout;
 
   })(D.View);
-  D.Module = Module = (function(_super) {
-    __extends(Module, _super);
+  D.Module = Module = (function(superClass) {
+    extend(Module, superClass);
 
     Module.Container = ModuleContainer;
 
     Module.Layout = Layout;
 
-    function Module(name, app, loader, options) {
-      var _ref2;
-      this.name = name;
-      this.app = app;
-      this.loader = loader;
-      this.options = options != null ? options : {};
-      _ref2 = this.name.split('/'), this.baseName = _ref2[_ref2.length - 1];
+    function Module(name1, app1, loader1, options1) {
+      var ref2;
+      this.name = name1;
+      this.app = app1;
+      this.loader = loader1;
+      this.options = options1 != null ? options1 : {};
+      ref2 = this.name.split('/'), this.baseName = ref2[ref2.length - 1];
       this.container = this.options.container || this.app.modules;
       this.separatedTemplate = this.options.separatedTemplate === true;
       this.regions = {};
@@ -1539,61 +1539,61 @@ var __slice = [].slice,
         this.container.changeId(this.id, options.id);
       }
       return this.chain(this.loadDeferred, function() {
-        var _ref2;
-        return (_ref2 = this.options.beforeRender) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.beforeRender) != null ? ref2.apply(this) : void 0;
       }, function() {
         return this.layout.setRegion(this.region);
       }, this.fetchDataDuringRender, function() {
         return this.layout.render();
       }, function() {
-        var _ref2;
-        return (_ref2 = this.options.afterLayoutRender) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.afterLayoutRender) != null ? ref2.apply(this) : void 0;
       }, function() {
         var defers, key, region, value;
         defers = (function() {
-          var _k, _len2, _ref2, _results;
-          _ref2 = this.inRegionItems;
-          _results = [];
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            value = _ref2[_k];
+          var l, len2, ref2, results;
+          ref2 = this.inRegionItems;
+          results = [];
+          for (l = 0, len2 = ref2.length; l < len2; l++) {
+            value = ref2[l];
             key = value.regionInfo.region;
             region = this.regions[key];
             if (!region) {
               throw new Error("Can not find region: " + key);
             }
-            _results.push(region.show(value));
+            results.push(region.show(value));
           }
-          return _results;
+          return results;
         }).call(this);
         return $.when.apply($, defers);
       }, function() {
-        var _ref2;
-        return (_ref2 = this.options.afterRender) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.afterRender) != null ? ref2.apply(this) : void 0;
       }, this.fetchDataAfterRender, this);
     };
 
-    Module.prototype.setRegion = function(region) {
-      this.region = region;
+    Module.prototype.setRegion = function(region1) {
+      this.region = region1;
     };
 
     Module.prototype.close = function() {
       return this.chain(function() {
-        var _ref2;
-        return (_ref2 = this.options.beforeClose) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.beforeClose) != null ? ref2.apply(this) : void 0;
       }, function() {
         return this.layout.close();
       }, function() {
-        var key, value, _ref2, _results;
-        _ref2 = this.regions;
-        _results = [];
-        for (key in _ref2) {
-          value = _ref2[key];
-          _results.push(value.close());
+        var key, ref2, results, value;
+        ref2 = this.regions;
+        results = [];
+        for (key in ref2) {
+          value = ref2[key];
+          results.push(value.close());
         }
-        return _results;
+        return results;
       }, function() {
-        var _ref2;
-        return (_ref2 = this.options.afterClose) != null ? _ref2.apply(this) : void 0;
+        var ref2;
+        return (ref2 = this.options.afterClose) != null ? ref2.apply(this) : void 0;
       }, function() {
         return this.container.remove(this.id);
       }, this);
@@ -1602,48 +1602,48 @@ var __slice = [].slice,
     Module.prototype.fetchDataDuringRender = function() {
       var id;
       return this.chain((function() {
-        var _base, _k, _len2, _ref2, _results;
-        _ref2 = this.autoLoadDuringRender;
-        _results = [];
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          id = _ref2[_k];
-          _results.push(typeof (_base = this.data[id]).get === "function" ? _base.get() : void 0);
+        var base1, l, len2, ref2, results;
+        ref2 = this.autoLoadDuringRender;
+        results = [];
+        for (l = 0, len2 = ref2.length; l < len2; l++) {
+          id = ref2[l];
+          results.push(typeof (base1 = this.data[id]).get === "function" ? base1.get() : void 0);
         }
-        return _results;
+        return results;
       }).call(this));
     };
 
     Module.prototype.fetchDataAfterRender = function() {
       var id;
       return this.chain((function() {
-        var _base, _k, _len2, _ref2, _results;
-        _ref2 = this.autoLoadAfterRender;
-        _results = [];
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          id = _ref2[_k];
-          _results.push(typeof (_base = this.data[id]).get === "function" ? _base.get() : void 0);
+        var base1, l, len2, ref2, results;
+        ref2 = this.autoLoadAfterRender;
+        results = [];
+        for (l = 0, len2 = ref2.length; l < len2; l++) {
+          id = ref2[l];
+          results.push(typeof (base1 = this.data[id]).get === "function" ? base1.get() : void 0);
         }
-        return _results;
+        return results;
       }).call(this));
     };
 
     return Module;
 
   })(D.Base);
-  D.Loader = Loader = (function(_super) {
-    __extends(Loader, _super);
+  D.Loader = Loader = (function(superClass) {
+    extend(Loader, superClass);
 
     Loader.TemplateCache = {};
 
     Loader.analyse = function(name) {
-      var args, loaderName, _ref2;
+      var args, loaderName, ref2;
       if (!D.isString(name)) {
         return {
           loader: null,
           name: name
         };
       }
-      _ref2 = name.split(':'), loaderName = _ref2[0], name = _ref2[1], args = 3 <= _ref2.length ? __slice.call(_ref2, 2) : [];
+      ref2 = name.split(':'), loaderName = ref2[0], name = ref2[1], args = 3 <= ref2.length ? slice.call(ref2, 2) : [];
       if (!name) {
         name = loaderName;
         loaderName = null;
@@ -1655,8 +1655,8 @@ var __slice = [].slice,
       };
     };
 
-    function Loader(app) {
-      this.app = app;
+    function Loader(app1) {
+      this.app = app1;
       this.name = 'default';
       this.fileNames = this.app.options.fileNames;
       Loader.__super__.constructor.apply(this, arguments);
@@ -1670,8 +1670,8 @@ var __slice = [].slice,
       }
       deferred = this.createDeferred();
       error = function(e) {
-        var _ref2;
-        if (((_ref2 = e.requireModules) != null ? _ref2[0] : void 0) === path) {
+        var ref2;
+        if (((ref2 = e.requireModules) != null ? ref2[0] : void 0) === path) {
           define(path, null);
           require.undef(path);
           require([path], function() {});
@@ -1791,8 +1791,8 @@ var __slice = [].slice,
     return Loader;
 
   })(D.Base);
-  D.SimpleLoader = SimpleLoader = (function(_super) {
-    __extends(SimpleLoader, _super);
+  D.SimpleLoader = SimpleLoader = (function(superClass) {
+    extend(SimpleLoader, superClass);
 
     function SimpleLoader() {
       SimpleLoader.__super__.constructor.apply(this, arguments);
@@ -1819,17 +1819,17 @@ var __slice = [].slice,
     return SimpleLoader;
 
   })(D.Loader);
-  pushStateSupported = root.history && __indexOf.call(root.history, 'pushState') >= 0;
+  pushStateSupported = root.history && indexOf.call(root.history, 'pushState') >= 0;
   Route = (function() {
     Route.prototype.regExps = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
-    function Route(app, router, path, fn) {
+    function Route(app1, router1, path1, fn3) {
       var pattern;
-      this.app = app;
-      this.router = router;
-      this.path = path;
-      this.fn = fn;
-      pattern = path.replace(this.regExps[0], this.regExps[1]).replace(this.regExps[2], this.regExps[3]);
+      this.app = app1;
+      this.router = router1;
+      this.path = path1;
+      this.fn = fn3;
+      pattern = this.path.replace(this.regExps[0], this.regExps[1]).replace(this.regExps[2], this.regExps[3]);
       this.pattern = new RegExp("^" + pattern + "$", this.app.options.caseSensitiveHash ? 'g' : 'gi');
     }
 
@@ -1839,35 +1839,35 @@ var __slice = [].slice,
     };
 
     Route.prototype.handle = function(hash) {
-      var args, fns, i, route, routes, _ref2;
+      var args, fns, i, ref2, route, routes;
       this.pattern.lastIndex = 0;
       args = this.pattern.exec(hash).slice(1);
       routes = this.router.getDependencies(this.path);
       routes.push(this);
       fns = (function() {
-        var _k, _len2, _results;
-        _results = [];
-        for (i = _k = 0, _len2 = routes.length; _k < _len2; i = ++_k) {
+        var l, len2, results;
+        results = [];
+        for (i = l = 0, len2 = routes.length; l < len2; i = ++l) {
           route = routes[i];
-          _results.push((function(route, i) {
+          results.push((function(route, i) {
             return function(prev) {
               return route.fn.apply(route, (i > 0 ? [prev].concat(args) : args));
             };
           })(route, i));
         }
-        return _results;
+        return results;
       })();
-      return (_ref2 = this.router).chain.apply(_ref2, fns);
+      return (ref2 = this.router).chain.apply(ref2, fns);
     };
 
     return Route;
 
   })();
-  D.Router = Router = (function(_super) {
-    __extends(Router, _super);
+  D.Router = Router = (function(superClass) {
+    extend(Router, superClass);
 
-    function Router(app) {
-      this.app = app;
+    function Router(app1) {
+      this.app = app1;
       this.routes = [];
       this.routeMap = {};
       this.dependencies = {};
@@ -1908,14 +1908,14 @@ var __slice = [].slice,
     };
 
     Router.prototype.dispatch = function(hash) {
-      var route, _k, _len2, _ref2;
+      var l, len2, ref2, route;
       if (this.previousHash === hash) {
         return;
       }
       this.previousHash = hash;
-      _ref2 = this.routes;
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        route = _ref2[_k];
+      ref2 = this.routes;
+      for (l = 0, len2 = ref2.length; l < len2; l++) {
+        route = ref2[l];
         if (route.match(hash)) {
           return route.handle(hash);
         }
@@ -1935,28 +1935,28 @@ var __slice = [].slice,
 
     Router.prototype.mountRoutes = function() {
       var path, paths;
-      paths = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      paths = 1 <= arguments.length ? slice.call(arguments, 0) : [];
       return this.chain((function() {
-        var _k, _len2, _results;
-        _results = [];
-        for (_k = 0, _len2 = paths.length; _k < _len2; _k++) {
-          path = paths[_k];
-          _results.push(this.app.getLoader(path).loadRouter(path));
+        var l, len2, results;
+        results = [];
+        for (l = 0, len2 = paths.length; l < len2; l++) {
+          path = paths[l];
+          results.push(this.app.getLoader(path).loadRouter(path));
         }
-        return _results;
+        return results;
       }).call(this), function(routers) {
-        var i, router, _k, _len2, _results;
-        _results = [];
-        for (i = _k = 0, _len2 = routers.length; _k < _len2; i = ++_k) {
+        var i, l, len2, results, router;
+        results = [];
+        for (i = l = 0, len2 = routers.length; l < len2; i = ++l) {
           router = routers[i];
-          _results.push(this.addRoute(paths[i], router));
+          results.push(this.addRoute(paths[i], router));
         }
-        return _results;
+        return results;
       });
     };
 
     Router.prototype.addRoute = function(path, router) {
-      var dependencies, key, p, route, routes, v, value, _results;
+      var dependencies, key, p, results, route, routes, v, value;
       routes = this.getOptionResult(router.routes);
       dependencies = this.getOptionResult(router.deps);
       for (key in dependencies) {
@@ -1965,7 +1965,7 @@ var __slice = [].slice,
         v = value.charAt(0) === '/' ? value.slice(1) : D.joinPath(path, value);
         this.dependencies[p] = v.replace(/^\//, '');
       }
-      _results = [];
+      results = [];
       for (key in routes) {
         value = routes[key];
         p = D.joinPath(path, key).replace(/(^\/|\/$)/g, '');
@@ -1974,9 +1974,9 @@ var __slice = [].slice,
         }
         route = new Route(this.app, this, p, router[value]);
         this.routes.unshift(route);
-        _results.push(this.routeMap[p] = route);
+        results.push(this.routeMap[p] = route);
       }
-      return _results;
+      return results;
     };
 
     Router.prototype.getDependencies = function(path) {
