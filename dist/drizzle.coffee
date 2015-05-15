@@ -1,5 +1,5 @@
 ###!
-# DrizzleJS v0.2.8
+# DrizzleJS v0.3.0
 # -------------------------------------
 # Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 # Distributed under MIT license
@@ -17,7 +17,7 @@
         root.Drizzle = factory root, Handlebars, diffDOM
 ) this, (root, Handlebars, diffDOM) ->
 
-    D = Drizzle = version: '0.2.8'
+    D = Drizzle = version: '0.3.0'
 
     idCounter = 0
     toString = Object.prototype.toString
@@ -45,11 +45,17 @@
 
     A = D.Adapter =
         Promise: root['Promise']
-        ajax: null
+        ajax: $.ajax
         hasClass: (el, clazz) -> $(el).hasClass(clazz)
+
         getElementsBySelector: (selector, el = root.document) -> el.querySelectorAll(selector)
+
+        createDefaultHandler: (name) ->
+            creator: throw new Error('Component [' + name + '] is not defined')
+
         delegateDomEvent: (el, name, selector, fn) ->
             $(el).on name, selector, fn
+
         undelegateDomEvents: (el, namespace) ->
             $(el).off namespace
 
@@ -440,7 +446,7 @@
 
                 handler = @handlers[name] or createDefaultHandler(name)
                 dom = if selector then view.$$(selector) else view.$(id)
-                dom = view.getEl() if dom.size() is 0 and not selector
+                dom = view.getEl() if not dom and dom.length is 0 and not selector
                 id = D.uniqueId() unless id
 
                 view.Promise.chain handler.creator(view, dom, opt), (comp) ->
@@ -493,7 +499,7 @@
         $$: (selector) -> @region.$$ selector
 
         setRegion: (@region) ->
-            @virtualEl = @getEl(@).cloneNode()
+            @virtualEl = @getEl().cloneNode()
             @bindEvents()
 
         close: ->

@@ -1,6 +1,6 @@
 
 /*!
- * DrizzleJS v0.2.8
+ * DrizzleJS v0.3.0
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -25,7 +25,7 @@ var slice = [].slice,
 })(this, function(root, Handlebars, diffDOM) {
   var A, Application, Base, D, Drizzle, Layout, Loader, Model, Module, Promise, Region, Route, Router, SimpleLoader, View, compose, defaultOptions, fn1, idCounter, item, j, len, pushStateSupported, toString, types;
   D = Drizzle = {
-    version: '0.2.8'
+    version: '0.3.0'
   };
   idCounter = 0;
   toString = Object.prototype.toString;
@@ -79,7 +79,7 @@ var slice = [].slice,
   };
   A = D.Adapter = {
     Promise: root['Promise'],
-    ajax: null,
+    ajax: $.ajax,
     hasClass: function(el, clazz) {
       return $(el).hasClass(clazz);
     },
@@ -88,6 +88,13 @@ var slice = [].slice,
         el = root.document;
       }
       return el.querySelectorAll(selector);
+    },
+    createDefaultHandler: function(name) {
+      return {
+        creator: (function() {
+          throw new Error('Component [' + name + '] is not defined');
+        })()
+      };
     },
     delegateDomEvent: function(el, name, selector, fn) {
       return $(el).on(name, selector, fn);
@@ -828,7 +835,7 @@ var slice = [].slice,
         }
         handler = this.handlers[name] || createDefaultHandler(name);
         dom = selector ? view.$$(selector) : view.$(id);
-        if (dom.size() === 0 && !selector) {
+        if (!dom && dom.length === 0 && !selector) {
           dom = view.getEl();
         }
         if (!id) {
@@ -941,7 +948,7 @@ var slice = [].slice,
 
     View.prototype.setRegion = function(region1) {
       this.region = region1;
-      this.virtualEl = this.getEl(this).cloneNode();
+      this.virtualEl = this.getEl().cloneNode();
       return this.bindEvents();
     };
 
