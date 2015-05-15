@@ -1,5 +1,5 @@
 ###!
-# DrizzleJS v0.2.8
+# DrizzleJS v0.2.9
 # -------------------------------------
 # Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 # Distributed under MIT license
@@ -16,7 +16,7 @@
         root.Drizzle = factory root, $
 ) this, (root, $, Handlebars) ->
 
-    D = Drizzle = version: '0.2.8'
+    D = Drizzle = version: '0.2.9'
 
     oldReference = root.Drizzle
     idCounter = 0

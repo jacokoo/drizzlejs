@@ -1,6 +1,6 @@
 
 /*!
- * DrizzleJS v0.2.8
+ * DrizzleJS v0.2.9
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -26,7 +26,7 @@ var slice = [].slice,
 })(this, function(root, $, Handlebars) {
   var Application, Base, D, DefaultConfigs, Drizzle, Layout, Loader, Model, Module, ModuleContainer, Region, Route, Router, SimpleLoader, View, fn1, fn2, idCounter, item, j, k, len, len1, oldReference, pushStateSupported, ref, ref1;
   D = Drizzle = {
-    version: '0.2.8'
+    version: '0.2.9'
   };
   oldReference = root.Drizzle;
   idCounter = 0;
