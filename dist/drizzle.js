@@ -16,13 +16,13 @@ var slice = [].slice,
       return factory(root, Handlebars['default'], diffDOM);
     });
   } else if (module && module.exports) {
-    Handlebars = require('handlebars.runtime');
+    Handlebars = require('handlebars/runtime')['default'];
     diffDOM = require('diff-dom');
     return module.exports = factory(root, Handlebars, diffDOM);
   } else {
     return root.Drizzle = factory(root, Handlebars, diffDOM);
   }
-})(this, function(root, Handlebars, diffDOM) {
+})(window, function(root, Handlebars, diffDOM) {
   var A, Application, Base, D, Drizzle, Layout, Loader, Model, Module, MultiRegion, PageableModel, Promise, Region, Route, Router, SimpleLoader, View, compose, defaultOptions, fn1, idCounter, item, j, len, pushStateSupported, toString, types;
   D = Drizzle = {
     version: '0.3.0'
@@ -480,6 +480,7 @@ var slice = [].slice,
     urlSuffix: '',
     caseSensitiveHash: false,
     defaultRegion: root.document.body,
+    disabledClass: 'disabled',
     attributesReferToId: ['for', 'data-target', 'data-parent'],
     fileNames: {
       module: 'index',
@@ -682,35 +683,6 @@ var slice = [].slice,
       this.data = {};
       this.changed();
       return this;
-    };
-
-    Model.prototype.find = function(name, value) {
-      var k, len1, ref, results;
-      if (D.isObject(this.data)) {
-        return this.data[name];
-      }
-      ref = this.data;
-      results = [];
-      for (k = 0, len1 = ref.length; k < len1; k++) {
-        item = ref[k];
-        if (item[name] === value) {
-          results.push(item);
-        }
-      }
-      return results;
-    };
-
-    Model.prototype.findOne = function(name, value) {
-      var result;
-      result = this.find(name, value);
-      if (!result) {
-        return result;
-      }
-      if (D.isObject(this.data)) {
-        return result;
-      } else {
-        return result[0];
-      }
     };
 
     return Model;
@@ -1039,58 +1011,69 @@ var slice = [].slice,
     };
 
     View.prototype.createActionEventHandler = function(name) {
-      var dataForAction, el;
+      var dataForAction, disabled, el;
       el = this.getEl();
       dataForAction = this.getOptionValue('dataForAction') || {};
+      disabled = this.app.options.disabledClass;
       return (function(_this) {
         return function(e) {
-          var containsTarget, data, k, len1, n, ref, rootEl, target, v, value;
+          var data, rootEl, target;
           rootEl = target = e.target || e.srcElement;
-          if (A.hasClass(target, 'disabled')) {
+          if (A.hasClass(target, disabled)) {
             return;
           }
-          A.addClass(target, 'disabled');
-          while (rootEl && rootEl !== el && rootEl.tagName.toLowerCase() !== 'form') {
+          A.addClass(target, disabled);
+          while (rootEl && rootEl !== el && rootEl.tagName !== 'FORM') {
             rootEl = rootEl.parentNode;
           }
-          data = rootEl.tagName.toLowerCase() === 'form' ? A.getFormData(rootEl) : {};
-          containsTarget = false;
-          ref = rootEl.querySelectorAll('[data-name][data-value]');
-          for (k = 0, len1 = ref.length; k < len1; k++) {
-            item = ref[k];
-            if (item === target) {
-              containsTarget = true;
+          data = _this.getActionData(rootEl, target);
+          return _this.Promise.chain(function() {
+            if (D.isFunction(dataForAction[name])) {
+              data = dataForAction[name].apply(this, [data, e]);
             }
-            n = item.getAttribute('data-name');
-            value = item.getAttribute('data-value');
-            v = data[n];
-            if (!v) {
-              data[n] = value;
-            } else {
-              if (!D.isArray(v)) {
-                v = data[n] = [data[n]];
-              }
-              v.push(value);
+            return data;
+          }, function(d) {
+            if (d !== false) {
+              return this.module.dispatch({
+                name: name,
+                payload: d
+              });
             }
-          }
-          if (containsTarget) {
-            n = target.getAttribute('data-name');
-            data[n] = target.getAttribute('data-value');
-          }
-          if (D.isFunction(dataForAction[name])) {
-            data = dataForAction[name].apply(_this, [data, e]);
-          }
-          if (data === false) {
-            return A.removeClass(target, 'disabled');
-          }
-          return _this.module.dispatch({
-            name: name,
-            payload: data
-          }).then(function() {
-            return A.removeClass(target, 'disabled');
+          }, function() {
+            return A.removeClass(target, disabled);
           });
         };
       })(this);
+    };
+
+    View.prototype.getActionData = function(el, target) {
+      var containsTarget, data, k, len1, n, ref, v, value;
+      el || (el = this.getEl());
+      data = el.tagName === 'FORM' ? A.getFormData(el) : {};
+      containsTarget = false;
+      ref = el.querySelectorAll('[data-name][data-value]');
+      for (k = 0, len1 = ref.length; k < len1; k++) {
+        item = ref[k];
+        if (item === target) {
+          containsTarget = true;
+        }
+        n = item.getAttribute('data-name');
+        value = item.getAttribute('data-value');
+        v = data[n];
+        if (!v) {
+          data[n] = value;
+        } else {
+          if (!D.isArray(v)) {
+            v = data[n] = [data[n]];
+          }
+          v.push(value);
+        }
+      }
+      if (containsTarget) {
+        n = target.getAttribute('data-name');
+        data[n] = target.getAttribute('data-value');
+      }
+      return data;
     };
 
     View.prototype.delegateEvent = function(token, handler) {
@@ -1517,7 +1500,7 @@ var slice = [].slice,
     }
 
     Loader.prototype.loadResource = function(path) {
-      path = this.app.options.scriptRoot + '/' + path;
+      path = compose(this.app.options.scriptRoot, path);
       return this.Promise.create(function(resolve, reject) {
         var error;
         if (this.app.options.amd) {
@@ -1537,7 +1520,7 @@ var slice = [].slice,
             return resolve(obj);
           }, error);
         } else {
-          return resolve(require(path));
+          return resolve(require('./' + path));
         }
       });
     };
@@ -1772,7 +1755,7 @@ var slice = [].slice,
       ref = interceptors || {};
       for (key in ref) {
         value = ref[key];
-        this.interceptors[compose(path, key)] = value;
+        this.interceptors[compose(path, key)] = router[value];
       }
       ref1 = routes || {};
       results = [];
@@ -1789,14 +1772,18 @@ var slice = [].slice,
 
     Router.prototype.getInterceptors = function(path) {
       var items, key, result;
-      result = this.interceptors[''] ? [this.interceptors['']] : [];
+      result = [];
       items = path.split('/');
+      items.pop();
       while (items.length > 0) {
         key = items.join('/');
         if (this.interceptors[key]) {
           result.unshift(this.interceptors[key]);
         }
         items.pop();
+      }
+      if (this.interceptors['']) {
+        result.unshift(this.interceptors['']);
       }
       return result;
     };

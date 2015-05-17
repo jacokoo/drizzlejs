@@ -14,7 +14,7 @@ D.Loader = class Loader extends D.Base
         super 'L'
 
     loadResource: (path) ->
-        path = @app.options.scriptRoot + '/' + path
+        path = compose(@app.options.scriptRoot, path)
         @Promise.create (resolve, reject) ->
 
             if @app.options.amd
@@ -31,7 +31,7 @@ D.Loader = class Loader extends D.Base
                     resolve obj
                 , error
             else
-                resolve require(path)
+                resolve require('./' + path)
 
     loadModuleResource: (module, path) ->
         @loadResource module.name + '/' + path

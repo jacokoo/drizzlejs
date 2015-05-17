@@ -3,12 +3,12 @@
         define ['handlebars.runtime', 'diff-dom'], (Handlebars, diffDOM) ->
             factory root, Handlebars['default'], diffDOM
     else if module and module.exports
-        Handlebars = require 'handlebars.runtime'
+        Handlebars = require('handlebars/runtime')['default']
         diffDOM = require 'diff-dom'
         module.exports = factory root, Handlebars, diffDOM
     else
         root.Drizzle = factory root, Handlebars, diffDOM
-) this, (root, Handlebars, diffDOM) ->
+) window, (root, Handlebars, diffDOM) ->
 
     D = Drizzle = version: '<%= version %>'
 

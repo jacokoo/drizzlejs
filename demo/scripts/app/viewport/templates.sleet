@@ -1,0 +1,4 @@
+layout
+    .pure-g
+        .sidebar.pure-u-1.pure-u-md-1-4(data-region='menu')
+        .content.pure-u-1.pure-u-md-3-4(data-region='content')

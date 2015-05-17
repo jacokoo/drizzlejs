@@ -1,0 +1,6 @@
+layout > .header
+    h1.brand-title Drizzle Demos
+    h2.brand-tagline A suite demos for DrizzleJs
+    nav.nav
+        ul.nav-list
+            li.nav-item > a.pure-button(href='#todos') Todos

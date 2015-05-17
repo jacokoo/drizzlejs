@@ -1,8 +1,0 @@
-layout
-    h1 MultiRegion, An abstract class for Extending
-        small
-            a(href='#module/content/card-region') see card region
-    div(data-region='content' data-region-type='multi')
-view('item1') view 1
-view('item2') view 2
-view('item3') view 3

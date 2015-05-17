@@ -10,12 +10,12 @@
         define ['handlebars.runtime', 'diff-dom'], (Handlebars, diffDOM) ->
             factory root, Handlebars['default'], diffDOM
     else if module and module.exports
-        Handlebars = require 'handlebars.runtime'
+        Handlebars = require('handlebars/runtime')['default']
         diffDOM = require 'diff-dom'
         module.exports = factory root, Handlebars, diffDOM
     else
         root.Drizzle = factory root, Handlebars, diffDOM
-) this, (root, Handlebars, diffDOM) ->
+) window, (root, Handlebars, diffDOM) ->
 
     D = Drizzle = version: '0.3.0'
 
@@ -255,6 +255,7 @@
         urlSuffix: ''
         caseSensitiveHash: false
         defaultRegion: root.document.body
+        disabledClass: 'disabled'
         attributesReferToId: [
             'for' # for label
             'data-target' #for bootstrap
@@ -377,15 +378,6 @@
             @data = {}
             @changed()
             @
-
-        find: (name, value) ->
-            return @data[name] if D.isObject @data
-            item for item in @data when item[name] is value
-
-        findOne: (name, value) ->
-            result = @find name, value
-            return result unless result
-            if D.isObject @data then result else result[0]
 
     D.extend D.Model, D.Factory
 
@@ -563,34 +555,45 @@
         createActionEventHandler: (name) ->
             el = @getEl()
             dataForAction = @getOptionValue('dataForAction') or {}
+            disabled = @app.options.disabledClass
             (e) =>
                 rootEl = target = e.target or e.srcElement
-                return if A.hasClass target, 'disabled'
-                A.addClass target, 'disabled'
+                return if A.hasClass target, disabled
+                A.addClass target, disabled
 
-                while rootEl and rootEl isnt el and rootEl.tagName.toLowerCase() isnt 'form'
+                while rootEl and rootEl isnt el and rootEl.tagName isnt 'FORM'
                     rootEl = rootEl.parentNode
-                data = if rootEl.tagName.toLowerCase() is 'form' then A.getFormData(rootEl) else {}
-                containsTarget = false
-                for item in rootEl.querySelectorAll('[data-name][data-value]')
-                    containsTarget = true if item is target
-                    n = item.getAttribute 'data-name'
-                    value = item.getAttribute 'data-value'
-                    v = data[n]
-                    if not v
-                        data[n] = value
-                    else
-                        v = data[n] = [data[n]] unless D.isArray v
-                        v.push value
 
-                if containsTarget
-                    n = target.getAttribute 'data-name'
-                    data[n] = target.getAttribute 'data-value'
+                data = @getActionData rootEl, target
+                @Promise.chain ->
+                    data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
+                    data
+                , (d) ->
+                    @module.dispatch(name: name, payload: d) if d isnt false
+                , ->
+                    A.removeClass target, disabled
 
-                data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
-                return A.removeClass target, 'disabled' if data is false
-                @module.dispatch(name: name, payload: data).then ->
-                    A.removeClass target, 'disabled'
+
+        getActionData: (el, target) ->
+            el or= @getEl()
+            data = if el.tagName is 'FORM' then A.getFormData(el) else {}
+            containsTarget = false
+            for item in el.querySelectorAll('[data-name][data-value]')
+                containsTarget = true if item is target
+                n = item.getAttribute 'data-name'
+                value = item.getAttribute 'data-value'
+                v = data[n]
+                if not v
+                    data[n] = value
+                else
+                    v = data[n] = [data[n]] unless D.isArray v
+                    v.push value
+
+            if containsTarget
+                n = target.getAttribute 'data-name'
+                data[n] = target.getAttribute 'data-value'
+
+            data
 
         delegateEvent: (token, handler) ->
             [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
@@ -814,7 +817,7 @@
             super 'L'
 
         loadResource: (path) ->
-            path = @app.options.scriptRoot + '/' + path
+            path = compose(@app.options.scriptRoot, path)
             @Promise.create (resolve, reject) ->
 
                 if @app.options.amd
@@ -831,7 +834,7 @@
                         resolve obj
                     , error
                 else
-                    resolve require(path)
+                    resolve require('./' + path)
 
         loadModuleResource: (module, path) ->
             @loadResource module.name + '/' + path
@@ -957,7 +960,7 @@
             routes = routes.call @ if D.isFunction routes
             interceptors = interceptors.call @ if D.isFunction interceptors
 
-            @interceptors[compose(path, key)] = value for key, value of interceptors or {}
+            @interceptors[compose(path, key)] = router[value] for key, value of interceptors or {}
 
             for key, value of routes or {}
                 p = compose path, key
@@ -965,12 +968,15 @@
                 @routes.unshift new Route(@app, @, compose(path, key), router[value])
 
         getInterceptors: (path) ->
-            result = if @interceptors[''] then [@interceptors['']] else []
+            result = []
             items = path.split '/'
+            items.pop()
             while items.length > 0
                 key = items.join '/'
                 result.unshift @interceptors[key] if @interceptors[key]
                 items.pop()
+
+            if @interceptors[''] then result.unshift @interceptors['']
             result
 
 

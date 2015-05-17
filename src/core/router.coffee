@@ -78,7 +78,7 @@ D.Router = class Router extends D.Base
         routes = routes.call @ if D.isFunction routes
         interceptors = interceptors.call @ if D.isFunction interceptors
 
-        @interceptors[compose(path, key)] = value for key, value of interceptors or {}
+        @interceptors[compose(path, key)] = router[value] for key, value of interceptors or {}
 
         for key, value of routes or {}
             p = compose path, key
@@ -86,10 +86,13 @@ D.Router = class Router extends D.Base
             @routes.unshift new Route(@app, @, compose(path, key), router[value])
 
     getInterceptors: (path) ->
-        result = if @interceptors[''] then [@interceptors['']] else []
+        result = []
         items = path.split '/'
+        items.pop()
         while items.length > 0
             key = items.join '/'
             result.unshift @interceptors[key] if @interceptors[key]
             items.pop()
+
+        if @interceptors[''] then result.unshift @interceptors['']
         result

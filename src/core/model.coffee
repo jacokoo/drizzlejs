@@ -35,13 +35,4 @@ D.Model = class Model extends D.Base
         @changed()
         @
 
-    find: (name, value) ->
-        return @data[name] if D.isObject @data
-        item for item in @data when item[name] is value
-
-    findOne: (name, value) ->
-        result = @find name, value
-        return result unless result
-        if D.isObject @data then result else result[0]
-
 D.extend D.Model, D.Factory

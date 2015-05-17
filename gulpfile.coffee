@@ -2,18 +2,16 @@ fs = require 'fs'
 
 p = require './package.json'
 gulp = require 'gulp'
+del = require 'del'
 header = require 'gulp-header'
 preprocess = require 'gulp-preprocess'
 template = require 'gulp-template'
-clean = require 'gulp-clean'
 rename = require 'gulp-rename'
 map = require 'map-stream'
 coffeelint = require 'gulp-coffeelint'
 coffee = require 'gulp-coffee'
 sourcemaps = require 'gulp-sourcemaps'
 uglify = require 'gulp-uglify'
-bower = require 'gulp-bower'
-connect = require 'gulp-connect'
 
 banner = """
     ###!
@@ -28,8 +26,7 @@ trimtrailingspaces = (file, cb) ->
     file.contents = new Buffer(String(file.contents).replace /[ \t]+\n/g, '\n')
     cb null, file
 
-gulp.task 'clean', ->
-    gulp.src('dist').pipe(clean())
+gulp.task 'clean', (cb) -> del ['dist'], cb
 
 gulp.task 'generate-coffee-files', ['clean'], ->
     gulp.src('src/drizzle.coffee')
@@ -60,18 +57,3 @@ gulp.task 'generate-dist-files', ['generate-source-map'], ->
 gulp.task 'build', ['generate-dist-files']
 
 gulp.task 'default', ['build']
-
-gulp.task 'clean-demo', ->
-    gulp.src(['demo/scripts/**/*.js', 'demo/scripts/drizzlejs'])
-        .pipe clean()
-
-gulp.task 'demo', ['build', 'clean-demo'], ->
-    gulp.src('dist/*', base: 'dist').pipe(gulp.dest('demo/scripts/drizzlejs'))
-    gulp.src('demo/scripts/**/*.coffee').pipe(coffee()).pipe(gulp.dest 'demo/scripts')
-
-    unless fs.existsSync 'demo/bower_components'
-        bower(cwd: 'demo').pipe(gulp.dest('demo/bower_components'))
-
-    connect.server
-        root: 'demo'
-        port: 8000
