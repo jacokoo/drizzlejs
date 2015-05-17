@@ -13,20 +13,24 @@ layout
                 div.col-md-12(data-region='status')
             br
 view('input')
-    input#input.form-control
+    form > input#input.form-control(name='text')
 view('list')
     div.list-group
         each(todos)
             a.list-group-item(href='javascript:void 0')
                 div.checkbox
                     label
-                        input(checked='true')&if(completed)(id='chk-' + id type='checkbox' value)
+                        input(checked='true')&if(completed)(id='chk-' + id type='checkbox' data-name='id' data-value=id)
                         if(completed)
                             del
                                 echo(text)
                             echo(else)
                             echo(text)
-                    span.glyphicon.glyphicon-remove.pull-right(id='rm-' + id)
+                    span.glyphicon.glyphicon-remove.pull-right(
+                        id='rm-' + id
+                        data-name='id'
+                        data-value=id
+                    )
 view('status')
     div.well
         span

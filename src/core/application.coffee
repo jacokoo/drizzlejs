@@ -4,6 +4,7 @@ defaultOptions =
     urlSuffix: ''
     caseSensitiveHash: false
     defaultRegion: root.document.body
+    disabledClass: 'disabled'
     attributesReferToId: [
         'for' # for label
         'data-target' #for bootstrap
@@ -16,6 +17,12 @@ defaultOptions =
         view: 'view-'             # view definition file name prefix
         template: 'template-'     # seprated template file name prefix
         router: 'router'
+
+    pagination:
+        pageSize: 10
+        pageKey: '_page'
+        pageSizeKey: '_pageSize'
+        recordCountKey: 'recordCount'
 
     actionPromised: (promise) ->
 

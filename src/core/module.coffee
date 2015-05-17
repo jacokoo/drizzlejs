@@ -2,6 +2,7 @@ class Layout extends D.View
     initialize: ->
         @isLayout = true
         @loadedPromise = @loadTemplate()
+        @bindActions = ->
 
 D.Module = class Module extends D.Base
     @Layout = Layout
@@ -10,6 +11,7 @@ D.Module = class Module extends D.Base
         @regions = {}
         super 'M', options
         @app.modules[@id] = @
+        @actions = @getOptionValue('actions') or {}
         @app.delegateEvent @
 
     initialize: ->
@@ -18,6 +20,9 @@ D.Module = class Module extends D.Base
 
         @initLayout()
         @initStore()
+        @actionContext = D.extend
+            store: @store
+        , D.Request
 
     initLayout: ->
         layout = @getOptionValue('layout') or {}
@@ -29,9 +34,10 @@ D.Module = class Module extends D.Base
         @autoLoadAfterRender = []
         doItem = (name, value) =>
             value = value.call @ if D.isFunction value
+            value or= {}
             if value and value.autoLoad
                 (if value.autoLoad is true then @autoLoadBeforeRender else @autoLoadAfterRender).push name
-            @store[name] = new D.Model @app, @, value
+            @store[name] = D.Model.create value.type, @app, @, value
 
         doItem key, value for key, value of @getOptionValue('store') or {}
 
@@ -112,6 +118,10 @@ D.Module = class Module extends D.Base
 
     fetchDataAfterRender: ->
         @Promise.chain (D.Request.get @store[name] for name in @autoLoadAfterRender)
+
+    dispatch: (action) ->
+        @error "No action handler for #{action.name}" unless D.isFunction @actions[action.name]
+        @Promise.chain -> @actions[action.name].call @actionContext, action.payload
 
     beforeRender: ->
     afterRender: ->

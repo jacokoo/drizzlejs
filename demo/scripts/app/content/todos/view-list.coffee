@@ -2,15 +2,11 @@ define ['jquery'], ($) ->
 
     bind: todos: true
 
-    events:
-        'change chk-*': 'completeIt'
-        'click rm-*': 'removeIt'
+    actions:
+        'change chk-*': 'completeTodo'
+        'click rm-*': 'removeTodo'
 
-    handlers:
-        completeIt: (id, e) ->
-            @data.todos.findOne('id', id).completed = $(e.target).is(':checked')
-            @data.todos.changed()
-
-        removeIt: (id) ->
-            data = (item for item in @data.todos.data when item.id isnt id)
-            @data.todos.set(data)
+    dataForAction:
+        completeTodo: (data, e) ->
+            data.completed = e.target.checked
+            data

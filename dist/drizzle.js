@@ -23,7 +23,7 @@ var slice = [].slice,
     return root.Drizzle = factory(root, Handlebars, diffDOM);
   }
 })(this, function(root, Handlebars, diffDOM) {
-  var A, Application, Base, D, Drizzle, Layout, Loader, Model, Module, Promise, Region, Route, Router, SimpleLoader, View, compose, defaultOptions, fn1, idCounter, item, j, len, pushStateSupported, toString, types;
+  var A, Application, Base, D, Drizzle, Layout, Loader, Model, Module, MultiRegion, PageableModel, Promise, Region, Route, Router, SimpleLoader, View, compose, defaultOptions, fn1, idCounter, item, j, len, pushStateSupported, toString, types;
   D = Drizzle = {
     version: '0.3.0'
   };
@@ -83,17 +83,17 @@ var slice = [].slice,
     hasClass: function(el, clazz) {
       return $(el).hasClass(clazz);
     },
-    getElementsBySelector: function(selector, el) {
-      if (el == null) {
-        el = root.document;
-      }
-      return el.querySelectorAll(selector);
+    addClass: function(el, clazz) {
+      return $(el).addClass(clazz);
     },
-    createDefaultHandler: function(name) {
+    removeClass: function(el, clazz) {
+      return $(el).removeClass(clazz);
+    },
+    componentHandler: function(name) {
       return {
-        creator: (function() {
+        creator: function() {
           throw new Error('Component [' + name + '] is not defined');
-        })()
+        }
       };
     },
     delegateDomEvent: function(el, name, selector, fn) {
@@ -101,6 +101,24 @@ var slice = [].slice,
     },
     undelegateDomEvents: function(el, namespace) {
       return $(el).off(namespace);
+    },
+    getFormData: function(form) {
+      var data, k, len1, o, ref;
+      data = {};
+      ref = $(form).serializeArray();
+      for (k = 0, len1 = ref.length; k < len1; k++) {
+        item = ref[k];
+        o = data[item.name];
+        if (o === void 0) {
+          data[item.name] = item.value;
+        } else {
+          if (!D.isArray(o)) {
+            o = data[item.name] = [data[item.name]];
+          }
+          o.push(data.value);
+        }
+      }
+      return data;
     }
   };
   D.Promise = Promise = (function() {
@@ -470,6 +488,12 @@ var slice = [].slice,
       template: 'template-',
       router: 'router'
     },
+    pagination: {
+      pageSize: 10,
+      pageKey: '_page',
+      pageSizeKey: '_pageSize',
+      recordCountKey: 'recordCount'
+    },
     actionPromised: function(promise) {}
   };
   D.Application = Application = (function(superClass) {
@@ -611,11 +635,14 @@ var slice = [].slice,
       if (options == null) {
         options = {};
       }
-      this.data = options.data || {};
       this.params = D.extend({}, options.params);
       Model.__super__.constructor.call(this, 'D', options);
       this.app.delegateEvent(this);
     }
+
+    Model.prototype.initialize = function() {
+      return this.data = this.options.data || {};
+    };
 
     Model.prototype.url = function() {
       return this.getOptionValue('url') || '';
@@ -689,6 +716,7 @@ var slice = [].slice,
     return Model;
 
   })(D.Base);
+  D.extend(D.Model, D.Factory);
   D.Region = Region = (function(superClass) {
     extend(Region, superClass);
 
@@ -771,7 +799,7 @@ var slice = [].slice,
     };
 
     Region.prototype.$$ = function(selector) {
-      return A.getElementsBySelector(selector, this.el);
+      return this.el.querySelectorAll(selector);
     };
 
     Region.prototype.update = function(el) {
@@ -802,16 +830,7 @@ var slice = [].slice,
     View.ComponentManager = {
       handlers: {},
       componentCache: {},
-      createDefaultHandler: function(name) {
-        return {
-          creator: function(view, el, options) {
-            return el[name](options);
-          },
-          destructor: function(view, component, options) {
-            return component[name]('destroy');
-          }
-        };
-      },
+      createDefaultHandler: A.componentHandler(),
       register: function(name, creator, destructor) {
         if (destructor == null) {
           destructor = (function() {});
@@ -830,10 +849,7 @@ var slice = [].slice,
         if (!name) {
           view.error('Component name can not be null');
         }
-        if (!(this.handlers[name] || el[name])) {
-          view.error('No component handler for name:' + name);
-        }
-        handler = this.handlers[name] || createDefaultHandler(name);
+        handler = this.handlers[name] || this.createDefaultHandler(name);
         dom = selector ? view.$$(selector) : view.$(id);
         if (!dom && dom.length === 0 && !selector) {
           dom = view.getEl();
@@ -943,13 +959,14 @@ var slice = [].slice,
     };
 
     View.prototype.$$ = function(selector) {
-      return this.region.$$(selector);
+      return this.getEl().querySelectorAll(selector);
     };
 
     View.prototype.setRegion = function(region1) {
       this.region = region1;
       this.virtualEl = this.getEl().cloneNode();
-      return this.bindEvents();
+      this.bindEvents();
+      return this.bindActions();
     };
 
     View.prototype.close = function() {
@@ -976,8 +993,7 @@ var slice = [].slice,
     };
 
     View.prototype.bindEvents = function() {
-      var events, key, me, results, value;
-      me = this;
+      var events, key, results, value;
       events = this.getOptionValue('events') || {};
       results = [];
       for (key in events) {
@@ -985,35 +1001,108 @@ var slice = [].slice,
         if (D.isString(value)) {
           results.push((function(_this) {
             return function(key, value) {
-              var handler, id, name, ref, selector, star, wid;
-              ref = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = ref[0], id = ref[1];
+              var handler;
               if (!_this.eventHandlers[value]) {
                 _this.error("No event handler: " + value);
               }
-              if (!id) {
-                _this.error('Id is required');
-              }
-              star = id.slice(-1) === '*';
-              wid = _this.wrapDomId(star ? id.slice(0, -1) : id);
-              selector = star ? "[id^=" + wid + "]" : '#' + wid;
               handler = function(e) {
-                var args, target;
+                var target;
                 target = e.target || e.srcElement;
                 if (A.hasClass(target, 'disabled')) {
                   return;
                 }
-                args = [e];
-                if (star) {
-                  args.unshift(target.getAttribute('id').slice(wid.length));
-                }
-                return me.eventHandlers[value].apply(me, args);
+                return _this.eventHandlers[value].call(_this, e);
               };
-              return _this.region.delegateDomEvent(_this, name, selector, handler);
+              return _this.delegateEvent(key, handler);
             };
           })(this)(key, value));
         }
       }
       return results;
+    };
+
+    View.prototype.bindActions = function() {
+      var actions, key, results, value;
+      actions = this.getOptionValue('actions') || {};
+      results = [];
+      for (key in actions) {
+        value = actions[key];
+        if (D.isString(value)) {
+          results.push((function(_this) {
+            return function(key, value) {
+              return _this.delegateEvent(key, _this.createActionEventHandler(value));
+            };
+          })(this)(key, value));
+        }
+      }
+      return results;
+    };
+
+    View.prototype.createActionEventHandler = function(name) {
+      var dataForAction, el;
+      el = this.getEl();
+      dataForAction = this.getOptionValue('dataForAction') || {};
+      return (function(_this) {
+        return function(e) {
+          var containsTarget, data, k, len1, n, ref, rootEl, target, v, value;
+          rootEl = target = e.target || e.srcElement;
+          if (A.hasClass(target, 'disabled')) {
+            return;
+          }
+          A.addClass(target, 'disabled');
+          while (rootEl && rootEl !== el && rootEl.tagName.toLowerCase() !== 'form') {
+            rootEl = rootEl.parentNode;
+          }
+          data = rootEl.tagName.toLowerCase() === 'form' ? A.getFormData(rootEl) : {};
+          containsTarget = false;
+          ref = rootEl.querySelectorAll('[data-name][data-value]');
+          for (k = 0, len1 = ref.length; k < len1; k++) {
+            item = ref[k];
+            if (item === target) {
+              containsTarget = true;
+            }
+            n = item.getAttribute('data-name');
+            value = item.getAttribute('data-value');
+            v = data[n];
+            if (!v) {
+              data[n] = value;
+            } else {
+              if (!D.isArray(v)) {
+                v = data[n] = [data[n]];
+              }
+              v.push(value);
+            }
+          }
+          if (containsTarget) {
+            n = target.getAttribute('data-name');
+            data[n] = target.getAttribute('data-value');
+          }
+          if (D.isFunction(dataForAction[name])) {
+            data = dataForAction[name].apply(_this, [data, e]);
+          }
+          if (data === false) {
+            return A.removeClass(target, 'disabled');
+          }
+          return _this.module.dispatch({
+            name: name,
+            payload: data
+          }).then(function() {
+            return A.removeClass(target, 'disabled');
+          });
+        };
+      })(this);
+    };
+
+    View.prototype.delegateEvent = function(token, handler) {
+      var id, name, ref, selector, star, wid;
+      ref = token.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = ref[0], id = ref[1];
+      if (!id) {
+        this.error('Id is required');
+      }
+      star = id.slice(-1) === '*';
+      wid = this.wrapDomId(star ? id.slice(0, -1) : id);
+      selector = star ? "[id^=" + wid + "]" : '#' + wid;
+      return this.region.delegateDomEvent(this, name, selector, handler);
     };
 
     View.prototype.unbindEvents = function() {
@@ -1059,7 +1148,7 @@ var slice = [].slice,
       var attr, id, k, l, len1, len2, len3, m, ref, ref1, ref2, used, value, withHash;
       this.virtualEl.innerHTML = this.template(data);
       used = {};
-      ref = A.getElementsBySelector('[id]', this.virtualEl);
+      ref = this.virtualEl.querySelectorAll('[id]');
       for (k = 0, len1 = ref.length; k < len1; k++) {
         item = ref[k];
         id = item.getAttribute('id');
@@ -1072,7 +1161,7 @@ var slice = [].slice,
       ref1 = this.app.options.attributesReferToId || [];
       for (l = 0, len2 = ref1.length; l < len2; l++) {
         attr = ref1[l];
-        ref2 = A.getElementsBySelector("[" + attr + "]", this.virtualEl);
+        ref2 = this.virtualEl.querySelectorAll("[" + attr + "]");
         for (m = 0, len3 = ref2.length; m < len3; m++) {
           item = ref2[m];
           value = item.getAttribute(attr);
@@ -1080,7 +1169,7 @@ var slice = [].slice,
           item.setAttribute(attr, (withHash ? "#" + (this.wrapDomId(value.slice(1))) : this.wrapDomId(value)));
         }
       }
-      return this.region.update(this.virtualEl);
+      return this.region.update(this.virtualEl, this);
     };
 
     View.prototype.renderComponent = function() {
@@ -1138,6 +1227,7 @@ var slice = [].slice,
     return View;
 
   })(Base);
+  D.extend(D.View, D.Factory);
   Layout = (function(superClass) {
     extend(Layout, superClass);
 
@@ -1147,7 +1237,8 @@ var slice = [].slice,
 
     Layout.prototype.initialize = function() {
       this.isLayout = true;
-      return this.loadedPromise = this.loadTemplate();
+      this.loadedPromise = this.loadTemplate();
+      return this.bindActions = function() {};
     };
 
     return Layout;
@@ -1169,6 +1260,7 @@ var slice = [].slice,
       this.regions = {};
       Module.__super__.constructor.call(this, 'M', options);
       this.app.modules[this.id] = this;
+      this.actions = this.getOptionValue('actions') || {};
       this.app.delegateEvent(this);
     }
 
@@ -1178,7 +1270,10 @@ var slice = [].slice,
       }
       this.loadedPromise = this.Promise.chain([this.loadTemplate(), this.loadItems()]);
       this.initLayout();
-      return this.initStore();
+      this.initStore();
+      return this.actionContext = D.extend({
+        store: this.store
+      }, D.Request);
     };
 
     Module.prototype.initLayout = function() {
@@ -1197,10 +1292,11 @@ var slice = [].slice,
           if (D.isFunction(value)) {
             value = value.call(_this);
           }
+          value || (value = {});
           if (value && value.autoLoad) {
             (value.autoLoad === true ? _this.autoLoadBeforeRender : _this.autoLoadAfterRender).push(name);
           }
-          return _this.store[name] = new D.Model(_this.app, _this, value);
+          return _this.store[name] = D.Model.create(value.type, _this.app, _this, value);
         };
       })(this);
       ref = this.getOptionValue('store') || {};
@@ -1370,6 +1466,15 @@ var slice = [].slice,
       }).call(this));
     };
 
+    Module.prototype.dispatch = function(action) {
+      if (!D.isFunction(this.actions[action.name])) {
+        this.error("No action handler for " + action.name);
+      }
+      return this.Promise.chain(function() {
+        return this.actions[action.name].call(this.actionContext, action.payload);
+      });
+    };
+
     Module.prototype.beforeRender = function() {};
 
     Module.prototype.afterRender = function() {};
@@ -1460,7 +1565,10 @@ var slice = [].slice,
       name = Loader.analyse(name).name;
       return this.Promise.chain(this.loadModuleResource(module, this.fileNames.view + name), (function(_this) {
         return function(options) {
-          return new D.View(name, module, _this, options);
+          if (options == null) {
+            options = {};
+          }
+          return D.View.create(options.type, name, module, _this, options);
         };
       })(this));
     };
@@ -1711,6 +1819,170 @@ var slice = [].slice,
       return options.fn(this);
     }
   };
+  D.PageableModel = PageableModel = (function(superClass) {
+    extend(PageableModel, superClass);
+
+    function PageableModel() {
+      var defaults;
+      PageableModel.__super__.constructor.apply(this, arguments);
+      defaults = this.app.options.pagination;
+      this.pagination = {
+        page: this.options.page || 1,
+        pageCount: 0,
+        pageSize: this.options.pageSize || defaults.pageSize,
+        pageKey: this.options.pageKey || defaults.pageKey,
+        pageSizeKey: options.pageSizeKey || defaults.pageSizeKey,
+        recordCountKey: options.recordCountKey || defaults.recordCountKey
+      };
+    }
+
+    PageableModel.prototype.initialize = function() {
+      return this.data = this.options.data || [];
+    };
+
+    PageableModel.prototype.set = function(data) {
+      var p;
+      p = this.pagination;
+      p.recordCount = data[p.recordCountKey];
+      p.pageCount = Math.ceil(p.recordCount / p.pageSize);
+      return PageableModel.__super__.set.apply(this, arguments);
+    };
+
+    PageableModel.prototype.getParams = function() {
+      var p, params;
+      params = PageableModel.__super__.getParams.apply(this, arguments) || {};
+      p = this.pagination;
+      params[p.pageKey] = p.page;
+      params[p.pageSizeKey] = p.pageSize;
+      return params;
+    };
+
+    PageableModel.prototype.clear = function() {
+      this.pagination.page = 1;
+      this.pagination.pageCount = 0;
+      return PageableModel.__super__.clear.apply(this, arguments);
+    };
+
+    PageableModel.prototype.turnToPage = function(page) {
+      if (page <= this.pagination.pageCount && page >= 1) {
+        this.pagination.page = page;
+      }
+      return this;
+    };
+
+    PageableModel.prototype.firstPage = function() {
+      return this.turnToPage(1);
+    };
+
+    PageableModel.prototype.lastPage = function() {
+      return this.turnToPage(this.pagination.pageCount);
+    };
+
+    PageableModel.prototype.nextPage = function() {
+      return this.turnToPage(this.pagination.page + 1);
+    };
+
+    PageableModel.prototype.prevPage = function() {
+      return this.turnToPage(this.pagination.page - 1);
+    };
+
+    PageableModel.prototype.getPageInfo = function() {
+      var d, page, pageSize, recordCount, ref;
+      ref = this.pagination, page = ref.page, pageSize = ref.pageSize, recordCount = ref.recordCount;
+      d = this.data.length > 0 ? {
+        page: page,
+        start: (page - 1) * pageSize + 1,
+        end: page * pageSize,
+        total: recordCount
+      } : {
+        page: page,
+        start: 0,
+        end: 0,
+        total: 0
+      };
+      if (d.end > d.total) {
+        d.end = d.total;
+      }
+      return d;
+    };
+
+    return PageableModel;
+
+  })(D.Model);
+  D.Model.register('pagaable', D.PageableModel);
+  D.MultiRegion = MultiRegion = (function(superClass) {
+    extend(MultiRegion, superClass);
+
+    function MultiRegion() {
+      MultiRegion.__super__.constructor.apply(this, arguments);
+      this.items = {};
+      this.elements = {};
+    }
+
+    MultiRegion.prototype.activate = function(item) {};
+
+    MultiRegion.prototype.createElement = function(key, item) {
+      var el;
+      el = root.document.createElement('div');
+      this.el.append(el);
+      return el;
+    };
+
+    MultiRegion.prototype.getKey = function(item) {
+      var key, ref, ref1;
+      key = ((ref = item.moduleOptions) != null ? ref.key : void 0) || ((ref1 = item.renderOptions) != null ? ref1.key : void 0);
+      if (!key) {
+        this.error('Region key is required');
+      }
+      return key;
+    };
+
+    MultiRegion.prototype.getEl = function(item) {
+      var key;
+      if (!item) {
+        return this.el;
+      }
+      key = this.getKey(item);
+      this.items[key] = item;
+      return this.elements[key] || (this.elements[key] = this.createElement(key, item));
+    };
+
+    MultiRegion.prototype.update = function(el, item) {
+      var e;
+      e = this.getEl(item);
+      return this.dd.apply(this.e, this.dd.diff(this.e, el));
+    };
+
+    MultiRegion.prototype.empty = function(item) {
+      var el;
+      if (item) {
+        el = this.getEl(item);
+        return el.parentNode.removeChild(el);
+      } else {
+        return this.el.innerHTML = '';
+      }
+    };
+
+    MultiRegion.prototype.close = function() {
+      var items, key;
+      delete this.current;
+      this.elements = {};
+      items = this.items;
+      this.items = {};
+      return this.Promise.chain((function() {
+        var results;
+        results = [];
+        for (key in items) {
+          item = items[key];
+          results.push(item.close());
+        }
+        return results;
+      })());
+    };
+
+    return MultiRegion;
+
+  })(D.Region);
   return Drizzle;
 });
 

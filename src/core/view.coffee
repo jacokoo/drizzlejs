@@ -2,18 +2,15 @@ D.View = class View extends Base
     @ComponentManager =
         handlers: {}
         componentCache: {}
-        createDefaultHandler: (name) ->
-            creator: (view, el, options) -> el[name] options
-            destructor: (view, component, options) -> component[name] 'destroy'
+        createDefaultHandler: A.componentHandler()
         register: (name, creator, destructor = ( -> )) ->
             @handlers[name] = creator: creator, destructor: destructor
 
         create: (view, options = {}) ->
             {id, name, selector, options: opt} = options
             view.error 'Component name can not be null' unless name
-            view.error 'No component handler for name:' + name unless @handlers[name] or el[name]
 
-            handler = @handlers[name] or createDefaultHandler(name)
+            handler = @handlers[name] or @createDefaultHandler(name)
             dom = if selector then view.$$(selector) else view.$(id)
             dom = view.getEl() if not dom and dom.length is 0 and not selector
             id = D.uniqueId() unless id
@@ -65,11 +62,12 @@ D.View = class View extends Base
 
     $: (id) -> @$$("##{@wrapDomId id}")[0]
 
-    $$: (selector) -> @region.$$ selector
+    $$: (selector) -> @getEl().querySelectorAll selector
 
     setRegion: (@region) ->
         @virtualEl = @getEl().cloneNode()
         @bindEvents()
+        @bindActions()
 
     close: ->
         return @Promise.resolve @ unless @region
@@ -92,25 +90,75 @@ D.View = class View extends Base
     wrapDomId: (id) -> "#{@id}#{id}"
 
     bindEvents: ->
-        me = @
         events = @getOptionValue('events') or {}
         for key, value of events when D.isString value
             do (key, value) =>
-                [name, id] = key.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
                 @error "No event handler: #{value}" unless @eventHandlers[value]
-                @error 'Id is required' unless id
-                star = id.slice(-1) is '*'
-                wid = @wrapDomId(if star then id.slice(0, -1) else id)
-                selector = if star then "[id^=#{wid}]" else '#' + wid
 
-                handler = (e) ->
+                handler = (e) =>
                     target = e.target or e.srcElement
                     return if A.hasClass target, 'disabled'
-                    args = [e]
-                    args.unshift target.getAttribute('id').slice(wid.length) if star
-                    me.eventHandlers[value].apply me, args
+                    @eventHandlers[value].call @, e
 
-                @region.delegateDomEvent @, name, selector, handler
+                @delegateEvent key, handler
+
+    bindActions: ->
+        actions = @getOptionValue('actions') or {}
+        for key, value of actions when D.isString value
+            do (key, value) =>
+                @delegateEvent key, @createActionEventHandler(value)
+
+    createActionEventHandler: (name) ->
+        el = @getEl()
+        dataForAction = @getOptionValue('dataForAction') or {}
+        disabled = @app.options.disabledClass
+        (e) =>
+            rootEl = target = e.target or e.srcElement
+            return if A.hasClass target, disabled
+            A.addClass target, disabled
+
+            while rootEl and rootEl isnt el and rootEl.tagName isnt 'FORM'
+                rootEl = rootEl.parentNode
+
+            data = @getActionData rootEl, target
+            @Promise.chain ->
+                data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
+                data
+            , (d) ->
+                @module.dispatch(name: name, payload: d) if d isnt false
+            , ->
+                A.removeClass target, disabled
+
+
+    getActionData: (el, target) ->
+        el or= @getEl()
+        data = if el.tagName is 'FORM' then A.getFormData(el) else {}
+        containsTarget = false
+        for item in el.querySelectorAll('[data-name][data-value]')
+            containsTarget = true if item is target
+            n = item.getAttribute 'data-name'
+            value = item.getAttribute 'data-value'
+            v = data[n]
+            if not v
+                data[n] = value
+            else
+                v = data[n] = [data[n]] unless D.isArray v
+                v.push value
+
+        if containsTarget
+            n = target.getAttribute 'data-name'
+            data[n] = target.getAttribute 'data-value'
+
+        data
+
+    delegateEvent: (token, handler) ->
+        [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
+        @error 'Id is required' unless id
+        star = id.slice(-1) is '*'
+        wid = @wrapDomId(if star then id.slice(0, -1) else id)
+        selector = if star then "[id^=#{wid}]" else '#' + wid
+
+        @region.delegateDomEvent @, name, selector, handler
 
     unbindEvents: ->
         @region.undelegateDomEvents @
@@ -144,19 +192,19 @@ D.View = class View extends Base
     renderTemplate: (data) ->
         @virtualEl.innerHTML = @template data
         used = {}
-        for item in A.getElementsBySelector('[id]', @virtualEl)
+        for item in @virtualEl.querySelectorAll('[id]')
             id = item.getAttribute 'id'
             @error "#{id} already used" if used[id]
             used[id] = true
             item.setAttribute 'id', @wrapDomId id
 
         for attr in @app.options.attributesReferToId or []
-            for item in A.getElementsBySelector("[#{attr}]", @virtualEl)
+            for item in @virtualEl.querySelectorAll("[#{attr}]")
                 value = item.getAttribute attr
                 withHash = value.charAt(0) is '#'
                 item.setAttribute attr, (if withHash then "##{@wrapDomId value.slice 1}" else @wrapDomId(value))
 
-        @region.update @virtualEl
+        @region.update @virtualEl, @
 
     renderComponent: ->
         components = @getOptionValue('components') or []
@@ -174,3 +222,5 @@ D.View = class View extends Base
     afterRender: ->
     beforeClose: ->
     afterClose: ->
+
+D.extend D.View, D.Factory

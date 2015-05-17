@@ -64,6 +64,8 @@
 
     # @include util/helpers.coffee
 
-<%= extModules %>
+    # @include core/pageable-model.coffee
+
+    # @include core/multi-region.coffee
 
     Drizzle

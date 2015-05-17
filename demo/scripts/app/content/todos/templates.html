@@ -19,7 +19,7 @@
     </div>
 {{/layout}}
 {{#view "input"}}
-    <input id="input" class="form-control"/>
+    <form><input id="input" class="form-control" name="text"/></form>
 {{/view}}
 {{#view "list"}}
     <div class="list-group">
@@ -27,7 +27,7 @@
             <a class="list-group-item" href="javascript:void 0">
                 <div class="checkbox">
                     <label>
-                        <input {{#if completed}} checked="true"{{/if}} id="chk-{{id}}" type="checkbox" value="value"/>
+                        <input {{#if completed}} checked="true"{{/if}} id="chk-{{id}}" type="checkbox" data-name="id" data-value="{{id}}"/>
                         {{#if completed}}
                             <del>
                                 {{text}}
@@ -36,7 +36,7 @@
                             {{text}}
                         {{/if}}
                     </label>
-                    <span class="glyphicon glyphicon-remove pull-right" id="rm-{{id}}"></span>
+                    <span class="glyphicon glyphicon-remove pull-right" id="rm-{{id}}" data-name="id" data-value="{{id}}"></span>
                 </div>
             </a>
         {{/each}}

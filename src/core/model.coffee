@@ -1,9 +1,11 @@
 D.Model = class Model extends D.Base
     constructor: (@app, @module, options = {}) ->
-        @data = options.data or {}
         @params = D.extend {}, options.params
         super 'D', options
         @app.delegateEvent @
+
+    initialize: ->
+        @data = @options.data or {}
 
     url: -> @getOptionValue('url') or ''
 
@@ -41,3 +43,5 @@ D.Model = class Model extends D.Base
         result = @find name, value
         return result unless result
         if D.isObject @data then result else result[0]
+
+D.extend D.Model, D.Factory

@@ -12,7 +12,7 @@ define
             completed: completed
             left: todos.length - completed
 
-    events:
+    actions:
         'click remove': 'removeCompleted'
 
     handlers:

@@ -41,7 +41,7 @@ D.Region = class Region extends D.Base
 
     getEl: -> @el
 
-    $$: (selector) -> A.getElementsBySelector selector, @el
+    $$: (selector) -> @el.querySelectorAll selector
 
     update: (el) ->
         @dd.apply @el, @dd.diff(@el, el)

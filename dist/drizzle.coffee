@@ -46,18 +46,29 @@
     A = D.Adapter =
         Promise: root['Promise']
         ajax: $.ajax
-        hasClass: (el, clazz) -> $(el).hasClass(clazz)
+        hasClass: (el, clazz) -> $(el).hasClass clazz
+        addClass: (el, clazz) -> $(el).addClass clazz
+        removeClass: (el, clazz) -> $(el).removeClass clazz
 
-        getElementsBySelector: (selector, el = root.document) -> el.querySelectorAll(selector)
-
-        createDefaultHandler: (name) ->
-            creator: throw new Error('Component [' + name + '] is not defined')
+        componentHandler: (name) ->
+            creator: -> throw new Error('Component [' + name + '] is not defined')
 
         delegateDomEvent: (el, name, selector, fn) ->
             $(el).on name, selector, fn
 
         undelegateDomEvents: (el, namespace) ->
             $(el).off namespace
+
+        getFormData: (form) ->
+            data = {}
+            for item in $(form).serializeArray()
+                o = data[item.name]
+                if o is undefined
+                    data[item.name] = item.value
+                else
+                    o = data[item.name] = [data[item.name]] unless D.isArray(o)
+                    o.push data.value
+            data
 
 
     D.Promise = class Promise
@@ -257,6 +268,12 @@
             template: 'template-'     # seprated template file name prefix
             router: 'router'
 
+        pagination:
+            pageSize: 10
+            pageKey: '_page'
+            pageSizeKey: '_pageSize'
+            recordCountKey: 'recordCount'
+
         actionPromised: (promise) ->
 
     D.Application = class Application extends D.Base
@@ -326,10 +343,12 @@
 
     D.Model = class Model extends D.Base
         constructor: (@app, @module, options = {}) ->
-            @data = options.data or {}
             @params = D.extend {}, options.params
             super 'D', options
             @app.delegateEvent @
+
+        initialize: ->
+            @data = @options.data or {}
 
         url: -> @getOptionValue('url') or ''
 
@@ -367,6 +386,8 @@
             result = @find name, value
             return result unless result
             if D.isObject @data then result else result[0]
+
+    D.extend D.Model, D.Factory
 
 
     D.Region = class Region extends D.Base
@@ -412,7 +433,7 @@
 
         getEl: -> @el
 
-        $$: (selector) -> A.getElementsBySelector selector, @el
+        $$: (selector) -> @el.querySelectorAll selector
 
         update: (el) ->
             @dd.apply @el, @dd.diff(@el, el)
@@ -433,18 +454,15 @@
         @ComponentManager =
             handlers: {}
             componentCache: {}
-            createDefaultHandler: (name) ->
-                creator: (view, el, options) -> el[name] options
-                destructor: (view, component, options) -> component[name] 'destroy'
+            createDefaultHandler: A.componentHandler()
             register: (name, creator, destructor = ( -> )) ->
                 @handlers[name] = creator: creator, destructor: destructor
 
             create: (view, options = {}) ->
                 {id, name, selector, options: opt} = options
                 view.error 'Component name can not be null' unless name
-                view.error 'No component handler for name:' + name unless @handlers[name] or el[name]
 
-                handler = @handlers[name] or createDefaultHandler(name)
+                handler = @handlers[name] or @createDefaultHandler(name)
                 dom = if selector then view.$$(selector) else view.$(id)
                 dom = view.getEl() if not dom and dom.length is 0 and not selector
                 id = D.uniqueId() unless id
@@ -496,11 +514,12 @@
 
         $: (id) -> @$$("##{@wrapDomId id}")[0]
 
-        $$: (selector) -> @region.$$ selector
+        $$: (selector) -> @getEl().querySelectorAll selector
 
         setRegion: (@region) ->
             @virtualEl = @getEl().cloneNode()
             @bindEvents()
+            @bindActions()
 
         close: ->
             return @Promise.resolve @ unless @region
@@ -523,25 +542,64 @@
         wrapDomId: (id) -> "#{@id}#{id}"
 
         bindEvents: ->
-            me = @
             events = @getOptionValue('events') or {}
             for key, value of events when D.isString value
                 do (key, value) =>
-                    [name, id] = key.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
                     @error "No event handler: #{value}" unless @eventHandlers[value]
-                    @error 'Id is required' unless id
-                    star = id.slice(-1) is '*'
-                    wid = @wrapDomId(if star then id.slice(0, -1) else id)
-                    selector = if star then "[id^=#{wid}]" else '#' + wid
 
-                    handler = (e) ->
+                    handler = (e) =>
                         target = e.target or e.srcElement
                         return if A.hasClass target, 'disabled'
-                        args = [e]
-                        args.unshift target.getAttribute('id').slice(wid.length) if star
-                        me.eventHandlers[value].apply me, args
+                        @eventHandlers[value].call @, e
 
-                    @region.delegateDomEvent @, name, selector, handler
+                    @delegateEvent key, handler
+
+        bindActions: ->
+            actions = @getOptionValue('actions') or {}
+            for key, value of actions when D.isString value
+                do (key, value) =>
+                    @delegateEvent key, @createActionEventHandler(value)
+
+        createActionEventHandler: (name) ->
+            el = @getEl()
+            dataForAction = @getOptionValue('dataForAction') or {}
+            (e) =>
+                rootEl = target = e.target or e.srcElement
+                return if A.hasClass target, 'disabled'
+                A.addClass target, 'disabled'
+
+                while rootEl and rootEl isnt el and rootEl.tagName.toLowerCase() isnt 'form'
+                    rootEl = rootEl.parentNode
+                data = if rootEl.tagName.toLowerCase() is 'form' then A.getFormData(rootEl) else {}
+                containsTarget = false
+                for item in rootEl.querySelectorAll('[data-name][data-value]')
+                    containsTarget = true if item is target
+                    n = item.getAttribute 'data-name'
+                    value = item.getAttribute 'data-value'
+                    v = data[n]
+                    if not v
+                        data[n] = value
+                    else
+                        v = data[n] = [data[n]] unless D.isArray v
+                        v.push value
+
+                if containsTarget
+                    n = target.getAttribute 'data-name'
+                    data[n] = target.getAttribute 'data-value'
+
+                data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
+                return A.removeClass target, 'disabled' if data is false
+                @module.dispatch(name: name, payload: data).then ->
+                    A.removeClass target, 'disabled'
+
+        delegateEvent: (token, handler) ->
+            [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
+            @error 'Id is required' unless id
+            star = id.slice(-1) is '*'
+            wid = @wrapDomId(if star then id.slice(0, -1) else id)
+            selector = if star then "[id^=#{wid}]" else '#' + wid
+
+            @region.delegateDomEvent @, name, selector, handler
 
         unbindEvents: ->
             @region.undelegateDomEvents @
@@ -575,19 +633,19 @@
         renderTemplate: (data) ->
             @virtualEl.innerHTML = @template data
             used = {}
-            for item in A.getElementsBySelector('[id]', @virtualEl)
+            for item in @virtualEl.querySelectorAll('[id]')
                 id = item.getAttribute 'id'
                 @error "#{id} already used" if used[id]
                 used[id] = true
                 item.setAttribute 'id', @wrapDomId id
 
             for attr in @app.options.attributesReferToId or []
-                for item in A.getElementsBySelector("[#{attr}]", @virtualEl)
+                for item in @virtualEl.querySelectorAll("[#{attr}]")
                     value = item.getAttribute attr
                     withHash = value.charAt(0) is '#'
                     item.setAttribute attr, (if withHash then "##{@wrapDomId value.slice 1}" else @wrapDomId(value))
 
-            @region.update @virtualEl
+            @region.update @virtualEl, @
 
         renderComponent: ->
             components = @getOptionValue('components') or []
@@ -606,11 +664,14 @@
         beforeClose: ->
         afterClose: ->
 
+    D.extend D.View, D.Factory
+
 
     class Layout extends D.View
         initialize: ->
             @isLayout = true
             @loadedPromise = @loadTemplate()
+            @bindActions = ->
 
     D.Module = class Module extends D.Base
         @Layout = Layout
@@ -619,6 +680,7 @@
             @regions = {}
             super 'M', options
             @app.modules[@id] = @
+            @actions = @getOptionValue('actions') or {}
             @app.delegateEvent @
 
         initialize: ->
@@ -627,6 +689,9 @@
 
             @initLayout()
             @initStore()
+            @actionContext = D.extend
+                store: @store
+            , D.Request
 
         initLayout: ->
             layout = @getOptionValue('layout') or {}
@@ -638,9 +703,10 @@
             @autoLoadAfterRender = []
             doItem = (name, value) =>
                 value = value.call @ if D.isFunction value
+                value or= {}
                 if value and value.autoLoad
                     (if value.autoLoad is true then @autoLoadBeforeRender else @autoLoadAfterRender).push name
-                @store[name] = new D.Model @app, @, value
+                @store[name] = D.Model.create value.type, @app, @, value
 
             doItem key, value for key, value of @getOptionValue('store') or {}
 
@@ -722,6 +788,10 @@
         fetchDataAfterRender: ->
             @Promise.chain (D.Request.get @store[name] for name in @autoLoadAfterRender)
 
+        dispatch: (action) ->
+            @error "No action handler for #{action.name}" unless D.isFunction @actions[action.name]
+            @Promise.chain -> @actions[action.name].call @actionContext, action.payload
+
         beforeRender: ->
         afterRender: ->
         beforeClose: ->
@@ -775,8 +845,8 @@
 
         loadView: (name, module, options) ->
             {name} = Loader.analyse name
-            @Promise.chain @loadModuleResource(module, @fileNames.view + name), (options) =>
-                new D.View name, module, @, options
+            @Promise.chain @loadModuleResource(module, @fileNames.view + name), (options = {}) =>
+                D.View.create options.type, name, module, @, options
 
         #load template for module
         loadTemplate: (module) ->
@@ -913,6 +983,102 @@
             options.fn @
 
 
+    D.PageableModel = class PageableModel extends D.Model
+        constructor: ->
+            super
+            defaults = @app.options.pagination
+            @pagination =
+                page: @options.page or 1
+                pageCount: 0
+                pageSize: @options.pageSize or defaults.pageSize
+                pageKey: @options.pageKey or defaults.pageKey
+                pageSizeKey: options.pageSizeKey or defaults.pageSizeKey
+                recordCountKey: options.recordCountKey or defaults.recordCountKey
+
+        initialize: -> @data = @options.data or []
+
+        set: (data) ->
+            p = @pagination
+            p.recordCount = data[p.recordCountKey]
+            p.pageCount = Math.ceil(p.recordCount / p.pageSize)
+            super
+
+        getParams: ->
+            params = super or {}
+            p = @pagination
+            params[p.pageKey] = p.page
+            params[p.pageSizeKey] = p.pageSize
+            params
+
+        clear: ->
+            @pagination.page = 1
+            @pagination.pageCount = 0
+            super
+
+        turnToPage: (page) ->
+            @pagination.page = page if page <= @pagination.pageCount and page >= 1
+            @
+
+        firstPage: -> @turnToPage 1
+        lastPage: -> @turnToPage @pagination.pageCount
+        nextPage: -> @turnToPage @pagination.page + 1
+        prevPage: -> @turnToPage @pagination.page - 1
+
+        getPageInfo: ->
+            {page, pageSize, recordCount} = @pagination
+            d = if @data.length > 0
+                page: page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount
+            else
+                page: page, start: 0, end: 0, total: 0
+
+            d.end = d.total if d.end > d.total
+            d
+
+    D.Model.register 'pagaable', D.PageableModel
+
+
+    D.MultiRegion = class MultiRegion extends D.Region
+        constructor: ->
+            super
+            @items = {}
+            @elements = {}
+
+        activate: (item) ->
+
+        createElement: (key, item) ->
+            el = root.document.createElement 'div'
+            @el.append el
+            el
+
+        getKey: (item) ->
+            key = item.moduleOptions?.key or item.renderOptions?.key
+            @error 'Region key is required' unless key
+            key
+
+        getEl: (item) ->
+            return @el if not item
+
+            key = @getKey item
+            @items[key] = item
+            @elements[key] or (@elements[key] = @createElement(key, item))
+
+        update: (el, item) ->
+            e = @getEl(item)
+            @dd.apply @e, @dd.diff(@e, el)
+
+        empty: (item) ->
+            if item
+                el = @getEl(item)
+                el.parentNode.removeChild(el)
+            else
+                @el.innerHTML = ''
+
+        close: ->
+            delete @current
+            @elements = {}
+            items = @items
+            @items = {}
+            @Promise.chain (item.close() for key, item of items)
 
 
     Drizzle

@@ -1,15 +1,12 @@
 define ['jquery', 'drizzle'], ($, D) ->
 
-    bind: todos: false
+    bind: todos: true
 
-    events:
-        'keypress input': 'addItem'
+    actions:
+        'keypress input': 'createTodo'
 
-    handlers:
-        addItem: (e) ->
-            return unless e.keyCode is 13
-            t = @$ 'input'
-            text = t.value
-            return unless text
-            @data.todos.append(id: D.uniqueId('todo'), text: text)
-            t.value = ''
+    dataForAction:
+        createTodo: (data, e) ->
+            return false unless e.keyCode is 13
+            e.preventDefault()
+            data

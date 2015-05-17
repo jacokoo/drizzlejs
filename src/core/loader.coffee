@@ -45,8 +45,8 @@ D.Loader = class Loader extends D.Base
 
     loadView: (name, module, options) ->
         {name} = Loader.analyse name
-        @Promise.chain @loadModuleResource(module, @fileNames.view + name), (options) =>
-            new D.View name, module, @, options
+        @Promise.chain @loadModuleResource(module, @fileNames.view + name), (options = {}) =>
+            D.View.create options.type, name, module, @, options
 
     #load template for module
     loadTemplate: (module) ->
