@@ -1,14 +1,13 @@
 ((root, factory) ->
     if typeof define is 'function' and define.amd
-        define ['handlebars.runtime', 'diff-dom'], (Handlebars, diffDOM) ->
-            factory root, Handlebars['default'], diffDOM
+        define ['handlebars.runtime'], (Handlebars) ->
+            factory root, Handlebars['default']
     else if module and module.exports
         Handlebars = require('handlebars/runtime')['default']
-        diffDOM = require 'diff-dom'
-        module.exports = factory root, Handlebars, diffDOM
+        module.exports = factory root, Handlebars
     else
-        root.Drizzle = factory root, Handlebars, diffDOM
-) window, (root, Handlebars, diffDOM) ->
+        root.Drizzle = factory root, Handlebars
+) window, (root, Handlebars) ->
 
     D = Drizzle = version: '<%= version %>'
 

@@ -28,6 +28,7 @@ D.View = class View extends Base
         @app = @module.app
         @eventHandlers = options.handlers or {}
         @components = {}
+        @eventKeys = {}
         super 'V', options
         @app.delegateEvent @
 
@@ -89,16 +90,30 @@ D.View = class View extends Base
 
     wrapDomId: (id) -> "#{@id}#{id}"
 
+    analyseEventKey: (token) ->
+        return @eventKeys[token] if @eventKeys[token]
+
+        [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
+        @error 'Id is required' unless id
+        star = id.slice(-1) is '*'
+        wid = @wrapDomId(if star then id.slice(0, -1) else id)
+        selector = if star then "[id^=#{wid}]" else '#' + wid
+
+        @eventKeys[token] = [name, id, star, wid, selector]
+
     bindEvents: ->
         events = @getOptionValue('events') or {}
         for key, value of events when D.isString value
             do (key, value) =>
                 @error "No event handler: #{value}" unless @eventHandlers[value]
+                [..., star, wid, s] = @analyseEventKey key
 
                 handler = (e) =>
                     target = e.target or e.srcElement
                     return if A.hasClass target, 'disabled'
-                    @eventHandlers[value].call @, e
+                    args = [e]
+                    args.unshift target.getAttribute('id').slice(wid.length) if star
+                    @eventHandlers[value].apply @, args
 
                 @delegateEvent key, handler
 
@@ -125,10 +140,9 @@ D.View = class View extends Base
                 data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
                 data
             , (d) ->
-                @module.dispatch(name: name, payload: d) if d isnt false
+                @dispatchAction(name, d) if d isnt false
             , ->
                 A.removeClass target, disabled
-
 
     getActionData: (el, target) ->
         el or= @getEl()
@@ -152,12 +166,7 @@ D.View = class View extends Base
         data
 
     delegateEvent: (token, handler) ->
-        [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
-        @error 'Id is required' unless id
-        star = id.slice(-1) is '*'
-        wid = @wrapDomId(if star then id.slice(0, -1) else id)
-        selector = if star then "[id^=#{wid}]" else '#' + wid
-
+        [name, ..., selector] = @analyseEventKey token
         @region.delegateDomEvent @, name, selector, handler
 
     unbindEvents: ->
@@ -204,7 +213,10 @@ D.View = class View extends Base
                 withHash = value.charAt(0) is '#'
                 item.setAttribute attr, (if withHash then "##{@wrapDomId value.slice 1}" else @wrapDomId(value))
 
-        @region.update @virtualEl, @
+        @updateDom()
+
+    updateDom: ->
+        @getEl().innerHTML = @virtualEl.innerHTML
 
     renderComponent: ->
         components = @getOptionValue('components') or []
@@ -217,6 +229,9 @@ D.View = class View extends Base
     destroyComponents: ->
         View.ComponentManager.destroy key, @, value for key, value of @components or {}
         @components = {}
+
+    dispatchAction: (name, data) ->
+        @module.dispatch(name: name, payload: data)
 
     beforeRender: ->
     afterRender: ->

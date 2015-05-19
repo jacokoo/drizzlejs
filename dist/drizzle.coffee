@@ -7,15 +7,14 @@
 
 ((root, factory) ->
     if typeof define is 'function' and define.amd
-        define ['handlebars.runtime', 'diff-dom'], (Handlebars, diffDOM) ->
-            factory root, Handlebars['default'], diffDOM
+        define ['handlebars.runtime'], (Handlebars) ->
+            factory root, Handlebars['default']
     else if module and module.exports
         Handlebars = require('handlebars/runtime')['default']
-        diffDOM = require 'diff-dom'
-        module.exports = factory root, Handlebars, diffDOM
+        module.exports = factory root, Handlebars
     else
-        root.Drizzle = factory root, Handlebars, diffDOM
-) window, (root, Handlebars, diffDOM) ->
+        root.Drizzle = factory root, Handlebars
+) window, (root, Handlebars) ->
 
     D = Drizzle = version: '0.3.0'
 
@@ -44,31 +43,20 @@
     D.uniqueId = (prefix) -> (if prefix then prefix else '') + ++idCounter
 
     A = D.Adapter =
-        Promise: root['Promise']
-        ajax: $.ajax
-        hasClass: (el, clazz) -> $(el).hasClass clazz
-        addClass: (el, clazz) -> $(el).addClass clazz
-        removeClass: (el, clazz) -> $(el).removeClass clazz
+        Promise: null
+        ajax: null
+        hasClass: (el, clazz) ->
+        addClass: (el, clazz) ->
+        removeClass: (el, clazz) ->
 
         componentHandler: (name) ->
             creator: -> throw new Error('Component [' + name + '] is not defined')
 
         delegateDomEvent: (el, name, selector, fn) ->
-            $(el).on name, selector, fn
 
         undelegateDomEvents: (el, namespace) ->
-            $(el).off namespace
 
         getFormData: (form) ->
-            data = {}
-            for item in $(form).serializeArray()
-                o = data[item.name]
-                if o is undefined
-                    data[item.name] = item.value
-                else
-                    o = data[item.name] = [data[item.name]] unless D.isArray(o)
-                    o.push data.value
-            data
 
 
     D.Promise = class Promise
@@ -194,14 +182,13 @@
 
         ajax: (params, model, data, options = {}) ->
             url = @url model
-            params = D.extend params,
-                contentType: model.app.options.defaultContentType
-            , options
+            params = D.extend params, options
             data = D.extend data, options.data
             params.url = url
             params.data = data
             model.Promise.chain A.ajax(params), (resp) ->
                 model.set resp
+                model.changed()
                 model
 
 
@@ -357,26 +344,18 @@
 
         getParams: -> D.extend {}, @params
 
-        set: (data) ->
+        set: (data, trigger) ->
             d = if D.isFunction @options.parse then @options.parse.call(@, data) else data
             @data = if @options.root then d[@options.root] else d
-            @changed()
+            @changed() if trigger
             @
 
         changed: ->
             @trigger 'change'
 
-        append: (data) ->
-            if D.isObject @data
-                D.extend @data, data
-            else if D.isArray @data
-                @data = @data.concat if D.isArray(data) then data else [data]
-            @changed()
-            @
-
-        clear: ->
+        clear: (trigger) ->
             @data = {}
-            @changed()
+            @changed() if trigger
             @
 
     D.extend D.Model, D.Factory
@@ -385,7 +364,6 @@
     D.Region = class Region extends D.Base
         constructor: (@app, @module, @el, @name = 'region') ->
             @error 'The DOM element for region is not found' unless @el
-            @dd = new diffDOM()
             super 'R'
 
         isCurrent: (item) ->
@@ -426,9 +404,6 @@
         getEl: -> @el
 
         $$: (selector) -> @el.querySelectorAll selector
-
-        update: (el) ->
-            @dd.apply @el, @dd.diff(@el, el)
 
         empty: -> @el.innerHTML = ''
 
@@ -472,6 +447,7 @@
             @app = @module.app
             @eventHandlers = options.handlers or {}
             @components = {}
+            @eventKeys = {}
             super 'V', options
             @app.delegateEvent @
 
@@ -533,16 +509,30 @@
 
         wrapDomId: (id) -> "#{@id}#{id}"
 
+        analyseEventKey: (token) ->
+            return @eventKeys[token] if @eventKeys[token]
+
+            [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
+            @error 'Id is required' unless id
+            star = id.slice(-1) is '*'
+            wid = @wrapDomId(if star then id.slice(0, -1) else id)
+            selector = if star then "[id^=#{wid}]" else '#' + wid
+
+            @eventKeys[token] = [name, id, star, wid, selector]
+
         bindEvents: ->
             events = @getOptionValue('events') or {}
             for key, value of events when D.isString value
                 do (key, value) =>
                     @error "No event handler: #{value}" unless @eventHandlers[value]
+                    [..., star, wid, s] = @analyseEventKey key
 
                     handler = (e) =>
                         target = e.target or e.srcElement
                         return if A.hasClass target, 'disabled'
-                        @eventHandlers[value].call @, e
+                        args = [e]
+                        args.unshift target.getAttribute('id').slice(wid.length) if star
+                        @eventHandlers[value].apply @, args
 
                     @delegateEvent key, handler
 
@@ -569,10 +559,9 @@
                     data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
                     data
                 , (d) ->
-                    @module.dispatch(name: name, payload: d) if d isnt false
+                    @dispatchAction(name, d) if d isnt false
                 , ->
                     A.removeClass target, disabled
-
 
         getActionData: (el, target) ->
             el or= @getEl()
@@ -596,12 +585,7 @@
             data
 
         delegateEvent: (token, handler) ->
-            [name, id] = token.replace(/(^\s+)|(\s+$)/g, '').split /\s+/
-            @error 'Id is required' unless id
-            star = id.slice(-1) is '*'
-            wid = @wrapDomId(if star then id.slice(0, -1) else id)
-            selector = if star then "[id^=#{wid}]" else '#' + wid
-
+            [name, ..., selector] = @analyseEventKey token
             @region.delegateDomEvent @, name, selector, handler
 
         unbindEvents: ->
@@ -648,7 +632,10 @@
                     withHash = value.charAt(0) is '#'
                     item.setAttribute attr, (if withHash then "##{@wrapDomId value.slice 1}" else @wrapDomId(value))
 
-            @region.update @virtualEl, @
+            @updateDom()
+
+        updateDom: ->
+            @getEl().innerHTML = @virtualEl.innerHTML
 
         renderComponent: ->
             components = @getOptionValue('components') or []
@@ -661,6 +648,9 @@
         destroyComponents: ->
             View.ComponentManager.destroy key, @, value for key, value of @components or {}
             @components = {}
+
+        dispatchAction: (name, data) ->
+            @module.dispatch(name: name, payload: data)
 
         beforeRender: ->
         afterRender: ->

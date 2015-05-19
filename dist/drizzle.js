@@ -10,19 +10,18 @@ var slice = [].slice,
   hasProp = {}.hasOwnProperty;
 
 (function(root, factory) {
-  var Handlebars, diffDOM;
+  var Handlebars;
   if (typeof define === 'function' && define.amd) {
-    return define(['handlebars.runtime', 'diff-dom'], function(Handlebars, diffDOM) {
-      return factory(root, Handlebars['default'], diffDOM);
+    return define(['handlebars.runtime'], function(Handlebars) {
+      return factory(root, Handlebars['default']);
     });
   } else if (module && module.exports) {
     Handlebars = require('handlebars/runtime')['default'];
-    diffDOM = require('diff-dom');
-    return module.exports = factory(root, Handlebars, diffDOM);
+    return module.exports = factory(root, Handlebars);
   } else {
-    return root.Drizzle = factory(root, Handlebars, diffDOM);
+    return root.Drizzle = factory(root, Handlebars);
   }
-})(window, function(root, Handlebars, diffDOM) {
+})(window, function(root, Handlebars) {
   var A, Application, Base, D, Drizzle, Layout, Loader, Model, Module, MultiRegion, PageableModel, Promise, Region, Route, Router, SimpleLoader, View, compose, defaultOptions, fn1, idCounter, item, j, len, pushStateSupported, toString, types;
   D = Drizzle = {
     version: '0.3.0'
@@ -78,17 +77,11 @@ var slice = [].slice,
     return (prefix ? prefix : '') + ++idCounter;
   };
   A = D.Adapter = {
-    Promise: root['Promise'],
-    ajax: $.ajax,
-    hasClass: function(el, clazz) {
-      return $(el).hasClass(clazz);
-    },
-    addClass: function(el, clazz) {
-      return $(el).addClass(clazz);
-    },
-    removeClass: function(el, clazz) {
-      return $(el).removeClass(clazz);
-    },
+    Promise: null,
+    ajax: null,
+    hasClass: function(el, clazz) {},
+    addClass: function(el, clazz) {},
+    removeClass: function(el, clazz) {},
     componentHandler: function(name) {
       return {
         creator: function() {
@@ -96,30 +89,9 @@ var slice = [].slice,
         }
       };
     },
-    delegateDomEvent: function(el, name, selector, fn) {
-      return $(el).on(name, selector, fn);
-    },
-    undelegateDomEvents: function(el, namespace) {
-      return $(el).off(namespace);
-    },
-    getFormData: function(form) {
-      var data, k, len1, o, ref;
-      data = {};
-      ref = $(form).serializeArray();
-      for (k = 0, len1 = ref.length; k < len1; k++) {
-        item = ref[k];
-        o = data[item.name];
-        if (o === void 0) {
-          data[item.name] = item.value;
-        } else {
-          if (!D.isArray(o)) {
-            o = data[item.name] = [data[item.name]];
-          }
-          o.push(data.value);
-        }
-      }
-      return data;
-    }
+    delegateDomEvent: function(el, name, selector, fn) {},
+    undelegateDomEvents: function(el, namespace) {},
+    getFormData: function(form) {}
   };
   D.Promise = Promise = (function() {
     function Promise(context1) {
@@ -380,14 +352,13 @@ var slice = [].slice,
         options = {};
       }
       url = this.url(model);
-      params = D.extend(params, {
-        contentType: model.app.options.defaultContentType
-      }, options);
+      params = D.extend(params, options);
       data = D.extend(data, options.data);
       params.url = url;
       params.data = data;
       return model.Promise.chain(A.ajax(params), function(resp) {
         model.set(resp);
+        model.changed();
         return model;
       });
     }
@@ -657,11 +628,13 @@ var slice = [].slice,
       return D.extend({}, this.params);
     };
 
-    Model.prototype.set = function(data) {
+    Model.prototype.set = function(data, trigger) {
       var d;
       d = D.isFunction(this.options.parse) ? this.options.parse.call(this, data) : data;
       this.data = this.options.root ? d[this.options.root] : d;
-      this.changed();
+      if (trigger) {
+        this.changed();
+      }
       return this;
     };
 
@@ -669,19 +642,11 @@ var slice = [].slice,
       return this.trigger('change');
     };
 
-    Model.prototype.append = function(data) {
-      if (D.isObject(this.data)) {
-        D.extend(this.data, data);
-      } else if (D.isArray(this.data)) {
-        this.data = this.data.concat(D.isArray(data) ? data : [data]);
-      }
-      this.changed();
-      return this;
-    };
-
-    Model.prototype.clear = function() {
+    Model.prototype.clear = function(trigger) {
       this.data = {};
-      this.changed();
+      if (trigger) {
+        this.changed();
+      }
       return this;
     };
 
@@ -700,7 +665,6 @@ var slice = [].slice,
       if (!this.el) {
         this.error('The DOM element for region is not found');
       }
-      this.dd = new diffDOM();
       Region.__super__.constructor.call(this, 'R');
     }
 
@@ -772,10 +736,6 @@ var slice = [].slice,
 
     Region.prototype.$$ = function(selector) {
       return this.el.querySelectorAll(selector);
-    };
-
-    Region.prototype.update = function(el) {
-      return this.dd.apply(this.el, this.dd.diff(this.el, el));
     };
 
     Region.prototype.empty = function() {
@@ -859,6 +819,7 @@ var slice = [].slice,
       this.app = this.module.app;
       this.eventHandlers = options.handlers || {};
       this.components = {};
+      this.eventKeys = {};
       View.__super__.constructor.call(this, 'V', options);
       this.app.delegateEvent(this);
     }
@@ -964,6 +925,21 @@ var slice = [].slice,
       return "" + this.id + id;
     };
 
+    View.prototype.analyseEventKey = function(token) {
+      var id, name, ref, selector, star, wid;
+      if (this.eventKeys[token]) {
+        return this.eventKeys[token];
+      }
+      ref = token.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = ref[0], id = ref[1];
+      if (!id) {
+        this.error('Id is required');
+      }
+      star = id.slice(-1) === '*';
+      wid = this.wrapDomId(star ? id.slice(0, -1) : id);
+      selector = star ? "[id^=" + wid + "]" : '#' + wid;
+      return this.eventKeys[token] = [name, id, star, wid, selector];
+    };
+
     View.prototype.bindEvents = function() {
       var events, key, results, value;
       events = this.getOptionValue('events') || {};
@@ -973,17 +949,22 @@ var slice = [].slice,
         if (D.isString(value)) {
           results.push((function(_this) {
             return function(key, value) {
-              var handler;
+              var handler, k, ref, s, star, wid;
               if (!_this.eventHandlers[value]) {
                 _this.error("No event handler: " + value);
               }
+              ref = _this.analyseEventKey(key), k = ref.length - 3, star = ref[k++], wid = ref[k++], s = ref[k++];
               handler = function(e) {
-                var target;
+                var args, target;
                 target = e.target || e.srcElement;
                 if (A.hasClass(target, 'disabled')) {
                   return;
                 }
-                return _this.eventHandlers[value].call(_this, e);
+                args = [e];
+                if (star) {
+                  args.unshift(target.getAttribute('id').slice(wid.length));
+                }
+                return _this.eventHandlers[value].apply(_this, args);
               };
               return _this.delegateEvent(key, handler);
             };
@@ -1034,10 +1015,7 @@ var slice = [].slice,
             return data;
           }, function(d) {
             if (d !== false) {
-              return this.module.dispatch({
-                name: name,
-                payload: d
-              });
+              return this.dispatchAction(name, d);
             }
           }, function() {
             return A.removeClass(target, disabled);
@@ -1077,14 +1055,8 @@ var slice = [].slice,
     };
 
     View.prototype.delegateEvent = function(token, handler) {
-      var id, name, ref, selector, star, wid;
-      ref = token.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/), name = ref[0], id = ref[1];
-      if (!id) {
-        this.error('Id is required');
-      }
-      star = id.slice(-1) === '*';
-      wid = this.wrapDomId(star ? id.slice(0, -1) : id);
-      selector = star ? "[id^=" + wid + "]" : '#' + wid;
+      var name, ref, selector;
+      ref = this.analyseEventKey(token), name = ref[0], selector = ref[ref.length - 1];
       return this.region.delegateDomEvent(this, name, selector, handler);
     };
 
@@ -1152,7 +1124,11 @@ var slice = [].slice,
           item.setAttribute(attr, (withHash ? "#" + (this.wrapDomId(value.slice(1))) : this.wrapDomId(value)));
         }
       }
-      return this.region.update(this.virtualEl, this);
+      return this.updateDom();
+    };
+
+    View.prototype.updateDom = function() {
+      return this.getEl().innerHTML = this.virtualEl.innerHTML;
     };
 
     View.prototype.renderComponent = function() {
@@ -1197,6 +1173,13 @@ var slice = [].slice,
         View.ComponentManager.destroy(key, this, value);
       }
       return this.components = {};
+    };
+
+    View.prototype.dispatchAction = function(name, data) {
+      return this.module.dispatch({
+        name: name,
+        payload: data
+      });
     };
 
     View.prototype.beforeRender = function() {};

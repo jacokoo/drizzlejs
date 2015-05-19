@@ -7,12 +7,20 @@ module.exports = {
 
     actions: {
         createTodo: function(payload) {
-            this.store.todos.append({id: D.uniqueId('todo'), text: payload.text, completed: false});
+            var todos = this.store.todos;
+            todos.data.unshift({id: D.uniqueId('todo'), text: payload.text, completed: false});
+            todos.changed();
+        },
+
+        updateTodo: function(payload) {
+            var todos = this.store.todos;
+            _.find(todos.data, 'id', payload.id).text = payload.text;
+            todos.changed();
         },
 
         removeTodo: function(payload) {
             var todos = this.store.todos;
-            todos.set(_.reject(todos.data, {id: payload.id}));
+            todos.set(_.reject(todos.data, {id: payload.id}), true);
         },
 
         completeTodo: function(payload) {
@@ -31,7 +39,7 @@ module.exports = {
 
         clearCompleted: function() {
             var todos = this.store.todos;
-            todos.set(_.reject(todos.data, {completed: true}));
+            todos.set(_.reject(todos.data, {completed: true}), true);
         }
     },
 

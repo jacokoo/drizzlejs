@@ -14,8 +14,7 @@ var fs = require('fs'),
     wrap = require('gulp-wrap');
 
 var libs = [
-        'jquery', 'diff-dom', 'handlebars/runtime',
-        'lodash/collection'
+        'jquery', 'handlebars/runtime', 'lodash/collection'
     ],
     options = {
         entries: ['./main.js'],

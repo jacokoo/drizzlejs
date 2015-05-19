@@ -1,6 +1,6 @@
 module.exports = {
     bind: {
-        todos: true
+        todos: false
     },
 
     actions: {
@@ -12,11 +12,11 @@ module.exports = {
             if (e.keyCode !== 13 ) {
                 return false;
             }
-            e.preventDefault();
 
             if (!data.text) {
                 return false;
             }
+            this.$('new-todo').value = ''
             return data;
         }
     }

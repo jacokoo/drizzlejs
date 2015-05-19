@@ -52,8 +52,30 @@ gulp.task 'generate-dist-files', ['generate-source-map'], ->
     gulp.src('dist/drizzle.js')
         .pipe uglify(preserveComments: 'some')
         .pipe rename 'drizzle.min.js'
+        .pipe sourcemaps.init()
+        .pipe sourcemaps.write('.')
         .pipe gulp.dest 'dist'
 
-gulp.task 'build', ['generate-dist-files']
+gulp.task 'jquery-adapter', ['clean'], ->
+    gulp.src('src/util/jquery-adapter.coffee')
+        .pipe header banner
+        .pipe map trimtrailingspaces
+        .pipe coffeelint '.coffeelint'
+        .pipe coffeelint.reporter()
+        .pipe coffee bare: true
+        .pipe sourcemaps.init()
+        .pipe sourcemaps.write('.')
+        .pipe gulp.dest 'dist'
+
+gulp.task 'jquery-adapter-min', ['jquery-adapter'], ->
+    gulp.src('dist/jquery-adapter.js')
+        .pipe uglify(preserveComments: 'some')
+        .pipe rename 'jquery-adapter.min.js'
+        .pipe sourcemaps.init()
+        .pipe sourcemaps.write('.')
+        .pipe gulp.dest 'dist'
+
+
+gulp.task 'build', ['generate-dist-files', 'jquery-adapter-min']
 
 gulp.task 'default', ['build']

@@ -1,24 +1,27 @@
 layout
-    section.todoapp
-        header(data-region='header')
+    div.todoapp
+        div(data-region='header')
         div(data-region='main')
         div(data-region='footer')
 
 view('header')
     h1 todos
-    form > input#new-todo.new-todo(placeholder='What needs to be done?' name='text' autocomplete='off')
+    form(onsubmit='return false;')
+        input#new-todo.new-todo(placeholder='What needs to be done?' name='text' autocomplete='off')
 
 view('main')
-    section.main(class='hidden')&unless(haveItem)
+    div.main(class='hidden')&unless(haveItem)
         input#toggleAll.toggle-all(type='checkbox')(checked)&if(completed)
         ul.todo-list > each(todos)
-            li(class='completed')&if(completed) > .view
-                input.toggle(type='checkbox' id='toggle-' + id)(data-name='id' data-value=id)(checked)&if(completed)
-                label > echo(text)
-                button.destroy(id='destroy-' + id)(data-name='id' data-value=id)
+            li(class='completed')&if(completed)
+                .view
+                    input.toggle(type='checkbox' id='toggle-' + id data-name='id' data-value=id)(checked)&if(completed)
+                    label(id='edit-' + id) > echo(text)
+                    button.destroy(id='destroy-' + id)(data-name='id' data-value=id)
+                form > input.edit(value=text id='input-' + id name='text')
 
 view('footer')
-    footer.footer(class='hidden')&unless(info.haveItem)
+    div.footer(class='hidden')&unless(info.haveItem)
         span.todo-count
             strong > echo(info.left)
             | items left

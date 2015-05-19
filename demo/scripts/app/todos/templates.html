@@ -1,28 +1,33 @@
 {{#layout}}
-    <section class="todoapp">
-        <header data-region="header"></header>
+    <div class="todoapp">
+        <div data-region="header"></div>
         <div data-region="main"></div>
         <div data-region="footer"></div>
-    </section>
+    </div>
 {{/layout}}
 {{#view "header"}}
     <h1>todos</h1>
-    <form><input id="new-todo" class="new-todo" placeholder="What needs to be done?" name="text" autocomplete="off"/></form>
+    <form onsubmit="return false;">
+        <input id="new-todo" class="new-todo" placeholder="What needs to be done?" name="text" autocomplete="off"/>
+    </form>
 {{/view}}
 {{#view "main"}}
-    <section {{#unless haveItem}} class="hidden"{{/unless}} class="main">
+    <div {{#unless haveItem}} class="hidden"{{/unless}} class="main">
         <input {{#if completed}} checked="checked"{{/if}} id="toggleAll" class="toggle-all" type="checkbox"/>
         <ul class="todo-list">{{#each todos}}
-            <li class="{{#if completed}}completed{{/if}}"><div class="view">
-                <input {{#if completed}} checked="checked"{{/if}} class="toggle" type="checkbox" id="toggle-{{id}}" data-name="id" data-value="{{id}}"/>
-                <label>{{text}}</label>
-                <button class="destroy" id="destroy-{{id}}" data-name="id" data-value="{{id}}"></button>
-            </div></li>
+            <li class="{{#if completed}}completed{{/if}}">
+                <div class="view">
+                    <input {{#if completed}} checked="checked"{{/if}} class="toggle" type="checkbox" id="toggle-{{id}}" data-name="id" data-value="{{id}}"/>
+                    <label id="edit-{{id}}">{{text}}</label>
+                    <button class="destroy" id="destroy-{{id}}" data-name="id" data-value="{{id}}"></button>
+                </div>
+                <form><input class="edit" value="{{text}}" id="input-{{id}}" name="text"/></form>
+            </li>
         {{/each}}</ul>
-    </section>
+    </div>
 {{/view}}
 {{#view "footer"}}
-    <footer {{#unless info.haveItem}} class="hidden"{{/unless}} class="footer">
+    <div {{#unless info.haveItem}} class="hidden"{{/unless}} class="footer">
         <span class="todo-count">
             <strong>{{info.left}}</strong>
             items left
@@ -33,5 +38,5 @@
             <li class="completed"><a class="{{#if info.completed}}selected{{/if}}" href="#todos/completed">Completed</a></li>
         </ul>
         <button {{#unless info.haveCompleted}} class="hidden"{{/unless}} id="remove" class="clear-completed">Clear completed</button>
-    </footer>
+    </div>
 {{/view}}

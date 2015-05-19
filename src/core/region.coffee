@@ -1,7 +1,6 @@
 D.Region = class Region extends D.Base
     constructor: (@app, @module, @el, @name = 'region') ->
         @error 'The DOM element for region is not found' unless @el
-        @dd = new diffDOM()
         super 'R'
 
     isCurrent: (item) ->
@@ -42,9 +41,6 @@ D.Region = class Region extends D.Base
     getEl: -> @el
 
     $$: (selector) -> @el.querySelectorAll selector
-
-    update: (el) ->
-        @dd.apply @el, @dd.diff(@el, el)
 
     empty: -> @el.innerHTML = ''
 

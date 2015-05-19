@@ -1,8 +1,39 @@
 var _ = require('lodash/collection');
+var $ = require('jquery');
 
 module.exports = {
     bind: {
         todos: true
+    },
+
+    events: {
+        'dblclick edit-*': 'showEdit',
+        'blur input-*': 'cancelEdit',
+        'keypress input-*': 'updateIt'
+    },
+
+    handlers: {
+        showEdit: function(id, e) {
+            $(e.target).closest('li').addClass('editing');
+            this.$('input-' + id).focus();
+        },
+        cancelEdit: function(id, e) {
+            $(e.target).closest('li').removeClass('editing');
+        },
+        updateIt: function(id, e) {
+            var data;
+            if (e.keyCode !== 13) {
+                return;
+            }
+            e.preventDefault();
+
+            data = this.getActionData(e.target.parentNode);
+            if (!data.text) {
+                return;
+            }
+            data.id = id;
+            this.dispatchAction('updateTodo', data);
+        }
     },
 
     dataForTemplate: {

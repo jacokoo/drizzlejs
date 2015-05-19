@@ -13,26 +13,18 @@ D.Model = class Model extends D.Base
 
     getParams: -> D.extend {}, @params
 
-    set: (data) ->
+    set: (data, trigger) ->
         d = if D.isFunction @options.parse then @options.parse.call(@, data) else data
         @data = if @options.root then d[@options.root] else d
-        @changed()
+        @changed() if trigger
         @
 
     changed: ->
         @trigger 'change'
 
-    append: (data) ->
-        if D.isObject @data
-            D.extend @data, data
-        else if D.isArray @data
-            @data = @data.concat if D.isArray(data) then data else [data]
-        @changed()
-        @
-
-    clear: ->
+    clear: (trigger) ->
         @data = {}
-        @changed()
+        @changed() if trigger
         @
 
 D.extend D.Model, D.Factory

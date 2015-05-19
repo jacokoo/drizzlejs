@@ -25,12 +25,11 @@ D.Request =
 
     ajax: (params, model, data, options = {}) ->
         url = @url model
-        params = D.extend params,
-            contentType: model.app.options.defaultContentType
-        , options
+        params = D.extend params, options
         data = D.extend data, options.data
         params.url = url
         params.data = data
         model.Promise.chain A.ajax(params), (resp) ->
             model.set resp
+            model.changed()
             model
