@@ -30,4 +30,4 @@ if ('forEach' in Array.prototype) {
 
 new D.Application({
     defaultRegion: document.getElementById('content')
-}).startRoute('todos', '/');;
+}).startRoute('todos', '/');

@@ -12,6 +12,7 @@ module.exports = {
             if (e.keyCode !== 13 ) {
                 return false;
             }
+            e.preventDefault();
 
             if (!data.text) {
                 return false;

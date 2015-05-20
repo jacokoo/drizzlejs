@@ -8,8 +8,7 @@ module.exports = {
 
     events: {
         'dblclick edit-*': 'showEdit',
-        'blur input-*': 'cancelEdit',
-        'keypress input-*': 'updateIt'
+        'blur input-*': 'cancelEdit'
     },
 
     handlers: {
@@ -19,20 +18,6 @@ module.exports = {
         },
         cancelEdit: function(id, e) {
             $(e.target).closest('li').removeClass('editing');
-        },
-        updateIt: function(id, e) {
-            var data;
-            if (e.keyCode !== 13) {
-                return;
-            }
-            e.preventDefault();
-
-            data = this.getActionData(e.target.parentNode);
-            if (!data.text) {
-                return;
-            }
-            data.id = id;
-            this.dispatchAction('updateTodo', data);
         }
     },
 
@@ -55,7 +40,8 @@ module.exports = {
     actions: {
         'change toggle-*': 'completeTodo',
         'click destroy-*': 'removeTodo',
-        'change toggleAll': 'toggleAllTodos'
+        'change toggleAll': 'toggleAllTodos',
+        'keypress input-*': 'updateTodo'
     },
 
     dataForAction: {
@@ -66,6 +52,20 @@ module.exports = {
 
         toggleAllTodos: function(data, e) {
             this.allCompleted = data.completed = e.target.checked
+            return data;
+        },
+
+        updateTodo: function(data, e) {
+            if (e.keyCode !== 13) {
+                return false;
+            }
+            e.preventDefault();
+
+            if (!data.text) {
+                return false;
+            }
+            // caused by https://github.com/marcelklehr/vdom-virtualize/issues/23
+            data.id = data.qid
             return data;
         }
     }

@@ -6,7 +6,7 @@ layout
 
 view('header')
     h1 todos
-    form(onsubmit='return false;')
+    form
         input#new-todo.new-todo(placeholder='What needs to be done?' name='text' autocomplete='off')
 
 view('main')
@@ -18,7 +18,9 @@ view('main')
                     input.toggle(type='checkbox' id='toggle-' + id data-name='id' data-value=id)(checked)&if(completed)
                     label(id='edit-' + id) > echo(text)
                     button.destroy(id='destroy-' + id)(data-name='id' data-value=id)
-                form > input.edit(value=text id='input-' + id name='text')
+                form
+                    input.edit(value=text id='input-' + id name='text')
+                    input(type='hidden' name='qid' value=id)
 
 view('footer')
     div.footer(class='hidden')&unless(info.haveItem)

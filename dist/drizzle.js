@@ -1008,12 +1008,10 @@ var slice = [].slice,
             rootEl = rootEl.parentNode;
           }
           data = _this.getActionData(rootEl, target);
-          return _this.Promise.chain(function() {
-            if (D.isFunction(dataForAction[name])) {
-              data = dataForAction[name].apply(this, [data, e]);
-            }
-            return data;
-          }, function(d) {
+          if (D.isFunction(dataForAction[name])) {
+            data = dataForAction[name].apply(_this, [data, e]);
+          }
+          return _this.Promise.chain(data, function(d) {
             if (d !== false) {
               return this.dispatchAction(name, d);
             }

@@ -136,9 +136,8 @@ D.View = class View extends Base
                 rootEl = rootEl.parentNode
 
             data = @getActionData rootEl, target
-            @Promise.chain ->
-                data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
-                data
+            data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
+            @Promise.chain data
             , (d) ->
                 @dispatchAction(name, d) if d isnt false
             , ->

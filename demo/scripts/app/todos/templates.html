@@ -7,7 +7,7 @@
 {{/layout}}
 {{#view "header"}}
     <h1>todos</h1>
-    <form onsubmit="return false;">
+    <form>
         <input id="new-todo" class="new-todo" placeholder="What needs to be done?" name="text" autocomplete="off"/>
     </form>
 {{/view}}
@@ -21,7 +21,10 @@
                     <label id="edit-{{id}}">{{text}}</label>
                     <button class="destroy" id="destroy-{{id}}" data-name="id" data-value="{{id}}"></button>
                 </div>
-                <form><input class="edit" value="{{text}}" id="input-{{id}}" name="text"/></form>
+                <form>
+                    <input class="edit" value="{{text}}" id="input-{{id}}" name="text"/>
+                    <input type="hidden" name="qid" value="{{id}}"/>
+                </form>
             </li>
         {{/each}}</ul>
     </div>
