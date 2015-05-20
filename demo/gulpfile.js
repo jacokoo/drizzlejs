@@ -33,7 +33,7 @@ var libs = [
                 if (ext === '.js' || ext === '.html') {
                     filename = path.relative(root, filename)
                     filename = path.join(path.dirname(filename), path.basename(filename, ext));
-                    b.require('./' + filename, {basedir: root});
+                    b.require('./' + filename.replace(/\\/g, '/'), {basedir: root});
                 }
             }
         })
