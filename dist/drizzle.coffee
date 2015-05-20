@@ -1,5 +1,5 @@
 ###!
-# DrizzleJS v0.3.1
+# DrizzleJS v0.3.2
 # -------------------------------------
 # Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
 # Distributed under MIT license
@@ -16,7 +16,7 @@
         root.Drizzle = factory root, Handlebars
 ) window, (root, Handlebars) ->
 
-    D = Drizzle = version: '0.3.1'
+    D = Drizzle = version: '0.3.2'
 
     idCounter = 0
     toString = Object.prototype.toString
