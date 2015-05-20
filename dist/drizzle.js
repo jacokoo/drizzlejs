@@ -853,7 +853,9 @@ var slice = [].slice,
         doBind = (function(_this) {
           return function(model) {
             return _this.listenTo(model, 'change', function() {
-              return _this.render(_this.renderOptions);
+              if (_this.region) {
+                return _this.render(_this.renderOptions);
+              }
             });
           };
         })(this);
@@ -1297,11 +1299,11 @@ var slice = [].slice,
             };
           }
           method = options.isModule ? 'loadModule' : 'loadView';
-          return _this.Promise.chain(_this.app.getLoader(name)[method](name, _this, options), function(obj) {
+          return _this.app.getLoader(name)[method](name, _this, options).then(function(obj) {
             obj.moduleOptions = options;
-            this.items[name] = obj;
+            _this.items[name] = obj;
             if (options.region) {
-              return this.inRegionItems[name] = obj;
+              return _this.inRegionItems[name] = obj;
             }
           });
         };
@@ -1389,17 +1391,21 @@ var slice = [].slice,
     };
 
     Module.prototype.renderItems = function() {
-      var key, ref, results, value;
-      ref = this.inRegionItems;
-      results = [];
-      for (key in ref) {
-        value = ref[key];
-        if (!this.regions[key]) {
-          this.error("Region:" + key + " is not defined");
+      var key, promises, value;
+      promises = (function() {
+        var ref, results;
+        ref = this.inRegionItems;
+        results = [];
+        for (key in ref) {
+          value = ref[key];
+          if (!this.regions[key]) {
+            this.error("Region:" + key + " is not defined");
+          }
+          results.push(this.regions[key].show(value));
         }
-        results.push(this.regions[key].show(value));
-      }
-      return results;
+        return results;
+      }).call(this);
+      return this.Promise.chain(promises);
     };
 
     Module.prototype.fetchDataBeforeRender = function() {

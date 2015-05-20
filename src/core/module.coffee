@@ -53,7 +53,7 @@ D.Module = class Module extends D.Base
             options = options.call @ if D.isFunction options
             options = region: options if D.isString options
             method = if options.isModule then 'loadModule' else 'loadView'
-            @Promise.chain @app.getLoader(name)[method](name, @, options), (obj) ->
+            @app.getLoader(name)[method](name, @, options).then (obj) =>
                 obj.moduleOptions = options
                 @items[name] = obj
                 @inRegionItems[name] = obj if options.region
@@ -109,9 +109,10 @@ D.Module = class Module extends D.Base
             @regions[id] = D.Region.create type, @app, @, item, id
 
     renderItems: ->
-        for key, value of @inRegionItems
+        promises = for key, value of @inRegionItems
             @error "Region:#{key} is not defined" unless @regions[key]
             @regions[key].show value
+        @Promise.chain promises
 
     fetchDataBeforeRender: ->
         @Promise.chain (D.Request.get @store[name] for name in @autoLoadBeforeRender)

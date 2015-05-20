@@ -29,5 +29,6 @@ if ('forEach' in Array.prototype) {
 }
 
 new D.Application({
-    defaultRegion: document.getElementById('content')
+    defaultRegion: document.getElementById('content'),
+    urlRoot: 'api'
 }).startRoute('todos', '/');

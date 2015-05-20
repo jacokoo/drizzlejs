@@ -9,8 +9,9 @@ var fs = require('fs'),
     buffer = require('vinyl-buffer'),
     gutil = require('gulp-util'),
     sourcemaps = require('gulp-sourcemaps'),
-    connect = require('gulp-connect'),
+    express = require('express'),
     handlebars = require('gulp-handlebars'),
+    jsonServer = require('json-server'),
     wrap = require('gulp-wrap');
 
 var libs = [
@@ -71,5 +72,18 @@ gulp.task('common', common);
 gulp.task('main', main);
 
 gulp.task('default', ['main', 'common'], function() {
-    connect.server({root: '.', port: 8000});
+    var app = express(), server = jsonServer.create();
+
+    server.use(jsonServer.defaults);
+    server.use(jsonServer.router('data/todos.json'))
+    app.use(function(req, res, next) {
+        console.log('Request URL:', req.originalUrl);
+        next();
+    });
+    app.use(express.static('.'));
+    app.use('/api', server);
+
+    app.listen(8000);
+    console.log('Server started at localhost:8000');
+    //connect.server({root: '.', port: 8000});
 })

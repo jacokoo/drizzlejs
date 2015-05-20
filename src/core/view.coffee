@@ -48,7 +48,7 @@ D.View = class View extends Base
         bind = @getOptionValue('bind') or {}
         @data = {}
 
-        doBind = (model) => @listenTo model, 'change', => @render @renderOptions
+        doBind = (model) => @listenTo model, 'change', => @render @renderOptions if @region
 
         for key, value of bind
             model = @data[key] = @module.store[key]

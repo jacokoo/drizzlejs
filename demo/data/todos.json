@@ -1,0 +1,14 @@
+{
+  "todos": [
+    {
+      "id": "1",
+      "text": "Meeting at 3pm",
+      "completed": false
+    },
+    {
+      "id": "2",
+      "text": "Go swimming",
+      "completed": true
+    }
+  ]
+}

@@ -3,7 +3,9 @@ var D = require('drizzlejs'),
 
 
 module.exports = {
-    store: {todos: {data: []}},
+    store: {
+        todos: {autoLoad: 'after'}
+    },
 
     actions: {
         createTodo: function(payload) {
@@ -54,6 +56,10 @@ module.exports = {
             this.filterKey = id;
             this.items.main.render();
             this.items.footer.render();
+        },
+
+        afterRender: function() {
+            console.log(arguments);
         }
     }
 }
