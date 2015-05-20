@@ -56,10 +56,6 @@ module.exports = {
             this.filterKey = id;
             this.items.main.render();
             this.items.footer.render();
-        },
-
-        afterRender: function() {
-            console.log(arguments);
         }
     }
 }

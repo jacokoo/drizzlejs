@@ -1,14 +1,46 @@
 ((root, factory) ->
     if typeof define is 'function' and define.amd
         define ['jquery', 'drizzlejs'], ($, D) ->
-            factory $, D
+            factory root, $, D
     else if module and module.exports
         $ = require 'jquery'
         D = require 'drizzlejs'
-        factory $, D
+        factory root, $, D
     else
-        factory $, Drizzle
-) window, ($, D) ->
+        factory root, $, Drizzle
+) window, (root, $, D) ->
+
+    class Promise
+        @resolve: (data) ->
+            return data.promise() if data and data.promise
+            return new Promise((resolve) ->
+                resolve(data)
+            )
+        @reject: (data) ->
+            return data.promise() if data and data.promise
+            return new Promise((resolve, reject) ->
+                reject(data)
+            )
+        @all: (args) ->
+            new Promise (re, rj) ->
+                $.when(args...).then (args...) ->
+                    re args
+                , (args...) ->
+                    rj args
+
+        constructor: (fn) ->
+            @deferred = $.Deferred()
+            setTimeout =>
+                fn($.proxy(@deferred.resolve, @deferred), $.proxy(@deferred.reject, @deferred))
+            , 1
+
+        then: (args...) ->
+            @deferred.then args...
+
+        promise: -> @deferred.promise()
+
+        catch: (fn) ->
+            @deferred.fail(fn)
 
     D.extend D.Adapter,
         ajax: $.ajax
@@ -39,34 +71,4 @@
                     o.push data.value
             data
 
-        Promise: class Promise
-            @resolve: (data) ->
-                return data.promise() if data and data.promise
-                return new Promise((resolve) ->
-                    resolve(data)
-                )
-            @reject: (data) ->
-                return data.promise() if data and data.promise
-                return new Promise((resolve, reject) ->
-                    reject(data)
-                )
-            @all: (args) ->
-                new Promise (re, rj) ->
-                    $.when(args...).then (args...) ->
-                        re args
-                    , (args...) ->
-                        rj args
-
-            constructor: (fn) ->
-                @deferred = $.Deferred()
-                setTimeout =>
-                    fn($.proxy(@deferred.resolve, @deferred), $.proxy(@deferred.reject, @deferred))
-                , 1
-
-            then: (args...) ->
-                @deferred.then args...
-
-            promise: -> @deferred.promise()
-
-            catch: (fn) ->
-                @deferred.fail(fn)
+        Promise: root.Promise or Promise
