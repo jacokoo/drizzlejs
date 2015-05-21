@@ -576,6 +576,14 @@ var slice = [].slice,
       return this.router.navigate(path, trigger);
     };
 
+    Application.prototype.dispatch = function(name, payload) {
+      var ref;
+      if (!payload) {
+        ref = name, name = ref.name, payload = ref.payload;
+      }
+      return this.trigger("app." + name, payload);
+    };
+
     Application.prototype.message = {
       success: function(title, content) {
         return alert(content || title);
@@ -828,7 +836,7 @@ var slice = [].slice,
       if (this.options.extend) {
         this.extend(this.options.extend);
       }
-      return this.loadedPromise = this.Promise.chain([this.loadTemplate(), this.bindData()]);
+      return this.loadedPromise = this.loadTemplate();
     };
 
     View.prototype.loadTemplate = function() {
@@ -901,7 +909,8 @@ var slice = [].slice,
       this.region = region1;
       this.virtualEl = this.getEl().cloneNode();
       this.bindEvents();
-      return this.bindActions();
+      this.bindActions();
+      return this.bindData();
     };
 
     View.prototype.close = function() {
@@ -1015,7 +1024,7 @@ var slice = [].slice,
           }
           return _this.Promise.chain(data, function(d) {
             if (d !== false) {
-              return this.dispatchAction(name, d);
+              return this.module.dispatch(name, d);
             }
           }, function() {
             return A.removeClass(target, disabled);
@@ -1175,13 +1184,6 @@ var slice = [].slice,
       return this.components = {};
     };
 
-    View.prototype.dispatchAction = function(name, data) {
-      return this.module.dispatch({
-        name: name,
-        payload: data
-      });
-    };
-
     View.prototype.beforeRender = function() {};
 
     View.prototype.afterRender = function() {};
@@ -1326,7 +1328,26 @@ var slice = [].slice,
         return this.layout.setRegion(this.region);
       }, function() {
         return this.layout.render();
-      }, this.initRegions);
+      }, this.bindGlobalAction, this.initRegions);
+    };
+
+    Module.prototype.bindGlobalAction = function() {
+      var key, ref, results, value;
+      ref = this.actions;
+      results = [];
+      for (key in ref) {
+        value = ref[key];
+        if (key.slice(0, 4) === 'app.') {
+          results.push((function(_this) {
+            return function(key, value) {
+              return _this.listenTo(_this.app, key, function(payload) {
+                return value.call(_this.actionContext, payload);
+              });
+            };
+          })(this)(key, value));
+        }
+      }
+      return results;
     };
 
     Module.prototype.close = function() {
@@ -1339,7 +1360,9 @@ var slice = [].slice,
         var ref;
         return (ref = this.options.afterClose) != null ? ref.call(this) : void 0;
       }, function() {
-        return delete this.app.modules[this.id];
+        this.stopListening();
+        delete this.app.modules[this.id];
+        return delete this.region;
       }, this);
     };
 
@@ -1361,16 +1384,19 @@ var slice = [].slice,
     };
 
     Module.prototype.closeRegions = function() {
-      var key, ref, regions, results, value;
+      var key, regions, value;
       regions = this.regions;
       delete this.regions;
-      ref = regions || {};
-      results = [];
-      for (key in ref) {
-        value = ref[key];
-        results.push(value.close());
-      }
-      return results;
+      return this.Promise.chain((function() {
+        var ref, results;
+        ref = regions || {};
+        results = [];
+        for (key in ref) {
+          value = ref[key];
+          results.push(value.close());
+        }
+        return results;
+      })());
     };
 
     Module.prototype.initRegions = function() {
@@ -1436,12 +1462,16 @@ var slice = [].slice,
       }).call(this));
     };
 
-    Module.prototype.dispatch = function(action) {
-      if (!D.isFunction(this.actions[action.name])) {
-        this.error("No action handler for " + action.name);
+    Module.prototype.dispatch = function(name, payload) {
+      var ref;
+      if (!payload) {
+        ref = name, name = ref.name, payload = ref.payload;
+      }
+      if (!D.isFunction(this.actions[name])) {
+        this.error("No action handler for " + name);
       }
       return this.Promise.chain(function() {
-        return this.actions[action.name].call(this.actionContext, action.payload);
+        return this.actions[name].call(this.actionContext, payload);
       });
     };
 

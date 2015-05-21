@@ -64,8 +64,14 @@ D.Module = class Module extends D.Base
         @Promise.chain(
             -> @layout.setRegion @region
             -> @layout.render()
+            @bindGlobalAction
             @initRegions
         )
+
+    bindGlobalAction: ->
+        for key, value of @actions when key.slice(0, 4) is 'app.'
+            do (key, value) =>
+                @listenTo @app, key, (payload) => value.call @actionContext, payload
 
     close: ->
         @Promise.chain(
@@ -75,7 +81,10 @@ D.Module = class Module extends D.Base
             @closeRegions
             @afterClose
             -> @options.afterClose?.call @
-            -> delete @app.modules[@id]
+            ->
+                @stopListening()
+                delete @app.modules[@id]
+                delete @region
             @
         )
 
@@ -98,7 +107,7 @@ D.Module = class Module extends D.Base
     closeRegions: ->
         regions = @regions
         delete @regions
-        (value.close() for key, value of regions or {})
+        @Promise.chain (value.close() for key, value of regions or {})
 
     initRegions: ->
         @closeRegions() if @regions
@@ -120,9 +129,10 @@ D.Module = class Module extends D.Base
     fetchDataAfterRender: ->
         @Promise.chain (D.Request.get @store[name] for name in @autoLoadAfterRender)
 
-    dispatch: (action) ->
-        @error "No action handler for #{action.name}" unless D.isFunction @actions[action.name]
-        @Promise.chain -> @actions[action.name].call @actionContext, action.payload
+    dispatch: (name, payload) ->
+        {name, payload} = name unless payload
+        @error "No action handler for #{name}" unless D.isFunction @actions[name]
+        @Promise.chain -> @actions[name].call @actionContext, payload
 
     beforeRender: ->
     afterRender: ->

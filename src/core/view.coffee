@@ -34,7 +34,7 @@ D.View = class View extends Base
 
     initialize: ->
         @extend @options.extend if @options.extend
-        @loadedPromise = @Promise.chain [@loadTemplate(), @bindData()]
+        @loadedPromise = @loadTemplate()
 
     loadTemplate: ->
         if @module.separatedTemplate isnt true
@@ -69,6 +69,7 @@ D.View = class View extends Base
         @virtualEl = @getEl().cloneNode()
         @bindEvents()
         @bindActions()
+        @bindData()
 
     close: ->
         return @Promise.resolve @ unless @region
@@ -139,7 +140,7 @@ D.View = class View extends Base
             data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
             @Promise.chain data
             , (d) ->
-                @dispatchAction(name, d) if d isnt false
+                @module.dispatch(name, d) if d isnt false
             , ->
                 A.removeClass target, disabled
 
@@ -228,9 +229,6 @@ D.View = class View extends Base
     destroyComponents: ->
         View.ComponentManager.destroy key, @, value for key, value of @components or {}
         @components = {}
-
-    dispatchAction: (name, data) ->
-        @module.dispatch(name: name, payload: data)
 
     beforeRender: ->
     afterRender: ->

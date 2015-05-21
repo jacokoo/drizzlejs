@@ -314,6 +314,10 @@
         navigate: (path, trigger) ->
             @router.navigate(path, trigger)
 
+        dispatch: (name, payload) ->
+            {name, payload} = name unless payload
+            @trigger "app.#{name}", payload
+
         message:
             success: (title, content) ->
                 alert content or title
@@ -453,7 +457,7 @@
 
         initialize: ->
             @extend @options.extend if @options.extend
-            @loadedPromise = @Promise.chain [@loadTemplate(), @bindData()]
+            @loadedPromise = @loadTemplate()
 
         loadTemplate: ->
             if @module.separatedTemplate isnt true
@@ -488,6 +492,7 @@
             @virtualEl = @getEl().cloneNode()
             @bindEvents()
             @bindActions()
+            @bindData()
 
         close: ->
             return @Promise.resolve @ unless @region
@@ -558,7 +563,7 @@
                 data = dataForAction[name].apply @, [data, e] if D.isFunction(dataForAction[name])
                 @Promise.chain data
                 , (d) ->
-                    @dispatchAction(name, d) if d isnt false
+                    @module.dispatch(name, d) if d isnt false
                 , ->
                     A.removeClass target, disabled
 
@@ -648,9 +653,6 @@
             View.ComponentManager.destroy key, @, value for key, value of @components or {}
             @components = {}
 
-        dispatchAction: (name, data) ->
-            @module.dispatch(name: name, payload: data)
-
         beforeRender: ->
         afterRender: ->
         beforeClose: ->
@@ -725,8 +727,14 @@
             @Promise.chain(
                 -> @layout.setRegion @region
                 -> @layout.render()
+                @bindGlobalAction
                 @initRegions
             )
+
+        bindGlobalAction: ->
+            for key, value of @actions when key.slice(0, 4) is 'app.'
+                do (key, value) =>
+                    @listenTo @app, key, (payload) => value.call @actionContext, payload
 
         close: ->
             @Promise.chain(
@@ -736,7 +744,10 @@
                 @closeRegions
                 @afterClose
                 -> @options.afterClose?.call @
-                -> delete @app.modules[@id]
+                ->
+                    @stopListening()
+                    delete @app.modules[@id]
+                    delete @region
                 @
             )
 
@@ -759,7 +770,7 @@
         closeRegions: ->
             regions = @regions
             delete @regions
-            (value.close() for key, value of regions or {})
+            @Promise.chain (value.close() for key, value of regions or {})
 
         initRegions: ->
             @closeRegions() if @regions
@@ -781,9 +792,10 @@
         fetchDataAfterRender: ->
             @Promise.chain (D.Request.get @store[name] for name in @autoLoadAfterRender)
 
-        dispatch: (action) ->
-            @error "No action handler for #{action.name}" unless D.isFunction @actions[action.name]
-            @Promise.chain -> @actions[action.name].call @actionContext, action.payload
+        dispatch: (name, payload) ->
+            {name, payload} = name unless payload
+            @error "No action handler for #{name}" unless D.isFunction @actions[name]
+            @Promise.chain -> @actions[name].call @actionContext, payload
 
         beforeRender: ->
         afterRender: ->

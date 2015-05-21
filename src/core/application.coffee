@@ -76,6 +76,10 @@ D.Application = class Application extends D.Base
     navigate: (path, trigger) ->
         @router.navigate(path, trigger)
 
+    dispatch: (name, payload) ->
+        {name, payload} = name unless payload
+        @trigger "app.#{name}", payload
+
     message:
         success: (title, content) ->
             alert content or title
