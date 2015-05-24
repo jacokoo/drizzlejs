@@ -67,4 +67,4 @@ D.extend(D.PageableModel, D.Model, {
     }
 });
 
-D.Model.register('pagaable', D.PageableModel);
+D.Model.register('pageable', D.PageableModel);
