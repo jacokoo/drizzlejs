@@ -1,4 +1,2 @@
-featurejs
+DrizzleJS
 =========
-
-Feature js

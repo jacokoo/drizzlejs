@@ -13,7 +13,6 @@ module.exports = {
         return this.Promise.chain(
             this.app.show('viewport', {forceRender: false}),
             function(viewport) {
-                viewport.regions.menu.show('menu');
                 return viewport.regions.content;
             }
         );
@@ -26,4 +25,4 @@ module.exports = {
     filterTodos: function(todos, id) {
         todos.filter(id);
     }
-}
+};

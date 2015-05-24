@@ -17,8 +17,8 @@ module.exports = {
             if (!data.text) {
                 return false;
             }
-            this.$('new-todo').value = ''
+            this.$('new-todo').value = '';
             return data;
         }
     }
-}
+};

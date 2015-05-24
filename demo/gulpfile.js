@@ -12,6 +12,7 @@ var fs = require('fs'),
     express = require('express'),
     handlebars = require('gulp-handlebars'),
     jsonServer = require('json-server'),
+    eslint = require('gulp-eslint'),
     wrap = require('gulp-wrap');
 
 var libs = [
@@ -46,6 +47,8 @@ var libs = [
         recurse('./scripts/app', './scripts', b);
         b.external(libs);
 
+        gulp.run('lint');
+
         return b.bundle()
             .on('error', gutil.log.bind(gutil, 'Browserify Error'))
             .pipe(source('main.js'))
@@ -53,7 +56,8 @@ var libs = [
             .pipe(sourcemaps.init({loadMaps: true}))
             .pipe(sourcemaps.write('./'))
             .pipe(gulp.dest('./build'));
-    }, common = function() {
+    },
+    common = function() {
         var b = watchify(browserify({cache: {}, packageCache: {}}));
         b.on('update', common);
         b.on('log', gutil.log);
@@ -66,6 +70,12 @@ var libs = [
             .pipe(sourcemaps.write('./'))
             .pipe(gulp.dest('./build'));
     }
+
+gulp.task('lint', function() {
+    gulp.src('scripts/**/*.js')
+        .pipe(eslint())
+        .pipe(eslint.format());
+});
 
 gulp.task('common', common);
 

@@ -1,5 +1,5 @@
-var _ = require('lodash/collection');
-var $ = require('jquery');
+var _ = require('lodash/collection'),
+    $ = require('jquery');
 
 module.exports = {
     bind: {
@@ -23,7 +23,7 @@ module.exports = {
 
     dataForTemplate: {
         todos: function(data) {
-            var d = [], i, item, filter = this.module.filterKey;
+            var filter = this.module.filterKey;
             if (!filter || filter === 'all') {
                 return data.todos;
             }
@@ -46,12 +46,12 @@ module.exports = {
 
     dataForAction: {
         completeTodo: function(data, e) {
-            data.completed = e.target.checked
+            data.completed = e.target.checked;
             return data;
         },
 
         toggleAllTodos: function(data, e) {
-            this.allCompleted = data.completed = e.target.checked
+            this.allCompleted = data.completed = e.target.checked;
             return data;
         },
 
@@ -65,9 +65,9 @@ module.exports = {
                 return false;
             }
             // caused by https://github.com/marcelklehr/vdom-virtualize/issues/23
-            data.id = data.qid
+            data.id = data.qid;
             return data;
         }
     }
 
-}
+};

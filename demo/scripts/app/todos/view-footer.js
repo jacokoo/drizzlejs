@@ -23,4 +23,4 @@ module.exports = {
         'click remove': 'clearCompleted'
     }
 
-}
+};

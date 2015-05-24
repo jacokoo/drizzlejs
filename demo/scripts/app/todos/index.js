@@ -35,8 +35,8 @@ module.exports = {
             var todos = this.store.todos;
             _.map(todos.data, function(item) {
                 item.completed = payload.completed;
-            })
-            todos.changed()
+            });
+            todos.changed();
         },
 
         clearCompleted: function() {
@@ -51,11 +51,11 @@ module.exports = {
         footer: 'footer'
     },
 
-    extend: {
+    mixin: {
         filter: function(id) {
             this.filterKey = id;
             this.items.main.render();
             this.items.footer.render();
         }
     }
-}
+};

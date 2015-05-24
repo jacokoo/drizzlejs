@@ -1,0 +1,8 @@
+env:
+    amd: false
+
+rules:
+    strict: 0
+    no-unused-expressions: 2
+    no-param-reassign: 2
+    no-alert: 2
