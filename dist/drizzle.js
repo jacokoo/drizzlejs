@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.3
+ * DrizzleJS v0.3.4
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -1453,7 +1453,7 @@
         }
     });
 
-    D.Model.register('pagaable', D.PageableModel);
+    D.Model.register('pageable', D.PageableModel);
 
 
     D.MultiRegion = function() {
