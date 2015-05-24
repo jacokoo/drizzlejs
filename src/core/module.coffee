@@ -56,7 +56,7 @@ D.Module = class Module extends D.Base
             @app.getLoader(name)[method](name, @, options).then (obj) =>
                 obj.moduleOptions = options
                 @items[name] = obj
-                @inRegionItems[name] = obj if options.region
+                @inRegionItems[options.region] = obj if options.region
 
         @Promise.chain (doItem key, value for key, value of @getOptionValue('items') or {})
 

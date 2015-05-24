@@ -16,7 +16,7 @@ D.Event =
 
     trigger: (name, args...) ->
         return @ unless @events and @events[name]
-        item.fn.apply item.context, args for item in @events[name]
+        item.fn.apply item.ctx, args for item in @events[name]
         @
 
     delegateEvent: (target) ->

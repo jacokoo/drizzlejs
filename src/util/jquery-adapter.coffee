@@ -68,7 +68,7 @@
                     data[item.name] = item.value
                 else
                     o = data[item.name] = [data[item.name]] unless D.isArray(o)
-                    o.push data.value
+                    o.push item.value
             data
 
         Promise: root.Promise or Promise
