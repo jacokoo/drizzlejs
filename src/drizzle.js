@@ -7,7 +7,7 @@
         define(['handlebars.runtime'], function(Handlebars) {
             return factory(root, Handlebars['default']);
         });
-    } else if (module && module.exports) {
+    } else if (typeof exports === 'object') {
         handlebars = require('handlebars/runtime')['default'];
         module.exports = factory(root, handlebars);
     } else {
