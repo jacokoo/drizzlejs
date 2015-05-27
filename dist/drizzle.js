@@ -115,6 +115,8 @@
         addClass: function(el, name) { return el.classList.add(name); },
         removeClass: function(el, name) { return el.classList.remove(name); },
 
+        getEventTarget: function(e) { return e.target; },
+
         componentHandler: function(name) {
             return {
                 creator: function() {
@@ -772,7 +774,7 @@
                 wid = items[3];
 
                 handler = function(e) {
-                    var target = e.target || e.srcElement, args = [e];
+                    var target = Adapter.getEventTarget(e), args = [e];
                     if (Adapter.hasClass(target, me.app.options.disabledClass)) return;
                     if (star) args.unshift(target.getAttribute('id').slice(wid.length));
                     me.eventHandlers[value].apply(me, args);
@@ -795,7 +797,7 @@
 
             return function(e) {
                 var target, rootEl, data;
-                rootEl = target = e.target || e.srcElement;
+                rootEl = target = Adapter.getEventTarget(e);
                 if (Adapter.hasClass(target, disabled)) return;
                 Adapter.addClass(target, disabled);
 
