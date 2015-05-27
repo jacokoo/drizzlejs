@@ -1,4 +1,4 @@
-D.Request = {
+Request = D.Request = {
     url: function(model) {
         var options = model.app.options,
             base = model.url(),
@@ -47,14 +47,14 @@ D.Request = {
 
     ajax: function(params, model, data, options) {
         options || (options = {});
-        D.assign(params, options);
-        D.assign(data, options.data);
+        assign(params, options);
+        assign(data, options.data);
 
         params.url = this.url(model);
         params.data = data;
 
-        return new A.Promise(function(resolve, reject) {
-            A.ajax(params).then(function() {
+        return new Adapter.Promise(function(resolve, reject) {
+            Adapter.ajax(params).then(function() {
                 var args = slice.call(arguments), resp = args[0];
                 model.set(resp).changed();
                 resolve(args);

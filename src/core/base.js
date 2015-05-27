@@ -1,11 +1,11 @@
-D.Base = function(idPrefix, options) {
+Base = D.Base = function(idPrefix, options) {
     this.options = options || {};
     this.id = D.uniqueId(idPrefix);
-    this.Promise = new D.Promise(this);
+    this.Promise = new Promise(this);
     this.initialize();
 };
 
-D.assign(D.Base.prototype, {
+assign(Base.prototype, {
     initialize: FN,
 
     option: function(key) {
@@ -23,20 +23,19 @@ D.assign(D.Base.prototype, {
     },
 
     mixin: function(mixins) {
+        var old, me = this;
         if (!mixins) return;
-
         mapObj(mixins, function(value, key) {
-            var old, me = this;
             if (D.isFunction(value)) {
-                old = this[key];
-                this[key] = function() {
+                old = me[key];
+                me[key] = function() {
                     var args = slice.call(arguments);
                     if (old) args.unshift(old);
                     return value.apply(me, args);
                 };
             } else {
-                if (!this[key]) this[key] = value;
+                if (!me[key]) me[key] = value;
             }
-        }, this);
+        });
     }
 });

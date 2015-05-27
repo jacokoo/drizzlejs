@@ -1,4 +1,4 @@
-A = D.Adapter = {
+Adapter = D.Adapter = {
     Promise: root.Promise,
     ajax: null,
     hasClass: function(el, name) { return el.classList.contains(name); },

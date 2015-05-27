@@ -24,22 +24,22 @@
         }
     };
 
-    D.Application = function(options) {
-        var opt = D.assign({}, defaultOptions, options);
+    Application = Drizzle.Application = function(options) {
+        var opt = assign({}, defaultOptions, options);
         this.modules = {};
         this.global = {};
         this.loaders = {};
         this.regions = [];
 
-        D.Application.__super__.constructor.call(this, 'A', opt);
+        parent(Application).call(this, 'A', opt);
     };
 
-    D.extend(D.Application, D.Base, {
+    extend(Application, Base, {
         initialize: function() {
-            this.registerLoader(new D.SimpleLoader(this));
-            this.registerLoader(new D.Loader(this), true);
-            this.setRegion(new D.Region(this, null, this.options.defaultRegion));
-            mapObj(D.Helpers, function(value, key) {
+            this.registerLoader(new SimpleLoader(this));
+            this.registerLoader(new Loader(this), true);
+            this.setRegion(new Region(this, null, this.options.defaultRegion));
+            mapObj(Helpers, function(value, key) {
                 this.registerHelper(key, value);
             }, this);
         },
@@ -58,7 +58,7 @@
         },
 
         getLoader: function(name) {
-            var loader = D.Loader.analyse(name).loader;
+            var loader = Loader.analyse(name).loader;
             return loader && this.loader[loader] ? this.loaders[loader] : this.defaultLoader;
         },
 
@@ -68,7 +68,7 @@
         },
 
         load: function() {
-            return this.Promise.chain(map(arguments, function(name) {
+            return chain(this, map(arguments, function(name) {
                 return this.getLoader(name).loadModule(name);
             }));
         },
@@ -79,7 +79,7 @@
 
         destory: function() {
             this.off();
-            return this.Promise.chain(map(this.regions, function(region) {
+            return chain(this, map(this.regions, function(region) {
                 return region.close();
             }));
         },
@@ -87,9 +87,9 @@
         startRoute: function(defaultRoute) {
             var paths = slice.call(arguments, 1), router = this.router;
             if (!this.router) {
-                router = this.router = new D.Router(this);
+                router = this.router = new Router(this);
             }
-            return this.Promise.chain(router.mountRoutes.apply(router, paths), function() {
+            return chain(this, router.mountRoutes.apply(router, paths), function() {
                 return router.start(defaultRoute);
             });
         },
@@ -113,5 +113,5 @@
         }
     });
 
-    D.assign(D.Application.prototype, D.Event);
+    assign(Application.prototype, Event);
 })();

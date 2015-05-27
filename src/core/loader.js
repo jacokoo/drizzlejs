@@ -1,11 +1,11 @@
-D.Loader = function(app) {
+Loader = D.Loader = function(app) {
     this.app = app;
     this.name = 'loader';
     this.fileNames = app.options.fileNames;
-    D.Loader.__super__.constructor.call(this, 'L');
+    parent(Loader).call(this, 'L');
 };
 
-D.Loader.analyse = function(name) {
+Loader.analyse = function(name) {
     var names, loader = null;
     if (!D.isString(name)) {
         return { loader: null, name: name };
@@ -22,7 +22,7 @@ D.Loader.analyse = function(name) {
     return { loader: loader, name: name, args: names };
 };
 
-D.extend(D.Loader, D.Base, {
+extend(Loader, Base, {
     loadResource: function(path) {
         path = compose(this.app.options.scriptRoot, path);
         return this.Promise.create(function(resolve, reject) {
@@ -38,59 +38,59 @@ D.extend(D.Loader, D.Base, {
         });
     },
 
-    loadModuleResource: function(module, path) {
-        return this.loadResource(compose(module.name, path));
+    loadModuleResource: function(mod, path) {
+        return this.loadResource(compose(mod.name, path));
     },
 
-    loadModule: function(path, parent) {
-        var name = D.Loader.analyse(path).name;
+    loadModule: function(path, parentModule) {
+        var name = Loader.analyse(path).name;
         path = compose(name, this.fileNames.module);
-        return this.Promise.chain(this.loadResource(compose(path)), function(options) {
-            var module = new D.Module(name, this.app, this, options);
-            if (parent) module.module = parent;
-            return module;
+        return chain(this, this.loadResource(compose(path)), function(options) {
+            var mod = new Module(name, this.app, this, options);
+            if (parentModule) mod.module = parentModule;
+            return mod;
         });
     },
 
-    loadView: function(name, module) {
-        var n = D.Loader.analyse(name).name, path = this.fileNames.view + n;
-        return this.Promise.chain(this.loadModuleResource(module, path), function(options) {
+    loadView: function(name, mod) {
+        var n = Loader.analyse(name).name, path = this.fileNames.view + n;
+        return chain(this, this.loadModuleResource(mod, path), function(options) {
             options || (options = {});
-            return D.View.create(options.type, n, module, this, options);
+            return View.create(options.type, n, mod, this, options);
         });
     },
 
-    loadTemplate: function(module) {
-        return this.loadModuleResource(module, this.fileNames.templates);
+    loadTemplate: function(mod) {
+        return this.loadModuleResource(mod, this.fileNames.templates);
     },
 
     loadSeparatedTemplate: function(view, name) {
-        return this.loadModuleResource(module, this.fileNames.template + name);
+        return this.loadModuleResource(view.module, this.fileNames.template + name);
     },
 
     loadRouter: function(path) {
-        var name = D.Loader.analyse(path).name;
+        var name = Loader.analyse(path).name;
         return this.loadResource(compose(name, this.fileNames.router));
     }
 });
 
-D.SimpleLoader = function() {
-    D.SimpleLoader.__super__.constructor.apply(this, arguments);
+SimpleLoader = D.SimpleLoader = function() {
+    parent(SimpleLoader).apply(this, arguments);
     this.name = 'simple';
 };
 
-D.extend(D.SimpleLoader, D.Loader, {
-    loadModule: function(name, parent) {
-        var n = D.Loader.analyse(name).name,
-            module = new D.Module(n, this.app, this, {separatedTemplate: true});
+extend(SimpleLoader, Loader, {
+    loadModule: function(name, parentModule) {
+        var n = Loader.analyse(name).name,
+            mod = new Module(n, this.app, this, {separatedTemplate: true});
 
-        if (parent) module.module = parent;
+        if (parentModule) mod.module = parentModule;
 
-        return this.Promise.resolve(module);
+        return this.Promise.resolve(mod);
     },
 
-    loadView: function(name, module) {
-        name = D.Loader.analyse(name).name;
-        return this.Promise.resolve(new D.View(name, module, this, {}));
+    loadView: function(name, mod) {
+        name = Loader.analyse(name).name;
+        return this.Promise.resolve(new View(name, mod, this, {}));
     }
 });

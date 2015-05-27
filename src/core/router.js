@@ -17,38 +17,38 @@
         this.fn = fn;
     };
 
-    D.assign(Route.prototype, {
+    assign(Route.prototype, {
         match: function(hash) {
             this.pattern.lastIndex = 0;
             return this.pattern.test(hash);
         },
 
         handle: function(hash) {
-            var args, handlers, p = this.router.Promise, me = this;
-            this.pattern.lastIndex = 0;
-            args = this.pattern.exec(hash).slice(1);
+            var me = this, p = me.router.Promise, args, handlers;
+            me.pattern.lastIndex = 0;
+            args = me.pattern.exec(hash).slice(1);
 
-            handlers = this.router.getInterceptors(this.path);
-            handlers.push(this.fn);
+            handlers = me.router.getInterceptors(me.path);
+            handlers.push(me.fn);
 
             return p.chain.apply(p, map(handlers, function(route, i) {
                 return function(prev) {
                     return route.apply(me.router, (i > 0 ? [prev].concat(args) : args));
                 };
-            }, this));
+            }));
         }
     });
 
-    D.Router = function(app) {
+    Router = D.Router = function(app) {
         this.app = app;
         this.routes = [];
         this.routeMap = {};
         this.interceptors = {};
         this.started = false;
-        D.Router.__super__.constructor.call(this, 'R');
+        parent(Router).call(this, 'R');
     };
 
-    D.extend(D.Router, D.Base, {
+    extend(Router, Base, {
         initialize: function() {
             this.addRoute('/', this.app.options.defaultRouter || {});
         },
@@ -59,17 +59,17 @@
 
         start: function(defaultPath) {
             var key, me = this, hash;
-            if (this.started) return;
-            this.started = true;
+            if (me.started) return;
+            me.started = true;
             key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
 
-            A.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
+            Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
             hash = me.getHash() || defaultPath;
-            if (hash) this.navigate(hash);
+            if (hash) me.navigate(hash);
         },
 
         stop: function() {
-            A.undelegateDomEvents(root, '.dr');
+            Adapter.undelegateDomEvents(root, '.dr');
         },
 
         dispatch: function(hash) {
@@ -99,7 +99,7 @@
 
         mountRoutes: function() {
             var paths = slice.call(arguments), me = this;
-            return this.Promise.chain(map(paths, function(path) {
+            return chain(me, map(paths, function(path) {
                 return me.app.getLoader(path).loadRouter(path);
             }), function(routers) {
                 map(routers, function(router, i) { me.addRoute(paths[i], router); });

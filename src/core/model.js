@@ -1,14 +1,14 @@
-D.Model = function(app, module, options) {
+Model = D.Model = function(app, module, options) {
     this.app = app;
     this.module = module;
     options || (options = {});
-    this.params = D.assign({}, options.params);
+    this.params = assign({}, options.params);
 
-    D.Model.__super__.constructor.call(this, 'D', options);
+    parent(Model).call(this, 'D', options);
     this.app.delegateEvent(this);
 };
 
-D.extend(D.Model, D.Base, {
+extend(Model, Base, {
     initialize: function() {
         this.data = this.options.data || {};
     },
@@ -18,11 +18,11 @@ D.extend(D.Model, D.Base, {
     },
 
     getFullUrl: function() {
-        return D.Request.url(this);
+        return Request.url(this);
     },
 
     getParams: function() {
-        return D.assign({}, this.params);
+        return assign({}, this.params);
     },
 
     set: function(data, trigger) {
@@ -43,4 +43,4 @@ D.extend(D.Model, D.Base, {
     }
 });
 
-D.assign(D.Model, D.Factory);
+assign(Model, Factory);

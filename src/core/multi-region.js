@@ -1,10 +1,10 @@
-D.MultiRegion = function() {
-    D.MultiRegion.__super__.constructor.apply(this, arguments);
+MultiRegion = D.MultiRegion = function() {
+    parent(MultiRegion).apply(this, arguments);
     this.items = {};
     this.elements = {};
 };
 
-D.extend(D.MultiRegion, D.Region, {
+extend(MultiRegion, Region, {
     activate: FN,
 
     createElement: function() {
@@ -48,7 +48,7 @@ D.extend(D.MultiRegion, D.Region, {
         this.elements = {};
         this.items = {};
 
-        return this.Promise.chain(mapObj(items, function(item) {
+        return chain(this, mapObj(items, function(item) {
             return item.close();
         }));
     }

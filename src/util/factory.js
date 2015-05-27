@@ -1,4 +1,4 @@
-D.Factory = {
+Factory = D.Factory = {
 
     types: {},
 

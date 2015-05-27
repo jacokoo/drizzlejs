@@ -1,32 +1,32 @@
-D.Module = function(name, app, loader, options) {
+Module = D.Module = function(name, app, loader, options) {
     this.name = name;
     this.app = app;
     this.loader = loader;
     options || (options = {});
 
     this.separatedTemplate = options.separatedTemplate === true;
-    D.Module.__super__.constructor.call(this, 'M', options);
+    parent(Module).call(this, 'M', options);
 
     this.app.modules[this.id] = this;
     this.actions = this.option('actions') || {};
     this.app.delegateEvent(this);
 };
 
-D.extend(D.Module, D.Base, {
+extend(Module, Base, {
     initialize: function() {
         if (this.options.mixin) this.mixin(this.options.mixin);
-        this.loadedPromise = this.Promise.chain([this.loadTemplate(), this.loadItems()]);
+        this.loadedPromise = chain(this, [this.loadTemplate(), this.loadItems()]);
 
         this.initLayout();
         this.initStore();
-        this.actionContext = D.assign({
+        this.actionContext = assign({
             store: this.store
-        }, D.Request);
+        }, Request);
     },
 
     initLayout: function() {
         var options = this.option('layout');
-        this.layout = new D.Module.Layout('layout', this, this.loader, options);
+        this.layout = new Layout('layout', this, this.loader, options);
     },
 
     initStore: function() {
@@ -39,13 +39,13 @@ D.extend(D.Module, D.Base, {
             if (value.autoLoad) {
                 (value.autoLoad === true ? this.autoLoadBeforeRender : this.autoLoadAfterRender).push(name);
             }
-            this.store[name] = D.Model.create(value.type, this.app, this, value);
+            this.store[name] = Model.create(value.type, this.app, this, value);
         }, this);
     },
 
     loadTemplate: function() {
         if (!this.separatedTemplate) {
-            return this.Promise.chain(this.loader.loadTemplate(this), function(template) {
+            return chain(this, this.loader.loadTemplate(this), function(template) {
                 this.template = template;
             });
         }
@@ -56,7 +56,7 @@ D.extend(D.Module, D.Base, {
         this.items = {};
         this.inRegionItems = {};
 
-        return this.Promise.chain(mapObj(this.option('items') || {}, function(options, name) {
+        return chain(me, mapObj(me.option('items') || {}, function(options, name) {
             var method;
             if (D.isFunction(options)) options = options.call(me);
             if (D.isString(options)) options = {region: options};
@@ -72,7 +72,7 @@ D.extend(D.Module, D.Base, {
 
     setRegion: function(region) {
         this.region = region;
-        return this.Promise.chain(function() {
+        return chain(this, function() {
             return this.layout.setRegion(region);
         }, function() {
             return this.layout.render();
@@ -90,7 +90,7 @@ D.extend(D.Module, D.Base, {
     },
 
     close: function() {
-        return this.Promise.chain(function() {
+        return chain(this, function() {
             return this.option('beforeClose');
         }, this.beforeClose, function() {
             return this.layout.close();
@@ -108,7 +108,7 @@ D.extend(D.Module, D.Base, {
         if (!this.region) this.error('region is null');
         this.renderOptions = options || {};
 
-        return this.Promise.chain(this.loadedPromise, function() {
+        return chain(this, this.loadedPromise, function() {
             return this.option('beforeRender');
         }, this.beforeRender, this.fetchDataBeforeRender, this.renderItems, this.afterRender, function() {
             return this.option('afterRender');
@@ -119,7 +119,7 @@ D.extend(D.Module, D.Base, {
         var regions = this.regions;
         delete this.regions;
 
-        return this.Promise.chain(mapObj(regions, function(region) {
+        return chain(this, mapObj(regions, function(region) {
             return region.close();
         }));
     },
@@ -131,26 +131,26 @@ D.extend(D.Module, D.Base, {
         map(this.layout.$$('[data-region]'), function(item) {
             id = item.getAttribute('data-region');
             type = item.getAttribute('region-type');
-            this.regions[id] = D.Region.create(type, this.app, this, item, id);
+            this.regions[id] = Region.create(type, this.app, this, item, id);
         }, this);
     },
 
     renderItems: function() {
-        return this.Promise.chain(mapObj(this.inRegionItems, function(item, name) {
+        return chain(this, mapObj(this.inRegionItems, function(item, name) {
             if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
             this.regions[name].show(item);
         }, this));
     },
 
     fetchDataBeforeRender: function() {
-        return this.Promise.chain(map(this.autoLoadBeforeRender, function(item) {
-            return D.Request.get(this.store[item]);
+        return chain(this, map(this.autoLoadBeforeRender, function(item) {
+            return Request.get(this.store[item]);
         }, this));
     },
 
     fetchDataAfterRender: function() {
-        return this.Promise.chain(map(this.autoLoadAfterRender, function(item) {
-            return D.Request.get(this.store[item]);
+        return chain(this, map(this.autoLoadAfterRender, function(item) {
+            return Request.get(this.store[item]);
         }, this));
     },
 
@@ -163,7 +163,7 @@ D.extend(D.Module, D.Base, {
 
         handler = this.actions[name];
         if (!D.isFunction(handler)) this.error('No action handler for ' + name);
-        return this.Promise.chain(function() {
+        return chain(this, function() {
             handler.call(this.actionContext, payload);
         });
     },
@@ -174,11 +174,11 @@ D.extend(D.Module, D.Base, {
     afterClose: FN
 });
 
-D.Module.Layout = function() {
-    D.Module.Layout.__super__.constructor.apply(this, arguments);
+Layout = Module.Layout = function() {
+    parent(Layout).apply(this, arguments);
 };
 
-D.extend(D.Module.Layout, D.View, {
+extend(Layout, View, {
     initialize: function() {
         this.isLayout = true;
         this.loadedPromise = this.loadTemplate();

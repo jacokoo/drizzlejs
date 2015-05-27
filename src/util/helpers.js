@@ -1,4 +1,4 @@
-D.Helpers = {
+Helpers = D.Helpers = {
     layout: function(app, H, options) {
         return this.View.isLayout ? options.fn(this) : '';
     },

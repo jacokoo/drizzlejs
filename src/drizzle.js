@@ -14,12 +14,20 @@
         root.Drizzle = factory(root, root.Handlebars);
     }
 })(window, function(root, handlebars) {
-    var Drizzle = {}, D = Drizzle, A,
+    var Drizzle = {}, D = Drizzle,
         counter = 0,
         toString = Drizzle.toString,
         has = Drizzle.hasOwnProperty,
         slice = [].slice,
         FN = function() {},
+
+    chain = function(obj) {
+        return obj.Promise.chain.apply(obj.Promise, slice.call(arguments, 1));
+    },
+
+    parent = function(obj) {
+        return obj.__super__.constructor;
+    },
 
     mapObj = function(obj, fn, ctx) {
         var result = [], i;
@@ -42,10 +50,42 @@
         return result;
     },
 
+    assign = function(target) {
+        if (!target) return target;
+        map(slice.call(arguments, 1), function(arg) {
+            if (!arg) return;
+            mapObj(arg, function(value, key) {
+                target[key] = value;
+            });
+        });
+        return target;
+    },
+
+    extend = function(child, theParent, obj) {
+        mapObj(theParent, function(value, key) {
+            if (has.call(theParent, key)) child[key] = value;
+        });
+
+        function Ctor() { this.constructor = child; }
+        Ctor.prototype = theParent.prototype;
+        child.prototype = new Ctor();
+        child.__super__ = theParent.prototype;
+
+        mapObj(obj, function(value, key) {
+            child.prototype[key] = value;
+        });
+
+        return child;
+    },
+
     compose = function() {
         return slice.call(arguments).join('/').replace(/\/{2,}/g, '/')
             .replace(/^\/|\/$/g, '');
-    };
+    },
+
+    Application, Base, Loader, Model, Module, MultiRegion,
+    PageableModel, Region, Router, View, Layout, Adapter,
+    Event, Factory, Helpers, Request, Promise, SimpleLoader;
 
     map(['Function', 'Array', 'String', 'Object'], function(value) {
         Drizzle['is' + value] = function(obj) {
@@ -57,33 +97,9 @@
         return (prefix || '') + (++counter);
     };
 
-    Drizzle.assign = function(target) {
-        if (!target) return target;
-        map(slice.call(arguments, 1), function(arg) {
-            if (!arg) return;
-            mapObj(arg, function(value, key) {
-                target[key] = value;
-            });
-        });
-        return target;
-    };
+    Drizzle.assign = assign;
 
-    Drizzle.extend = function(child, parent, obj) {
-        mapObj(parent, function(value, key) {
-            if (has.call(parent, key)) child[key] = value;
-        });
-
-        function Ctor() { this.constructor = child; }
-        Ctor.prototype = parent.prototype;
-        child.prototype = new Ctor();
-        child.__super__ = parent.prototype;
-
-        mapObj(obj, function(value, key) {
-            child.prototype[key] = value;
-        });
-
-        return child;
-    };
+    Drizzle.extend = extend;
 
     // @include util/adapter.js
 

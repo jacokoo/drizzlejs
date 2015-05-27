@@ -1,18 +1,18 @@
-D.Region = function(app, module, el, name) {
+Region = D.Region = function(app, module, el, name) {
     this.app = app;
     this.module = module;
     this.el = el;
     this.name = name || 'default';
     if (!el) this.error('The DOM element for region is not found');
 
-    D.Region.__super__.constructor.call(this, 'R');
+    parent(Region).call(this, 'R');
 };
 
-D.extend(D.Region, D.Base, {
+extend(Region, Base, {
     isCurrent: function(item) {
         if (!this.current) return false;
         if (D.isObject(item) && item.id === this.current.id) return true;
-        if (D.isString(item) && D.Loader.analyse(item).name === this.current.name) return true;
+        if (D.isString(item) && Loader.analyse(item).name === this.current.name) return true;
 
         return false;
     },
@@ -25,11 +25,11 @@ D.extend(D.Region, D.Base, {
         }
 
         if (D.isString(item)) item = this.app.getLoader(item).loadModule(item);
-        return this.Promise.chain(item, function(obj) {
+        return chain(this, item, function(obj) {
             if (!obj.render && !obj.setRegion) this.error('Can not render ' + obj);
             return obj;
         }, [function(obj) {
-            return this.Promise.chain(obj.region && obj.region.close(), obj);
+            return chain(this, obj.region && obj.region.close(), obj);
         }, function() {
             return this.close();
         }], function(arg) {
@@ -43,7 +43,7 @@ D.extend(D.Region, D.Base, {
     },
 
     close: function() {
-        return this.Promise.chain(this.current && this.current.close(), delete this.current, this);
+        return chain(this, this.current && this.current.close(), delete this.current, this);
     },
 
     getElement: function() {
@@ -56,12 +56,12 @@ D.extend(D.Region, D.Base, {
 
     delegateDomEvent: function(item, name, selector, fn) {
         var n = name + '.events' + this.id + item.id;
-        A.delegateDomEvent(this.el, n, selector, fn);
+        Adapter.delegateDomEvent(this.el, n, selector, fn);
     },
 
     undelegateDomEvents: function(item) {
-        A.undelegateDomEvents(this.el, '.events' + this.id + item.id);
+        Adapter.undelegateDomEvents(this.el, '.events' + this.id + item.id);
     }
 });
 
-D.assign(D.Region, D.Factory);
+assign(Region, Factory);

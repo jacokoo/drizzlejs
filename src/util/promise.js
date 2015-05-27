@@ -1,34 +1,34 @@
-D.Promise = function(context) {
+Promise = D.Promise = function(context) {
     this.context = context;
 };
 
-D.assign(D.Promise.prototype, {
+assign(Promise.prototype, {
     create: function(fn) {
         var ctx = this.context;
-        return new A.Promise(function(resolve, reject) {
+        return new Adapter.Promise(function(resolve, reject) {
             fn.call(ctx, resolve, reject);
         });
     },
 
     resolve: function(data) {
-        return A.Promise.resolve(data);
+        return Adapter.Promise.resolve(data);
     },
 
     reject: function(data) {
-        return A.Promise.reject(data);
+        return Adapter.Promise.reject(data);
     },
 
     when: function(obj) {
         var args = slice.call(arguments, 1), result;
         result = D.isFunction(obj) ? obj.apply(this.context, args) : obj;
-        return A.Promise.resolve(result);
+        return Adapter.Promise.resolve(result);
     },
 
     chain: function() {
         var me = this, args, prev = null, doRing = function(rings, resolve, reject, ring, i) {
             var promise;
             if (D.isArray(ring)) {
-                promise = A.Promise.all(map(ring, function(item) {
+                promise = Adapter.Promise.all(map(ring, function(item) {
                     return me.when.apply(me, i > 0 ? [item, prev] : [item]);
                 }));
             } else {
@@ -44,9 +44,9 @@ D.assign(D.Promise.prototype, {
         };
 
         args = slice.call(arguments);
-        if (args.length === 0) return this.resolve();
+        if (args.length === 0) return me.resolve();
 
-        return this.create(function(resolve, reject) {
+        return me.create(function(resolve, reject) {
             doRing(args, resolve, reject, args.shift(), 0);
         });
     }

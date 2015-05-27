@@ -1,6 +1,6 @@
-D.PageableModel = function() {
+PageableModel = D.PageableModel = function() {
     var defaults = this.app.options.pagination;
-    D.PageableModel.__super__.constructor.apply(this, arguments);
+    parent(PageableModel).apply(this, arguments);
 
     this.pagination = {
         page: this.options.page || 1,
@@ -12,7 +12,7 @@ D.PageableModel = function() {
     };
 };
 
-D.extend(D.PageableModel, D.Model, {
+extend(PageableModel, Model, {
     initialize: function() {
         this.data = this.options.data || [];
     },
@@ -22,11 +22,11 @@ D.extend(D.PageableModel, D.Model, {
         data || (data = {});
         p.recordCount = data[p.recordCountKey] || 0;
         p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-        D.PageableModel.__super__.set.call(this, data);
+        PageableModel.__super__.set.call(this, data);
     },
 
     getParams: function() {
-        var params = D.PageableModel.__super__.getParams.call(this) || {},
+        var params = PageableModel.__super__.getParams.call(this) || {},
             p = this.pagination;
         params[p.pageKey] = p.page;
         params[p.pageSizeKey] = p.pageSize;
@@ -38,7 +38,7 @@ D.extend(D.PageableModel, D.Model, {
         this.pagination.page = 1;
         this.pagination.recordCount = 0;
         this.pagination.pageCount = 0;
-        D.PageableModel.__super__.clear.call(this);
+        PageableModel.__super__.clear.call(this);
     },
 
     turnToPage: function(page) {
@@ -67,4 +67,4 @@ D.extend(D.PageableModel, D.Model, {
     }
 });
 
-D.Model.register('pageable', D.PageableModel);
+Model.register('pageable', PageableModel);

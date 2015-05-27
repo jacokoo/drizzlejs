@@ -1,4 +1,4 @@
-D.Event = {
+Event = D.Event = {
     on: function(name, callback, context) {
         this.events || (this.events = {});
         this.events[name] || (this.events[name] = []);
