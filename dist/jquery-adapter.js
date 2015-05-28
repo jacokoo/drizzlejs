@@ -8,16 +8,12 @@
 'use strict';
 
 (function(root, factory) {
-    var jQuery, Drizzle;
-
     if (typeof define === 'function' && define.amd) {
         define(['jquery', 'drizzlejs'], function($, D) {
             return factory(root, $, D);
         });
-    } else if (module && module.exports) {
-        jQuery = require('jquery');
-        Drizzle = require('drizzlejs');
-        factory(root, jQuery, Drizzle);
+    } else if (typeof exports === 'object') {
+        factory(root, require('jquery'), require('drizzlejs'));
     } else {
         factory(root, root.$, root.Drizzle);
     }

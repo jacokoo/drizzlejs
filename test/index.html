@@ -1,0 +1,36 @@
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Drizzle Test</title>
+        <link rel="stylesheet" href="../node_modules/mocha/mocha.css"/>
+    </head>
+    <body>
+        <div id="content"></div>
+        <div id="mocha"></div>
+        <script src="../node_modules/jquery/dist/jquery.js"></script>
+        <script src="../node_modules/handlebars/dist/handlebars.runtime.js"></script>
+        <script src="../dist/drizzle.js"></script>
+        <script src="../dist/jquery-adapter.js"></script>
+        <script src="../node_modules/chai/chai.js"></script>
+        <script src="../node_modules/mocha/mocha.js"></script>
+        <script>
+            window.expect = chai.expect;
+            mocha.setup('bdd');
+        </script>
+        <script src="test.drizzle.js"></script>
+        <script src="test.promise.js"></script>
+        <script src="test.event.js"></script>
+        <script>
+            window.modules = {};
+            window.app = new Drizzle.Application({
+                getResource: function(path) {
+                    return window.modules[path];
+                },
+                defaultRegion: document.getElementById('content')
+            });
+            
+            mocha.checkLeaks();
+            mocha.run();
+        </script>
+    </body>
+</html>

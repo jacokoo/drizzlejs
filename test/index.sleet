@@ -1,0 +1,32 @@
+html
+    head
+        meta(charset='utf-8')
+        title Drizzle Test
+        link(rel='stylesheet' href='../node_modules/mocha/mocha.css')
+
+    body
+        #content
+        #mocha
+        script(src='../node_modules/jquery/dist/jquery.js')
+        script(src='../node_modules/handlebars/dist/handlebars.runtime.js')
+        script(src='../dist/drizzle.js')
+        script(src='../dist/jquery-adapter.js')
+        script(src='../node_modules/chai/chai.js')
+        script(src='../node_modules/mocha/mocha.js')
+        script.
+            window.expect = chai.expect;
+            mocha.setup('bdd');
+        script(src='test.drizzle.js')
+        script(src='test.promise.js')
+        script(src='test.event.js')
+        script.
+            window.modules = {};
+            window.app = new Drizzle.Application({
+                getResource: function(path) {
+                    return window.modules[path];
+                },
+                defaultRegion: document.getElementById('content')
+            });
+
+            mocha.checkLeaks();
+            mocha.run();
