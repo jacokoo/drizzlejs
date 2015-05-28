@@ -24,16 +24,20 @@ Loader.analyse = function(name) {
 
 extend(Loader, Base, {
     loadResource: function(path) {
-        path = compose(this.app.options.scriptRoot, path);
-        return this.Promise.create(function(resolve, reject) {
-            if (this.app.options.amd) {
-                require([path], function(obj) {
+        var me = this, options = me.app.options,
+            fullPath = compose(options.scriptRoot, path);
+
+        return me.Promise.create(function(resolve, reject) {
+            if (options.amd) {
+                require([fullPath], function(obj) {
                     resolve(obj);
                 }, function(e) {
                     reject(e);
                 });
+            } else if (options.getResource) {
+                resolve(options.getResource(fullPath));
             } else {
-                resolve(require('./' + path));
+                resolve(require('./' + fullPath));
             }
         });
     },

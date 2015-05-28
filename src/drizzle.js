@@ -1,15 +1,12 @@
 'use strict';
 
 (function(root, factory) {
-    var handlebars;
-
     if (typeof define === 'function' && define.amd) {
         define(['handlebars.runtime'], function(Handlebars) {
             return factory(root, Handlebars['default']);
         });
     } else if (typeof exports === 'object') {
-        handlebars = require('handlebars/runtime')['default'];
-        module.exports = factory(root, handlebars);
+        module.exports = factory(root, require('handlebars/runtime')['default']);
     } else {
         root.Drizzle = factory(root, root.Handlebars);
     }

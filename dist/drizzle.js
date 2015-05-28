@@ -8,15 +8,12 @@
 'use strict';
 
 (function(root, factory) {
-    var handlebars;
-
     if (typeof define === 'function' && define.amd) {
         define(['handlebars.runtime'], function(Handlebars) {
             return factory(root, Handlebars['default']);
         });
     } else if (typeof exports === 'object') {
-        handlebars = require('handlebars/runtime')['default'];
-        module.exports = factory(root, handlebars);
+        module.exports = factory(root, require('handlebars/runtime')['default']);
     } else {
         root.Drizzle = factory(root, root.Handlebars);
     }
@@ -429,6 +426,7 @@
             defaultRegion: root.document.body,
             disabledClass: 'disabled',
             attributesReferToId: ['for', 'data-target', 'data-parent'],
+            getResource: null,
 
             fileNames: {
                 module: 'index',
@@ -1178,16 +1176,20 @@
 
     extend(Loader, Base, {
         loadResource: function(path) {
-            path = compose(this.app.options.scriptRoot, path);
-            return this.Promise.create(function(resolve, reject) {
-                if (this.app.options.amd) {
-                    require([path], function(obj) {
+            var me = this, options = me.app.options,
+                fullPath = compose(options.scriptRoot, path);
+
+            return me.Promise.create(function(resolve, reject) {
+                if (options.amd) {
+                    require([fullPath], function(obj) {
                         resolve(obj);
                     }, function(e) {
                         reject(e);
                     });
+                } else if (options.getResource) {
+                    resolve(options.getResource(fullPath));
                 } else {
-                    resolve(require('./' + path));
+                    resolve(require('./' + fullPath));
                 }
             });
         },

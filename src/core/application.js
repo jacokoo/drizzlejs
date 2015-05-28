@@ -7,6 +7,7 @@
         defaultRegion: root.document.body,
         disabledClass: 'disabled',
         attributesReferToId: ['for', 'data-target', 'data-parent'],
+        getResource: null,
 
         fileNames: {
             module: 'index',
