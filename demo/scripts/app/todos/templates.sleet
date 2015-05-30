@@ -1,3 +1,5 @@
+#!handlebars html
+
 layout
     div.todoapp
         div(data-region='header')

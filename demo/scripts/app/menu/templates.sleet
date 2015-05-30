@@ -1,3 +1,5 @@
+#!handlebars html
+
 layout > .header
     h1.brand-title Drizzle Demos
     h2.brand-tagline Some demos to show how to use DrizzleJs

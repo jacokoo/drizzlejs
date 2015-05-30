@@ -36,5 +36,10 @@
     "lodash": "^3.8.0",
     "purecss": "^0.6.0",
     "vdom-virtualize": "0.0.7"
+  },
+  "sleet": {
+      "handlebars": {
+          "block": ["layout", "view"]
+      }
   }
 }

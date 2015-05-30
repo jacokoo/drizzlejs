@@ -12,7 +12,7 @@
     </form>
 {{/view}}
 {{#view "main"}}
-    <div {{#unless haveItem}} class="hidden"{{/unless}} class="main">
+    <div class="main {{#unless haveItem}}hidden{{/unless}}">
         <input {{#if completed}} checked="checked"{{/if}} id="toggleAll" class="toggle-all" type="checkbox"/>
         <ul class="todo-list">{{#each todos}}
             <li class="{{#if completed}}completed{{/if}}">
@@ -30,7 +30,7 @@
     </div>
 {{/view}}
 {{#view "footer"}}
-    <div {{#unless info.haveItem}} class="hidden"{{/unless}} class="footer">
+    <div class="footer {{#unless info.haveItem}}hidden{{/unless}}">
         <span class="todo-count">
             <strong>{{info.left}}</strong>
             items left
@@ -40,6 +40,6 @@
             <li class="active"><a class="{{#if info.active}}selected{{/if}}" href="#todos/active">Active</a></li>
             <li class="completed"><a class="{{#if info.completed}}selected{{/if}}" href="#todos/completed">Completed</a></li>
         </ul>
-        <button {{#unless info.haveCompleted}} class="hidden"{{/unless}} id="remove" class="clear-completed">Clear completed</button>
+        <button id="remove" class="clear-completed {{#unless info.haveCompleted}}hidden{{/unless}}">Clear completed</button>
     </div>
 {{/view}}
