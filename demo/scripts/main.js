@@ -1,9 +1,10 @@
 var D = require('drizzlejs'),
+    $ = require('jquery'),
     vr = require('vdom-virtualize'),
     diff = require('virtual-dom/diff'),
     patch = require('virtual-dom/patch');
 
-require('drizzlejs/dist/jquery-adapter');
+require('drizzlejs/dist/jquery-adapter')(window, $, D);
 
 if ('forEach' in Array.prototype) {
     D.View.prototype.updateDom = function() {

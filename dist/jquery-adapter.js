@@ -9,13 +9,13 @@
 
 (function(root, factory) {
     if (typeof define === 'function' && define.amd) {
-        define(['jquery', 'drizzlejs'], function($, D) {
-            return factory(root, $, D);
+        define(function() {
+            return factory;
         });
     } else if (typeof exports === 'object') {
-        factory(root, require('jquery'), require('drizzlejs'));
+        module.exports = factory;
     } else {
-        factory(root, root.$, root.Drizzle);
+        root.jQueryAdapter = factory;
     }
 })(window, function(root, $, D) {
     var slice = [].slice,
