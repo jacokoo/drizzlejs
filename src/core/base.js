@@ -23,9 +23,10 @@ assign(Base.prototype, {
     },
 
     mixin: function(mixins) {
-        var old, me = this;
+        var me = this;
         if (!mixins) return;
         mapObj(mixins, function(value, key) {
+            var old;
             if (D.isFunction(value)) {
                 old = me[key];
                 me[key] = function() {

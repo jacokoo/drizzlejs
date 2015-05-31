@@ -1,5 +1,9 @@
 describe('Drizzle', function() {
-    var d = Drizzle;
+    var d;
+
+    before(function() {
+        d = Drizzle;
+    });
 
     it('type determination', function() {
         var values = [function() {}, {}, [], 'a', 1, null, undefined, false, true],
@@ -8,40 +12,45 @@ describe('Drizzle', function() {
         for (i = 0; i < values.length; i ++) {
             result.push(d.isFunction(values[i]));
         }
-        expect(result).to.deep.equals([true, false, false, false, false, false, false, false, false]);
+        expect(result).to.deep.equal([true, false, false, false, false, false, false, false, false]);
 
         result = [];
         for (i = 0; i < values.length; i ++) {
             result.push(d.isString(values[i]));
         }
-        expect(result).to.deep.equals([false, false, false, true, false, false, false, false, false]);
+        expect(result).to.deep.equal([false, false, false, true, false, false, false, false, false]);
 
         result = [];
         for (i = 0; i < values.length; i ++) {
             result.push(d.isObject(values[i]));
         }
-        expect(result).to.deep.equals([false, true, false, false, false, false, false, false, false]);
+        expect(result).to.deep.equal([false, true, false, false, false, false, false, false, false]);
 
         result = [];
         for (i = 0; i < values.length; i ++) {
             result.push(d.isArray(values[i]));
         }
-        expect(result).to.deep.equals([false, false, true, false, false, false, false, false, false]);
+        expect(result).to.deep.equal([false, false, true, false, false, false, false, false, false]);
     });
 
     it('#uniqueId', function() {
         var id = d.uniqueId();
         expect(id).to.be.string;
-        expect(d.uniqueId()).to.be.equals((Number(id) + 1) + '');
-        expect(d.uniqueId('hello')).to.be.equals('hello' + (Number(id) + 2));
+        expect(d.uniqueId()).to.equal((Number(id) + 1) + '');
+        expect(d.uniqueId('hello')).to.equal('hello' + (Number(id) + 2));
     });
 
     it('#assign', function() {
-        var a = {};
+        var a = {}, tmp;
         expect(d.assign(null, {a: 1})).to.be.null;
-        expect(d.assign({}, {a: 1, b: 2}, {c: 3})).to.deep.equals({a: 1, b: 2, c: 3});
-        expect(d.assign(a)).to.be.equals(a).and.not.have.keys;
-        expect(d.assign(a, {a: 1})).to.be.equals(a).and.deep.equals({a: 1});
+        expect(d.assign({}, {a: 1, b: 2}, {c: 3})).to.deep.equal({a: 1, b: 2, c: 3});
+        expect(d.assign(a)).to.equal(a).and.not.have.keys;
+        expect(d.assign(a, {a: 1})).to.equal(a).and.deep.equal({a: 1});
+
+        tmp = Array.prototype.map;
+        Array.prototype.map = null;
+        expect(d.assign({}, {a: 1}, {b: 2})).to.deep.equal({a: 1, b: 2});
+        Array.prototype.map = tmp;
     });
 
     it('#extend', function() {
@@ -63,11 +72,11 @@ describe('Drizzle', function() {
         });
 
         b = new B('jaco', 'koo');
-        expect(b.a).to.be.equals('a');
-        expect(b.b).to.be.equals('b');
-        expect(b.hello()).to.be.equals('hello jacokoo');
-        expect(b.echo()).to.be.equals('b');
-        expect(B.echo()).to.be.equals('static a');
+        expect(b.a).to.equal('a');
+        expect(b.b).to.equal('b');
+        expect(b.hello()).to.equal('hello jacokoo');
+        expect(b.echo()).to.equal('b');
+        expect(B.echo()).to.equal('static a');
     });
 
 });

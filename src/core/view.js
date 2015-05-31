@@ -108,8 +108,9 @@ extend(View, Base, {
     },
 
     bindEvents: function() {
-        var me = this, star, wid, items, handler;
+        var me = this;
         mapObj(me.option('events'), function(value, key) {
+            var star, wid, items, handler;
             if (!me.eventHandlers[value]) me.error('No event handler:' + value);
             items = me.analyseEventKey(key);
             star = items[2];

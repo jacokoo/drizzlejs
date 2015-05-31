@@ -194,18 +194,20 @@
         },
 
         off: function(name, callback, context) {
-            if (!this.events || !name || !this.events[name]) return this;
-            if (!callback) return (delete this.events[name]) && this;
-            map(this.events[name], function(item) {
-                var result = [];
+            var me = this, result;
+            if (!me.events || !name || !me.events[name]) return me;
+            if (!callback) return (delete me.events[name]) && this;
+
+            result = [];
+            map(me.events[name], function(item) {
                 if (item.fn !== callback || (context && context !== item.ctx)) {
                     result.push(item);
                 }
-                this.events[name] = result;
-            }, this);
+            });
 
-            if (!this.events[name].length) delete this.events[name];
-            return this;
+            me.events[name] = result;
+            if (!me.events[name].length) delete me.events[name];
+            return me;
         },
 
         trigger: function(name) {
@@ -222,65 +224,66 @@
         delegateEvent: function(target) {
             var me = this, id = '--' + target.id;
             Drizzle.assign(target, {
-                on: function(name, callback) {
-                    target.listenTo(me, name + id, callback);
-                    return this;
+                on: function(name, callback, context) {
+                    target.listenTo(me, name + id, callback, context);
+                    return target;
                 },
 
                 off: function(name, callback) {
                     target.stopListening(me, (name && name + id), callback);
-                    return this;
+                    return target;
                 },
 
                 trigger: function(name) {
                     var args;
-                    if (!name) return this;
+                    if (!name) return target;
 
-                    args = slice.call(arguments);
+                    args = slice.call(arguments, 1);
                     args.unshift(name + id);
                     me.trigger.apply(me, args);
-                    return this;
+                    return target;
                 },
 
-                listenTo: function(obj, name, callback) {
-                    this.listeners || (this.listeners = {});
-                    this.listeners[name] || (this.listeners[name] = []);
-                    this.listeners[name].push({obj: obj, fn: callback});
+                listenTo: function(obj, name, callback, context) {
+                    var ctx = context || target;
+                    target.listeners || (target.listeners = {});
+                    target.listeners[name] || (target.listeners[name] = []);
+                    target.listeners[name].push({obj: obj, fn: callback, ctx: ctx});
 
-                    obj.on(name, callback, this);
-                    return this;
+                    obj.on(name, callback, ctx);
+                    return target;
                 },
 
                 stopListening: function(obj, name, callback) {
-                    if (!this.listeners) return this;
+                    if (!target.listeners) return target;
 
                     if (!obj) {
-                        mapObj(this.listeners, function(value, key) {
+                        mapObj(target.listeners, function(value, key) {
                             map(value, function(item) {
-                                item.obj.off(key, item.fn, this);
-                            }, this);
-                        }, this);
-                        this.listeners = {};
-                        return this;
+                                item.obj.off(key, item.fn, item.ctx);
+                            });
+                        });
+                        target.listeners = {};
+                        return target;
                     }
 
-                    mapObj(this.listeners, function(value, key) {
+                    mapObj(target.listeners, function(value, key) {
                         if (name && name !== key) return;
 
-                        this.listeners[key] = [];
+                        target.listeners[key] = [];
                         map(value, function(item) {
                             if (item.obj !== obj || (callback && callback !== item.fn)) {
-                                this.listeners[key].push(item);
+                                target.listeners[key].push(item);
                             } else {
-                                item.obj.off(key, item.fn, this);
+                                item.obj.off(key, item.fn, item.ctx);
                             }
-                        }, this);
-                    }, this);
+                        });
+                    });
 
-                    return this;
+                    return target;
                 }
             });
-            return this;
+            return me;
         }
     };
 
@@ -355,15 +358,16 @@
 
     Factory = D.Factory = {
 
-        types: {},
-
-        register: function(name, type) { this.types[name] = type; },
+        register: function(name, type) {
+            this.types || (this.types = {});
+            this.types[name] = type;
+        },
 
         create: function(type) {
             var args = slice.call(arguments, 1),
                 result, child, Ctor = function() {};
 
-            type = this.types[type] || this;
+            type = (this.types && this.types[type]) || this;
             Ctor.prototype = type.prototype;
             child = new Ctor();
             result = type.apply(child, args);
@@ -399,9 +403,10 @@
         },
 
         mixin: function(mixins) {
-            var old, me = this;
+            var me = this;
             if (!mixins) return;
             mapObj(mixins, function(value, key) {
+                var old;
                 if (D.isFunction(value)) {
                     old = me[key];
                     me[key] = function() {
@@ -764,8 +769,9 @@
         },
 
         bindEvents: function() {
-            var me = this, star, wid, items, handler;
+            var me = this;
             mapObj(me.option('events'), function(value, key) {
+                var star, wid, items, handler;
                 if (!me.eventHandlers[value]) me.error('No event handler:' + value);
                 items = me.analyseEventKey(key);
                 star = items[2];
