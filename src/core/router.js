@@ -60,12 +60,12 @@
         start: function(defaultPath) {
             var key, me = this, hash;
             if (me.started) return;
-            me.started = true;
             key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
 
             Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
             hash = me.getHash() || defaultPath;
             if (hash) me.navigate(hash);
+            me.started = true;
         },
 
         stop: function() {

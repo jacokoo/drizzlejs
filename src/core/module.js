@@ -86,7 +86,7 @@ extend(Module, Base, {
             this.listenTo(this.app, key, function(payload) {
                 value.call(ctx, payload);
             });
-        });
+        }, this);
     },
 
     close: function() {

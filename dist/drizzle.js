@@ -484,7 +484,7 @@
 
             getLoader: function(name) {
                 var loader = Loader.analyse(name).loader;
-                return loader && this.loader[loader] ? this.loaders[loader] : this.defaultLoader;
+                return loader && this.loaders[loader] ? this.loaders[loader] : this.defaultLoader;
             },
 
             setRegion: function(region) {
@@ -495,7 +495,7 @@
             load: function() {
                 return chain(this, map(arguments, function(name) {
                     return this.getLoader(name).loadModule(name);
-                }));
+                }, this));
             },
 
             show: function(name, options) {
@@ -520,7 +520,8 @@
             },
 
             navigate: function(path, trigger) {
-                return this.router.navigate(path, trigger);
+                if (!this.router || !this.router.started) return;
+                this.router.navigate(path, trigger);
             },
 
             dispatch: function(name, payload) {
@@ -532,9 +533,9 @@
             },
 
             message: {
-                success: function(title, content) { alert(content || title); },
-                info: function(title, content) { alert(content || title); },
-                error: function(title, content) { alert(content || title); }
+                success: FN,
+                info: FN,
+                error: FN
             }
         });
 
@@ -1053,7 +1054,7 @@
                 this.listenTo(this.app, key, function(payload) {
                     value.call(ctx, payload);
                 });
-            });
+            }, this);
         },
 
         close: function() {
@@ -1320,12 +1321,12 @@
             start: function(defaultPath) {
                 var key, me = this, hash;
                 if (me.started) return;
-                me.started = true;
                 key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
 
                 Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
                 hash = me.getHash() || defaultPath;
                 if (hash) me.navigate(hash);
+                me.started = true;
             },
 
             stop: function() {

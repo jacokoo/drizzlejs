@@ -5,7 +5,7 @@ html
         link(rel='stylesheet' href='../node_modules/mocha/mocha.css')
 
     body
-        #content + #mocha
+        #content(style='display:none;') + #mocha
         script(src='../node_modules/jquery/dist/jquery.js')
         script(src='../node_modules/handlebars/dist/handlebars.runtime.js')
         script(src='../dist/drizzle.js' data-cover)
