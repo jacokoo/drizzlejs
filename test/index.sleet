@@ -23,6 +23,8 @@ html
         script(src='test.base.js')
         script(src='test.application.js')
         script(src='test.model.js')
+        script(src='test.region.js')
+        script(src='test.module.js')
         script.
             mocha.checkLeaks();
             mocha.run();
