@@ -22,6 +22,7 @@ html
         script(src='test.factory.js')
         script(src='test.base.js')
         script(src='test.application.js')
+        script(src='test.model.js')
         script.
             mocha.checkLeaks();
             mocha.run();

@@ -32,7 +32,6 @@ describe('Application', function() {
 
     before(function() {
         getResource = function(path) {
-            console.log(path);
             return modules[path];
         };
         app = new Drizzle.Application({

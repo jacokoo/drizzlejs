@@ -14,9 +14,9 @@ Request = D.Request = {
             urls.pop();
             base = base.slice(3);
         }
-        urls.push(base);
+        if (base) urls.push(base);
 
-        if (model.data.id) urls.push(model.data.id);
+        if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
         if (options.urlSuffix) {
             urls.push(urls.pop() + options.urlSuffix);
@@ -42,7 +42,7 @@ Request = D.Request = {
     },
 
     save: function(model, options) {
-        return model.data.id ? this.put(model, options) : this.post(model, options);
+        return model.data[model.idKey] ? this.put(model, options) : this.post(model, options);
     },
 
     ajax: function(params, model, data, options) {

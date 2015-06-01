@@ -8,6 +8,7 @@
         disabledClass: 'disabled',
         attributesReferToId: ['for', 'data-target', 'data-parent'],
         getResource: null,
+        idKey: 'id',
 
         fileNames: {
             module: 'index',

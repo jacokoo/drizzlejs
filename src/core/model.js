@@ -2,6 +2,7 @@ Model = D.Model = function(app, module, options) {
     this.app = app;
     this.module = module;
     options || (options = {});
+    this.idKey = options.idKey || app.options.idKey;
     this.params = assign({}, options.params);
 
     parent(Model).call(this, 'D', options);

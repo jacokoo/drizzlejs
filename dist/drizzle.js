@@ -304,9 +304,9 @@
                 urls.pop();
                 base = base.slice(3);
             }
-            urls.push(base);
+            if (base) urls.push(base);
 
-            if (model.data.id) urls.push(model.data.id);
+            if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
             if (options.urlSuffix) {
                 urls.push(urls.pop() + options.urlSuffix);
@@ -332,7 +332,7 @@
         },
 
         save: function(model, options) {
-            return model.data.id ? this.put(model, options) : this.post(model, options);
+            return model.data[model.idKey] ? this.put(model, options) : this.post(model, options);
         },
 
         ajax: function(params, model, data, options) {
@@ -432,6 +432,7 @@
             disabledClass: 'disabled',
             attributesReferToId: ['for', 'data-target', 'data-parent'],
             getResource: null,
+            idKey: 'id',
 
             fileNames: {
                 module: 'index',
@@ -547,6 +548,7 @@
         this.app = app;
         this.module = module;
         options || (options = {});
+        this.idKey = options.idKey || app.options.idKey;
         this.params = assign({}, options.params);
 
         parent(Model).call(this, 'D', options);
