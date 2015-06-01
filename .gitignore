@@ -2,3 +2,5 @@
 npm-debug.log
 demo/build
 node_modules
+starter-kit/**/dist
+bundle

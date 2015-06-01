@@ -1,0 +1,7 @@
+#! handlebars
+
+layout
+    div(data-region='main')
+
+view("main")
+    h1 Hello Drizzle!
