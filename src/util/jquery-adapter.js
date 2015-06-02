@@ -19,9 +19,7 @@
         this.deferred = $.Deferred();
         /*eslint-enable*/
 
-        setTimeout(function() {
-            fn($.proxy(me.deferred.resolve, me.deferred), $.proxy(me.deferred.reject, me.deferred));
-        }, 1);
+        fn($.proxy(me.deferred.resolve, me.deferred), $.proxy(me.deferred.reject, me.deferred));
     };
 
     D.assign(Promise, {

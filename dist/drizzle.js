@@ -735,8 +735,7 @@
             this.virtualEl = this.getElement().cloneNode();
             this.bindEvents();
             this.bindActions();
-            this.bindData();
-            return this;
+            return chain(this, this.bindData, this);
         },
 
         close: function() {

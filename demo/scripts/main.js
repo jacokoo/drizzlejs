@@ -2,7 +2,8 @@ var D = require('drizzlejs'),
     $ = require('jquery'),
     vr = require('vdom-virtualize'),
     diff = require('virtual-dom/diff'),
-    patch = require('virtual-dom/patch');
+    patch = require('virtual-dom/patch'),
+    app;
 
 require('drizzlejs/dist/jquery-adapter')(window, $, D);
 
@@ -17,10 +18,13 @@ if ('forEach' in Array.prototype) {
     };
 }
 
-new D.Application({
+window.app = app = new D.Application({
     defaultRegion: document.getElementById('content'),
     urlRoot: 'api'
-}).startRoute('todos', '/');
+});
+
+app.startRoute('todos', '/');
+
 
 
 /*
