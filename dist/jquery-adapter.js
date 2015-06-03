@@ -85,6 +85,16 @@
                 }
             });
             return data;
+        },
+        componentHandler: function(name) {
+            return {
+                creator: function(view, el, options) {
+                    return $(el)[name](options);
+                },
+                destructor: function(view, component) {
+                    component[name]('destroy');
+                }
+            };
         }
     });
 });

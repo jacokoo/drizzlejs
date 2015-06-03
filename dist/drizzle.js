@@ -923,7 +923,7 @@
         destroyComponents: function() {
             mapObj(this.components, function(component, id) {
                 View.ComponentManager.destroy(id, this, component);
-            });
+            }, this);
 
             this.components = {};
         },
@@ -939,7 +939,6 @@
     View.ComponentManager = {
         handlers: {},
         componentCache: {},
-        createDefaultHandler: Adapter.componentHandler(),
 
         register: function(name, creator, destructor) {
             this.handlers[name] = { creator: creator, destructor: destructor || FN };
@@ -949,7 +948,7 @@
             var me = this, handler, dom, id;
             if (!options || !options.name) view.error('Component name can not be null');
 
-            handler = me.handlers[options.name] || me.createDefaultHandler(options.name);
+            handler = me.handlers[options.name] || Adapter.componentHandler(options.name);
             dom = options.selector ? view.$$(options.selector) : view.$(options.id);
             id = options.id || D.uniqueId('comp');
 
