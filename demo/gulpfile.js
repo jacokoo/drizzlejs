@@ -10,12 +10,10 @@ var fs = require('fs'),
     gutil = require('gulp-util'),
     sourcemaps = require('gulp-sourcemaps'),
     express = require('express'),
-    handlebars = require('gulp-handlebars'),
     jsonServer = require('json-server'),
     eslint = require('gulp-eslint'),
-    wrap = require('gulp-wrap');
 
-var libs = [
+    libs = [
         'jquery', 'handlebars/runtime', 'lodash/collection'
     ],
     options = {
@@ -33,12 +31,13 @@ var libs = [
             } else {
                 ext = path.extname(filename);
                 if (ext === '.js' || ext === '.html') {
-                    filename = path.relative(root, filename)
+                    filename = path.relative(root, filename);
                     filename = path.join(path.dirname(filename), path.basename(filename, ext));
-                    b.require('./' + filename.replace(/\\/g, '/'), {basedir: root});
+                    filename = './' + filename.replace(/\\/g, '/');
+                    b.require({file: filename}, {basedir: root});
                 }
             }
-        })
+        });
     },
     main = function() {
         var b = watchify(browserify(options));
@@ -61,7 +60,7 @@ var libs = [
         var b = watchify(browserify({cache: {}, packageCache: {}}));
         b.on('update', common);
         b.on('log', gutil.log);
-        b.require(libs)
+        b.require(libs);
         return b.bundle()
             .on('error', gutil.log.bind(gutil, 'Browserify Error'))
             .pipe(source('common.js'))
@@ -69,7 +68,7 @@ var libs = [
             .pipe(sourcemaps.init({loadMaps: true}))
             .pipe(sourcemaps.write('./'))
             .pipe(gulp.dest('./build'));
-    }
+    };
 
 gulp.task('lint', function() {
     gulp.src('scripts/**/*.js')
@@ -85,7 +84,7 @@ gulp.task('default', ['main', 'common'], function() {
     var app = express(), server = jsonServer.create();
 
     server.use(jsonServer.defaults);
-    server.use(jsonServer.router('data/todos.json'))
+    server.use(jsonServer.router('data/todos.json'));
     app.use(function(req, res, next) {
         console.log('Request URL:', req.originalUrl);
         next();
@@ -93,7 +92,8 @@ gulp.task('default', ['main', 'common'], function() {
     app.use(express.static('.'));
     app.use('/api', server);
 
-    app.listen(8000);
-    console.log('Server started at localhost:8000');
-    //connect.server({root: '.', port: 8000});
-})
+    app.listen(8000, function() {
+        console.log('Server started at localhost:8000');
+    });
+    // connect.server({root: '.', port: 8000});
+});
