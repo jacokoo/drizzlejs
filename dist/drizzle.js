@@ -346,7 +346,7 @@
             return new Adapter.Promise(function(resolve, reject) {
                 Adapter.ajax(params).then(function() {
                     var args = slice.call(arguments), resp = args[0];
-                    model.set(resp).changed();
+                    model.set(resp, !options.silent);
                     resolve(args);
                 }, function() {
                     reject(slice.call(arguments));
@@ -616,7 +616,7 @@
             options || (options = {});
             if (this.isCurrent(item)) {
                 if (options.forceRender === false) return this.Promise.resolve(this.current);
-                return this.current.render();
+                return this.current.render(options);
             }
 
             if (D.isString(item)) item = this.app.getLoader(item).loadModule(item);
@@ -703,9 +703,10 @@
                 mapObj(bind, function(value, key) {
                     var model = me.data[key] = me.module.store[key];
                     if (!model) me.error('No model:' + key);
-                    if (value !== true) return;
+                    if (!value) return;
                     me.listenTo(model, 'change', function() {
-                        if (me.region) me.render(me.renderOptions);
+                        if (value === true && me.region) me.render(me.renderOptions);
+                        if (D.isString(value)) me.option(value);
                     });
                 });
             });

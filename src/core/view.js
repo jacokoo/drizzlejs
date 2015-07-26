@@ -39,9 +39,10 @@ extend(View, Base, {
             mapObj(bind, function(value, key) {
                 var model = me.data[key] = me.module.store[key];
                 if (!model) me.error('No model:' + key);
-                if (value !== true) return;
+                if (!value) return;
                 me.listenTo(model, 'change', function() {
-                    if (me.region) me.render(me.renderOptions);
+                    if (value === true && me.region) me.render(me.renderOptions);
+                    if (D.isString(value)) me.option(value);
                 });
             });
         });
