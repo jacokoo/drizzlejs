@@ -56,7 +56,7 @@ Request = D.Request = {
         return new Adapter.Promise(function(resolve, reject) {
             Adapter.ajax(params).then(function() {
                 var args = slice.call(arguments), resp = args[0];
-                model.set(resp).changed();
+                model.set(resp, !options.silent);
                 resolve(args);
             }, function() {
                 reject(slice.call(arguments));
