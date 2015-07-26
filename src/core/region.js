@@ -21,7 +21,7 @@ extend(Region, Base, {
         options || (options = {});
         if (this.isCurrent(item)) {
             if (options.forceRender === false) return this.Promise.resolve(this.current);
-            return this.current.render();
+            return this.current.render(options);
         }
 
         if (D.isString(item)) item = this.app.getLoader(item).loadModule(item);
