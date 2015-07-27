@@ -1,6 +1,7 @@
 PageableModel = D.PageableModel = function() {
-    var defaults = this.app.options.pagination;
+    var defaults;
     parent(PageableModel).apply(this, arguments);
+    defaults = this.app.options.pagination;
 
     this.pagination = {
         page: this.options.page || 1,

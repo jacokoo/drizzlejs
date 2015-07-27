@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.8
+ * DrizzleJS v0.3.9
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -989,7 +989,8 @@
             this.initLayout();
             this.initStore();
             this.actionContext = assign({
-                store: this.store
+                store: this.store,
+                app: this.app
             }, Request);
         },
 
@@ -1411,8 +1412,9 @@
 
 
     PageableModel = D.PageableModel = function() {
-        var defaults = this.app.options.pagination;
+        var defaults;
         parent(PageableModel).apply(this, arguments);
+        defaults = this.app.options.pagination;
 
         this.pagination = {
             page: this.options.page || 1,

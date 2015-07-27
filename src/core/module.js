@@ -20,7 +20,8 @@ extend(Module, Base, {
         this.initLayout();
         this.initStore();
         this.actionContext = assign({
-            store: this.store
+            store: this.store,
+            app: this.app
         }, Request);
     },
 
