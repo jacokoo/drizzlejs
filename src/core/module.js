@@ -21,7 +21,8 @@ extend(Module, Base, {
         this.initStore();
         this.actionContext = assign({
             store: this.store,
-            app: this.app
+            app: this.app,
+            module: this
         }, Request);
     },
 

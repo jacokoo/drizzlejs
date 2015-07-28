@@ -112,7 +112,7 @@
         addClass: function(el, name) { return el.classList.add(name); },
         removeClass: function(el, name) { return el.classList.remove(name); },
 
-        getEventTarget: function(e) { return e.target; },
+        getEventTarget: function(e) { return e.currentTarget || e.target; },
 
         componentHandler: function(name) {
             return {
@@ -990,7 +990,8 @@
             this.initStore();
             this.actionContext = assign({
                 store: this.store,
-                app: this.app
+                app: this.app,
+                module: this
             }, Request);
         },
 
