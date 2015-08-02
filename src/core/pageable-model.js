@@ -18,12 +18,12 @@ extend(PageableModel, Model, {
         this.data = this.options.data || [];
     },
 
-    set: function(data) {
+    set: function(data, trigger) {
         var p = this.pagination;
         data || (data = {});
         p.recordCount = data[p.recordCountKey] || 0;
         p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-        PageableModel.__super__.set.call(this, data);
+        PageableModel.__super__.set.call(this, data, trigger);
     },
 
     getParams: function() {
@@ -31,7 +31,9 @@ extend(PageableModel, Model, {
             p = this.pagination;
         params[p.pageKey] = p.page;
         params[p.pageSizeKey] = p.pageSize;
-
+        if (this.app.options.pagination.params) {
+            params = this.app.options.pagination.params(params);
+        }
         return params;
     },
 
@@ -43,7 +45,7 @@ extend(PageableModel, Model, {
     },
 
     turnToPage: function(page) {
-        if (page <= this.pagination.pageCount || page >= 1) this.pagination.page = page;
+        if (page <= this.pagination.pageCount && page >= 1) this.pagination.page = page;
         return this;
     },
 
