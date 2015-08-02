@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.10
+ * DrizzleJS v0.3.11
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -1432,12 +1432,12 @@
             this.data = this.options.data || [];
         },
 
-        set: function(data) {
+        set: function(data, trigger) {
             var p = this.pagination;
             data || (data = {});
             p.recordCount = data[p.recordCountKey] || 0;
             p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-            PageableModel.__super__.set.call(this, data);
+            PageableModel.__super__.set.call(this, data, trigger);
         },
 
         getParams: function() {
@@ -1445,7 +1445,9 @@
                 p = this.pagination;
             params[p.pageKey] = p.page;
             params[p.pageSizeKey] = p.pageSize;
-
+            if (this.app.options.pagination.params) {
+                params = this.app.options.pagination.params(params);
+            }
             return params;
         },
 
@@ -1457,7 +1459,7 @@
         },
 
         turnToPage: function(page) {
-            if (page <= this.pagination.pageCount || page >= 1) this.pagination.page = page;
+            if (page <= this.pagination.pageCount && page >= 1) this.pagination.page = page;
             return this;
         },
 
