@@ -16,7 +16,7 @@ Request = D.Request = {
         }
         if (base) urls.push(base);
 
-        if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
+        if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
         if (options.urlSuffix) {
             urls.push(urls.pop() + options.urlSuffix);

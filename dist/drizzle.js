@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.11
+ * DrizzleJS v0.3.12
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -306,7 +306,7 @@
             }
             if (base) urls.push(base);
 
-            if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
+            if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
             if (options.urlSuffix) {
                 urls.push(urls.pop() + options.urlSuffix);
