@@ -60,7 +60,7 @@
         start: function(defaultPath) {
             var key, me = this, hash;
             if (me.started) return;
-            key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
+            key = 'hashchange.dr';
 
             Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
             hash = me.getHash() || defaultPath;
