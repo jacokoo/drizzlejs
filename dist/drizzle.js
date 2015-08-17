@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.12
+ * DrizzleJS v0.3.13
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -1324,7 +1324,7 @@
             start: function(defaultPath) {
                 var key, me = this, hash;
                 if (me.started) return;
-                key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
+                key = 'hashchange.dr';
 
                 Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
                 hash = me.getHash() || defaultPath;
