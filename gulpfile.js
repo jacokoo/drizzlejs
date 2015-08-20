@@ -18,18 +18,15 @@ var banner =
 ' * Distributed under MIT license\n' +
 ' */\n\n';
 
-
-
 var trimTrailingSpaces = function(file, cb) {
     file.contents = new Buffer(String(file.contents).replace(/[ \t]+\n/g, '\n'));
     cb(null, file);
 }
 
-
 gulp.task('clean', function(cb) { del(['dist'], cb) });
 
 gulp.task('build', ['clean'], function() {
-    gulp.src('src/drizzle.js')
+    return gulp.src('src/drizzle.js')
         .pipe(template({ version: p.version }))
         .pipe(preprocess())
         .pipe(header(banner))
@@ -45,7 +42,7 @@ gulp.task('build', ['clean'], function() {
 });
 
 gulp.task('jquery-adapter', ['clean'], function() {
-    gulp.src('src/util/jquery-adapter.js')
+    return gulp.src('src/util/jquery-adapter.js')
         .pipe(header(banner))
         .pipe(map(trimTrailingSpaces))
         .pipe(eslint())

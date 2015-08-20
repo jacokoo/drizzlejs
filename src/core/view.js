@@ -210,7 +210,7 @@ extend(View, Base, {
     serializeData: function() {
         var data = {};
         mapObj(this.data, function(value, key) {
-            data[key] = value.data;
+            data[key] = value.get(true);
         });
         mapObj(this.option('dataForTemplate'), function(value, key) {
             data[key] = value.call(this, data);

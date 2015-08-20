@@ -80,6 +80,25 @@
             .replace(/^\/|\/$/g, '');
     },
 
+    clone = function(target) {
+        var result;
+        if (D.isObject(target)) {
+            result = {};
+            mapObj(target, function(value, key) {
+                result[key] = clone(value);
+            });
+            return result;
+        }
+
+        if (D.isArray(target)) {
+            return map(target, function(value) {
+                return clone(value);
+            });
+        };
+
+        return target;
+    },
+
     Application, Base, Loader, Model, Module, MultiRegion,
     PageableModel, Region, Router, View, Layout, Adapter,
     Event, Factory, Helpers, Request, Promise, SimpleLoader;
