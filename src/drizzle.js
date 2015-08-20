@@ -94,7 +94,7 @@
             return map(target, function(value) {
                 return clone(value);
             });
-        };
+        }
 
         return target;
     },

@@ -36,7 +36,7 @@ extend(Model, Base, {
     },
 
     get: function(cloneIt) {
-        return cloneIt ? clone(this.data) : this.data
+        return cloneIt ? clone(this.data) : this.data;
     },
 
     changed: function() { this.trigger('change'); },

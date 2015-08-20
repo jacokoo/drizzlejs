@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.13
+ * DrizzleJS v0.3.14
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -85,6 +85,25 @@
     compose = function() {
         return slice.call(arguments).join('/').replace(/\/{2,}/g, '/')
             .replace(/^\/|\/$/g, '');
+    },
+
+    clone = function(target) {
+        var result;
+        if (D.isObject(target)) {
+            result = {};
+            mapObj(target, function(value, key) {
+                result[key] = clone(value);
+            });
+            return result;
+        }
+
+        if (D.isArray(target)) {
+            return map(target, function(value) {
+                return clone(value);
+            });
+        }
+
+        return target;
     },
 
     Application, Base, Loader, Model, Module, MultiRegion,
@@ -581,6 +600,10 @@
             return this;
         },
 
+        get: function(cloneIt) {
+            return cloneIt ? clone(this.data) : this.data;
+        },
+
         changed: function() { this.trigger('change'); },
 
         clear: function(trigger) {
@@ -874,7 +897,7 @@
         serializeData: function() {
             var data = {};
             mapObj(this.data, function(value, key) {
-                data[key] = value.data;
+                data[key] = value.get(true);
             });
             mapObj(this.option('dataForTemplate'), function(value, key) {
                 data[key] = value.call(this, data);
