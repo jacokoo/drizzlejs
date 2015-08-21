@@ -140,7 +140,7 @@ extend(Module, Base, {
     renderItems: function() {
         return chain(this, mapObj(this.inRegionItems, function(item, name) {
             if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
-            this.regions[name].show(item);
+            return this.regions[name].show(item);
         }, this));
     },
 
