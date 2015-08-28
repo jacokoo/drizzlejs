@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.14
+ * DrizzleJS v0.3.15
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -823,6 +823,7 @@
         createActionEventHandler: function(name) {
             var me = this, el = me.getElement(),
                 dataForAction = (me.option('dataForAction') || {})[name],
+                actionCallback = (me.option('actionCallbacks') || {})[name],
                 disabled = me.app.options.disabledClass;
 
             return function(e) {
@@ -840,6 +841,9 @@
 
                 chain(me, data, function(d) {
                     if (d !== false) return me.module.dispatch(name, d);
+                    return false;
+                }, function(d) {
+                    if (d !== false) return actionCallback && actionCallback.call(this, d);
                 }, function() {
                     Adapter.removeClass(target, disabled);
                 });
@@ -1132,7 +1136,7 @@
         renderItems: function() {
             return chain(this, mapObj(this.inRegionItems, function(item, name) {
                 if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
-                this.regions[name].show(item);
+                return this.regions[name].show(item);
             }, this));
         },
 
@@ -1158,7 +1162,7 @@
             handler = this.actions[name];
             if (!D.isFunction(handler)) this.error('No action handler for ' + name);
             return chain(this, function() {
-                handler.call(this.actionContext, payload);
+                return handler.call(this.actionContext, payload);
             });
         },
 
