@@ -136,6 +136,7 @@ extend(View, Base, {
     createActionEventHandler: function(name) {
         var me = this, el = me.getElement(),
             dataForAction = (me.option('dataForAction') || {})[name],
+            actionCallback = (me.option('actionCallbacks') || {})[name],
             disabled = me.app.options.disabledClass;
 
         return function(e) {
@@ -153,6 +154,9 @@ extend(View, Base, {
 
             chain(me, data, function(d) {
                 if (d !== false) return me.module.dispatch(name, d);
+                return false;
+            }, function(d) {
+                if (d !== false) return actionCallback && actionCallback.call(this, d);
             }, function() {
                 Adapter.removeClass(target, disabled);
             });

@@ -166,7 +166,7 @@ extend(Module, Base, {
         handler = this.actions[name];
         if (!D.isFunction(handler)) this.error('No action handler for ' + name);
         return chain(this, function() {
-            handler.call(this.actionContext, payload);
+            return handler.call(this.actionContext, payload);
         });
     },
 
