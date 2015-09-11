@@ -157,6 +157,8 @@ extend(View, Base, {
                 return false;
             }, function(d) {
                 if (d !== false) return actionCallback && actionCallback.call(this, d);
+            }).then(function() {
+                Adapter.removeClass(target, disabled);
             }, function() {
                 Adapter.removeClass(target, disabled);
             });
