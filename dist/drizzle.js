@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.15
+ * DrizzleJS v0.3.16
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -844,6 +844,8 @@
                     return false;
                 }, function(d) {
                     if (d !== false) return actionCallback && actionCallback.call(this, d);
+                }).then(function() {
+                    Adapter.removeClass(target, disabled);
                 }, function() {
                     Adapter.removeClass(target, disabled);
                 });
