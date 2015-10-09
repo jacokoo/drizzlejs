@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.16
+ * DrizzleJS v0.3.17
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -1054,7 +1054,6 @@
         loadItems: function() {
             var me = this;
             this.items = {};
-            this.inRegionItems = {};
 
             return chain(me, mapObj(me.option('items') || {}, function(options, name) {
                 var method;
@@ -1065,7 +1064,6 @@
                 me.app.getLoader(name)[method](name, me, options).then(function(obj) {
                     obj.moduleOptions = options;
                     me.items[obj.name] = obj;
-                    if (options.region) me.inRegionItems[options.region] = obj;
                 });
             }));
         },
@@ -1136,7 +1134,11 @@
         },
 
         renderItems: function() {
-            return chain(this, mapObj(this.inRegionItems, function(item, name) {
+            return chain(this, mapObj(this.items, function(item) {
+                var name = item.moduleOptions.region;
+                if (!name) {
+                    return false;
+                }
                 if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
                 return this.regions[name].show(item);
             }, this));
@@ -1182,6 +1184,10 @@
         initialize: function() {
             this.isLayout = true;
             this.loadedPromise = this.loadTemplate();
+        },
+
+        getElement: function() {
+            return this.region ? this.region.getElement(this.module) : null;
         },
 
         bindActions: FN,
