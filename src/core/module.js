@@ -56,7 +56,6 @@ extend(Module, Base, {
     loadItems: function() {
         var me = this;
         this.items = {};
-        this.inRegionItems = {};
 
         return chain(me, mapObj(me.option('items') || {}, function(options, name) {
             var method;
@@ -67,7 +66,6 @@ extend(Module, Base, {
             me.app.getLoader(name)[method](name, me, options).then(function(obj) {
                 obj.moduleOptions = options;
                 me.items[obj.name] = obj;
-                if (options.region) me.inRegionItems[options.region] = obj;
             });
         }));
     },
@@ -138,7 +136,11 @@ extend(Module, Base, {
     },
 
     renderItems: function() {
-        return chain(this, mapObj(this.inRegionItems, function(item, name) {
+        return chain(this, mapObj(this.items, function(item) {
+            var name = item.moduleOptions.region;
+            if (!name) {
+                return;
+            }
             if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
             return this.regions[name].show(item);
         }, this));
@@ -184,6 +186,10 @@ extend(Layout, View, {
     initialize: function() {
         this.isLayout = true;
         this.loadedPromise = this.loadTemplate();
+    },
+
+    getElement: function() {
+        return this.region ? this.region.getElement(this.module) : null;
     },
 
     bindActions: FN,
