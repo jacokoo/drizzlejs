@@ -2,7 +2,15 @@ Request = D.Request = {
     url: function(model) {
         var options = model.app.options,
             base = model.url(),
-            urls = [options.urlRoot];
+            urlRoot = options.urlRoot || '',
+            urls = [], matches, protocol = '';
+
+        matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
+        if (matches) {
+            protocol = matches[1];
+            urlRoot = matches[2];
+        }
+        urls.push(urlRoot);
 
         if (model.module.options.urlPrefix) {
             urls.push(model.module.options.urlPrefix);
@@ -22,7 +30,7 @@ Request = D.Request = {
             urls.push(urls.pop() + options.urlSuffix);
         }
 
-        return compose.apply(null, urls);
+        return protocol + compose.apply(null, urls);
     },
 
     get: function(model, options) {
