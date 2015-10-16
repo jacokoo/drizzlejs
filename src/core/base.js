@@ -10,7 +10,7 @@ assign(Base.prototype, {
 
     option: function(key) {
         var value = this.options[key];
-        return D.isFunction(value) ? value.call(this) : value;
+        return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
     },
 
     error: function(message) {

@@ -2,7 +2,7 @@ Request = D.Request = {
     url: function(model) {
         var options = model.app.options,
             base = model.url(),
-            urlRoot = options.urlRoot || '',
+            urlRoot = app.option('urlRoot', model) || '',
             urls = [], matches, protocol = '';
 
         matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
