@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.17
+ * DrizzleJS v0.3.18
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -311,7 +311,15 @@
         url: function(model) {
             var options = model.app.options,
                 base = model.url(),
-                urls = [options.urlRoot];
+                urlRoot = model.app.option('urlRoot', model) || '',
+                urls = [], matches, protocol = '';
+
+            matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
+            if (matches) {
+                protocol = matches[1];
+                urlRoot = matches[2];
+            }
+            urls.push(urlRoot);
 
             if (model.module.options.urlPrefix) {
                 urls.push(model.module.options.urlPrefix);
@@ -331,7 +339,7 @@
                 urls.push(urls.pop() + options.urlSuffix);
             }
 
-            return compose.apply(null, urls);
+            return protocol + compose.apply(null, urls);
         },
 
         get: function(model, options) {
@@ -409,7 +417,7 @@
 
         option: function(key) {
             var value = this.options[key];
-            return D.isFunction(value) ? value.call(this) : value;
+            return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
         },
 
         error: function(message) {
