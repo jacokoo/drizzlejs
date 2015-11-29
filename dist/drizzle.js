@@ -57,7 +57,6 @@
     assign = function(target) {
         if (!target) return target;
         map(slice.call(arguments, 1), function(arg) {
-            if (!arg) return;
             mapObj(arg, function(value, key) {
                 target[key] = value;
             });
