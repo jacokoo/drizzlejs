@@ -6,10 +6,11 @@ D.Renderable = class Renderable extends D.Base {
         this._components = {};
 
         super(name, options);
+        app.delegateEvent(this);
     }
 
     initialize () {
-        this._loadedPromise = app._templateEngine._load(this);
+        this._loadedPromise = app.templateEngine._load(this);
     }
 
     get _element {

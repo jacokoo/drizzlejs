@@ -41,6 +41,14 @@ D.Application = class Application extends D.Base {
         if (isDefault) this._defaultLoader = loader;
     }
 
+    set templateEngine (engine) {
+        this._templateEngine = engine;
+    }
+
+    get templateEngine () {
+        return this._templateEngine || this._option('templateEngine');
+    }
+
     _getLoader (name) {
         return name && this._loaders[name] || this._defaultLoader;
     }
@@ -63,3 +71,5 @@ D.Application = class Application extends D.Base {
         });
     }
 };
+
+Object.assign(D.Application.prototype, D.Event);

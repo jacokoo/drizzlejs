@@ -1,6 +1,5 @@
 let Drizzle = {},
     D = Drizzle,
-    has = D.hasOwnProperty,
     slice = [].slice,
     EMPTY = function() {},
     counter = 0,
@@ -23,7 +22,7 @@ let Drizzle = {},
         if (!obj) return result;
 
         for (key in obj) {
-            if (has.call(obj, key)) result.push(fn(obj[key], key, obj));
+            if (D.hasOwnProperty.call(obj, key)) result.push(fn(obj[key], key, obj));
         }
 
         return result;
