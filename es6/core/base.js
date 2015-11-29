@@ -1,15 +1,16 @@
 D.Base = class Base {
-    constructor (name, options = {}) {
+    constructor (name, options = {}, defaults) {
         this.options = options;
         this.id = D.uniqueId('D');
         this.name = name;
         this.Promise = new D.Promise(this);
 
+        Object.assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
         this.initialize();
     }
 
-    initialize: () {
+    initialize () {
     }
 
     _option (key, ...args) {

@@ -1,10 +1,5 @@
 D.Application = class Application extends D.Base {
     constructor (options) {
-        this._modules = {};
-        this.global = {};
-        this._loaders = {};
-        this._regions = [];
-
         super(options && options.name || 'Application', Object.assign({
             scriptRoot: 'app',
             urlRoot: '',
@@ -29,7 +24,12 @@ D.Application = class Application extends D.Base {
                 pageSizeKey: '_pageSize',
                 recordCountKey: 'recordCount'
             }
-        }, options));
+        }, options), {
+            global: {},
+            _modules: {},
+            _loaders: {},
+            _regions: []
+        });
     }
 
     initialize () {

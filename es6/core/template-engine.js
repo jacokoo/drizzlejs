@@ -1,7 +1,6 @@
 D.TemplateEngine = class TemplateEngine extends D.Base {
     constructor (options) {
-        this._templateCache = {};
-        super('Template Engine', options);
+        super('Template Engine', options, {_templateCache: {}});
     }
 
     _load (renderable) {

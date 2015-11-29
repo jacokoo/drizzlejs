@@ -9,7 +9,7 @@ D.Event = {
         if (!fn) return delete this._events[name];
 
         let result = [];
-        map(this._events[name], (item) => if (item.fn !== fn) result.push(item));
+        map(this._events[name], (item) => {if (item.fn !== fn) result.push(item)});
 
         if (result.length === 0) return (delete this._events[name]);
         this._events[name] = result;

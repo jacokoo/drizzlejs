@@ -39,7 +39,7 @@ let Drizzle = {},
             let clazz = this[type][name] || D[type];
             return new clazz(...args);
         }
-    },
+    };
 
 map(['Function', 'Array', 'String', 'Object'], (item) => {
     D[`is${item}`] = function(obj) {

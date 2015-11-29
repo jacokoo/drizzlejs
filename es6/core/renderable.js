@@ -1,11 +1,12 @@
 D.Renderable = class Renderable extends D.Base {
     constructor (name, app, mod, loader, options) {
-        this.app = app;
-        this.module = mod;
-        this._loader = loader;
-        this._components = {};
+        super(name, options, {
+            app: app,
+            module: mod,
+            _loader: loader,
+            _components: {}
+        });
 
-        super(name, options);
         app.delegateEvent(this);
     }
 
