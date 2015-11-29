@@ -8,7 +8,9 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     uglify = require('gulp-uglify'),
     p = require('./package.json'),
-    eslint = require('gulp-eslint');
+    eslint = require('gulp-eslint'),
+    babel = require('gulp-babel'),
+    umd = require('gulp-umd');
 
 var banner =
 '/*!\n' +
@@ -19,20 +21,21 @@ var banner =
 ' */\n\n';
 
 var trimTrailingSpaces = function(file, cb) {
-    file.contents = new Buffer(String(file.contents).replace(/[ \t]+\n/g, '\n'));
+    file.contents = new Buffer(String(file.contents).replace(/[ \t]+\n/g, '\n').replace(/\n+$/g, '\n'));
     cb(null, file);
 }
 
 gulp.task('clean', function(cb) { del(['dist'], cb) });
 
 gulp.task('build', ['clean'], function() {
-    return gulp.src('src/drizzle.js')
-        .pipe(template({ version: p.version }))
+    return gulp.src('es6/drizzle.js')
         .pipe(preprocess())
         .pipe(header(banner))
         .pipe(map(trimTrailingSpaces))
         .pipe(eslint())
         .pipe(eslint.format())
+        .pipe(babel({presets: ['es2015']}))
+        .pipe(umd({exports: function() { return 'Drizzle';}}))
         .pipe(gulp.dest('dist'))
         .pipe(rename('drizzle.min.js'))
         .pipe(uglify({ preserveComments: 'some' }))
@@ -41,18 +44,4 @@ gulp.task('build', ['clean'], function() {
         .pipe(gulp.dest('dist'));
 });
 
-gulp.task('jquery-adapter', ['clean'], function() {
-    return gulp.src('src/util/jquery-adapter.js')
-        .pipe(header(banner))
-        .pipe(map(trimTrailingSpaces))
-        .pipe(eslint())
-        .pipe(eslint.format())
-        .pipe(gulp.dest('dist'))
-        .pipe(rename('jquery-adapter.min.js'))
-        .pipe(uglify({ preserveComments: 'some' }))
-        .pipe(sourcemaps.init())
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('dist'));
-});
-
-gulp.task('default', ['build', 'jquery-adapter']);
+gulp.task('default', ['build']);

@@ -1,7 +1,3 @@
-module.exports = {
-
-    items: {
-        menu: {isModule: true, region: 'menu'}
-    }
-
+exports.items = {
+    menu: { isModule: true, region: 'menu' }
 };

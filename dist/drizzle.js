@@ -1,470 +1,1585 @@
+;(function(root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else if (typeof exports === 'object') {
+    module.exports = factory();
+  } else {
+    root.Drizzle = factory();
+  }
+}(this, function() {
+'use strict';
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 /*!
  * DrizzleJS v0.3.18
  * -------------------------------------
- * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
+ * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
  */
 
-'use strict';
+var Drizzle = {},
+    D = Drizzle,
+    slice = [].slice,
+    EMPTY = function EMPTY() {},
+    map = function map(arr, fn) {
+    var result = [];
+    if (!arr) return result;
+    if (arr.map) return arr.map(fn);
 
-(function(root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define(['handlebars.runtime'], function(Handlebars) {
-            return factory(root, Handlebars['default']);
-        });
-    } else if (typeof exports === 'object') {
-        module.exports = factory(root, require('handlebars/runtime')['default']);
-    } else {
-        root.Drizzle = factory(root, root.Handlebars);
+    for (var i = 0; i < arr.length; i++) {
+        result.push(fn(arr[i], i, arr));
     }
-})(window, function(root, handlebars) {
-    var Drizzle = {}, D = Drizzle,
-        counter = 0,
-        toString = Drizzle.toString,
-        has = Drizzle.hasOwnProperty,
-        slice = [].slice,
-        FN = function() {},
+    return result;
+},
+    mapObj = function mapObj(obj, fn) {
+    var result = [];
+    var key = undefined;
+    if (!obj) return result;
 
-    chain = function(obj) {
-        return obj.Promise.chain.apply(obj.Promise, slice.call(arguments, 1));
-    },
+    for (key in obj) {
+        if (D.hasOwnProperty.call(obj, key)) result.push(fn(obj[key], key, obj));
+    }
 
-    parent = function(obj) {
-        return obj.__super__.constructor;
-    },
-
-    mapObj = function(obj, fn, ctx) {
-        var result = [], i;
-        if (!obj) return result;
-
-        for (i in obj) {
-            if (has.call(obj, i)) result.push(fn.call(ctx, obj[i], i));
-        }
-        return result;
-    },
-
-    map = function(arr, fn, ctx) {
-        var result = [], i;
-        if (!arr) return result;
-        if (arr.map) return arr.map(fn, ctx);
-
-        for (i = 0; i < arr.length; i++) {
-            result.push(fn.call(ctx, arr[i], i));
-        }
-        return result;
-    },
-
-    assign = function(target) {
-        if (!target) return target;
-        map(slice.call(arguments, 1), function(arg) {
-            mapObj(arg, function(value, key) {
-                target[key] = value;
-            });
-        });
-        return target;
-    },
-
-    extend = function(child, theParent, obj) {
-        mapObj(theParent, function(value, key) {
-            if (has.call(theParent, key)) child[key] = value;
-        });
-
-        function Ctor() { this.constructor = child; }
-        Ctor.prototype = theParent.prototype;
-        child.prototype = new Ctor();
-        child.__super__ = theParent.prototype;
-
-        mapObj(obj, function(value, key) {
-            child.prototype[key] = value;
-        });
-
-        return child;
-    },
-
-    compose = function() {
-        return slice.call(arguments).join('/').replace(/\/{2,}/g, '/')
-            .replace(/^\/|\/$/g, '');
-    },
-
-    clone = function(target) {
-        var result;
-        if (D.isObject(target)) {
-            result = {};
-            mapObj(target, function(value, key) {
+    return result;
+},
+    clone = function clone(target) {
+    if (D.isObject(target)) {
+        var _ret = function () {
+            var result = {};
+            mapObj(target, function (value, key) {
                 result[key] = clone(value);
             });
-            return result;
-        }
-
-        if (D.isArray(target)) {
-            return map(target, function(value) {
-                return clone(value);
-            });
-        }
-
-        return target;
-    },
-
-    Application, Base, Loader, Model, Module, MultiRegion,
-    PageableModel, Region, Router, View, Layout, Adapter,
-    Event, Factory, Helpers, Request, Promise, SimpleLoader;
-
-    map(['Function', 'Array', 'String', 'Object'], function(value) {
-        Drizzle['is' + value] = function(obj) {
-            return toString.call(obj) === '[object ' + value + ']';
-        };
-    });
-
-    Drizzle.uniqueId = function(prefix) {
-        return (prefix || '') + (++counter);
-    };
-
-    Drizzle.assign = assign;
-
-    Drizzle.extend = extend;
-
-    Adapter = D.Adapter = {
-        Promise: root.Promise,
-        ajax: null,
-        hasClass: function(el, name) { return el.classList.contains(name); },
-        addClass: function(el, name) { return el.classList.add(name); },
-        removeClass: function(el, name) { return el.classList.remove(name); },
-
-        getEventTarget: function(e) { return e.currentTarget || e.target; },
-
-        componentHandler: function(name) {
             return {
-                creator: function() {
-                    throw new Error('Component [' + name + '] is not defined');
-                }
+                v: result
             };
-        },
+        }();
 
-        delegateDomEvent: FN,
+        if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+    }
 
-        undelegateDomEvents: FN,
+    if (D.isArray(target)) {
+        return map(target, function (value) {
+            return clone(value);
+        });
+    }
 
-        getFormData: FN
+    return target;
+},
+    typeCache = {
+    View: {}, Region: {}, Module: {}, Model: {}, Store: {},
+
+    register: function register(type, name, clazz) {
+        this[type][name] = clazz;
+    },
+    create: function create(type, name) {
+        var Clazz = this[type][name] || D[type];
+
+        for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+            args[_key - 2] = arguments[_key];
+        }
+
+        return new (Function.prototype.bind.apply(Clazz, [null].concat(args)))();
+    }
+};
+
+var counter = 0,
+    root = null;
+
+if (typeof window !== 'undefined') {
+    root = window;
+}
+
+map(['Function', 'Array', 'String', 'Object'], function (item) {
+    D['is' + item] = function (obj) {
+        return D.toString.call(obj) === '[object ' + item + ']';
     };
+});
 
+map(['Module', 'View', 'Region', 'Model', 'Store'], function (item) {
+    D['register' + item] = function (name, clazz) {
+        return typeCache.register(item, name, clazz);
+    };
+    typeCache['create' + item] = function (name) {
+        for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            args[_key2 - 1] = arguments[_key2];
+        }
 
-    Promise = D.Promise = function(context) {
+        return typeCache.create.apply(typeCache, [item, name].concat(args));
+    };
+});
+
+Object.assign(D, {
+    uniqueId: function uniqueId() {
+        var prefix = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+
+        return '' + prefix + ++counter;
+    },
+    adapt: function adapt(obj) {
+        Object.assign(D.Adapter, obj);
+    }
+});
+
+D.Adapter = {
+    Promise: Promise,
+
+    ajax: function ajax(params) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(params.type, params.url, true);
+        var promise = new Promise(function (resolve, reject) {
+            xhr.onload = function () {
+                if (this.status >= 200 && this.status < 4000) {
+                    resolve(JSON.parse(this.response));
+                    return;
+                }
+                reject(xhr);
+            };
+
+            xhr.onerror = function () {
+                reject(xhr);
+            };
+        });
+        xhr.send(params.data);
+        return promise;
+    },
+    ajaxResult: function ajaxResult(args) {
+        return args[0];
+    },
+    getEventTarget: function getEventTarget(e) {
+        return e.target;
+    },
+    getFormData: function getFormData(el) {
+        throw new Error('getFormData is not implemented', el);
+    },
+    addEventListener: function addEventListener(el, name, handler, useCapture) {
+        el.addEventListener(name, handler, useCapture);
+    },
+    removeEventListener: function removeEventListener(el, name, handler) {
+        el.removeEventListener(el, name, handler);
+    },
+    hasClass: function hasClass(el, clazz) {
+        return el.classList.contains(clazz);
+    },
+    addClass: function addClass(el, clazz) {
+        el.classList.add(clazz);
+    },
+    removeClass: function removeClass(el, clazz) {
+        el.classList.remove(clazz);
+    }
+};
+
+D.Promise = function () {
+    function Promiser(context) {
+        _classCallCheck(this, Promiser);
+
         this.context = context;
-    };
+    }
 
-    assign(Promise.prototype, {
-        create: function(fn) {
-            var ctx = this.context;
-            return new Adapter.Promise(function(resolve, reject) {
-                fn.call(ctx, resolve, reject);
-            });
-        },
+    _createClass(Promiser, [{
+        key: 'create',
+        value: function create(fn) {
+            var _this = this;
 
-        resolve: function(data) {
-            return Adapter.Promise.resolve(data);
-        },
-
-        reject: function(data) {
-            return Adapter.Promise.reject(data);
-        },
-
-        when: function(obj) {
-            var args = slice.call(arguments, 1), result;
-            result = D.isFunction(obj) ? obj.apply(this.context, args) : obj;
-            return Adapter.Promise.resolve(result);
-        },
-
-        chain: function() {
-            var me = this, args, prev = null, doRing = function(rings, resolve, reject, ring, i) {
-                var promise;
-                if (D.isArray(ring)) {
-                    promise = Adapter.Promise.all(map(ring, function(item) {
-                        return me.when.apply(me, i > 0 ? [item, prev] : [item]);
-                    }));
-                } else {
-                    promise = me.when.apply(me, i > 0 ? [ring, prev] : [ring]);
-                }
-
-                promise.then(function(data) {
-                    prev = data;
-                    rings.length === 0 ? resolve(prev) : doRing(rings, resolve, reject, rings.shift(), i + 1);
-                }, function(data) {
-                    reject(data);
-                });
-            };
-
-            args = slice.call(arguments);
-            if (args.length === 0) return me.resolve();
-
-            return me.create(function(resolve, reject) {
-                doRing(args, resolve, reject, args.shift(), 0);
+            return new D.Adapter.Promise(function (resolve, reject) {
+                fn.call(_this.context, resolve, reject);
             });
         }
-    });
+    }, {
+        key: 'resolve',
+        value: function resolve(data) {
+            return D.Adapter.Promise.resolve(data);
+        }
+    }, {
+        key: 'reject',
+        value: function reject(data) {
+            return D.Adapter.Promise.reject(data);
+        }
+    }, {
+        key: 'parallel',
+        value: function parallel(items) {
+            var _this2 = this;
 
+            for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+                args[_key3 - 1] = arguments[_key3];
+            }
 
-    Event = D.Event = {
-        on: function(name, callback, context) {
-            this.events || (this.events = {});
-            this.events[name] || (this.events[name] = []);
-            this.events[name].push({fn: callback, ctx: context});
-            return this;
-        },
-
-        off: function(name, callback, context) {
-            var me = this, result;
-            if (!me.events || !name || !me.events[name]) return me;
-            if (!callback) return (delete me.events[name]) && this;
-
-            result = [];
-            map(me.events[name], function(item) {
-                if (item.fn !== callback || (context && context !== item.ctx)) {
-                    result.push(item);
-                }
-            });
-
-            me.events[name] = result;
-            if (!me.events[name].length) delete me.events[name];
-            return me;
-        },
-
-        trigger: function(name) {
-            var args;
-            if (!name || !this.events || !this.events[name]) return this;
-            args = slice.call(arguments, 1);
-
-            map(this.events[name], function(item) {
-                item.fn.apply(item.ctx, args);
-            });
-            return this;
-        },
-
-        delegateEvent: function(target) {
-            var me = this, id = '--' + target.id;
-            Drizzle.assign(target, {
-                on: function(name, callback, context) {
-                    target.listenTo(me, name + id, callback, context);
-                    return target;
-                },
-
-                off: function(name, callback) {
-                    target.stopListening(me, (name && name + id), callback);
-                    return target;
-                },
-
-                trigger: function(name) {
-                    var args;
-                    if (!name) return target;
-
-                    args = slice.call(arguments, 1);
-                    args.unshift(name + id);
-                    me.trigger.apply(me, args);
-                    return target;
-                },
-
-                listenTo: function(obj, name, callback, context) {
-                    var ctx = context || target;
-                    target.listeners || (target.listeners = {});
-                    target.listeners[name] || (target.listeners[name] = []);
-                    target.listeners[name].push({obj: obj, fn: callback, ctx: ctx});
-
-                    obj.on(name, callback, ctx);
-                    return target;
-                },
-
-                stopListening: function(obj, name, callback) {
-                    if (!target.listeners) return target;
-
-                    if (!obj) {
-                        mapObj(target.listeners, function(value, key) {
-                            map(value, function(item) {
-                                item.obj.off(key, item.fn, item.ctx);
-                            });
-                        });
-                        target.listeners = {};
-                        return target;
+            return this.create(function (resolve, reject) {
+                var result = [],
+                    thenables = [],
+                    indexMap = {};
+                map(items, function (item, i) {
+                    var value = D.isFunction(item) ? item.apply(_this2.context, args) : item;
+                    if (value && value.then) {
+                        indexMap[thenables.length] = i;
+                        thenables.push(value);
+                    } else {
+                        result[i] = value;
                     }
+                });
 
-                    mapObj(target.listeners, function(value, key) {
-                        if (name && name !== key) return;
+                if (thenables.length === 0) return resolve(result);
 
-                        target.listeners[key] = [];
-                        map(value, function(item) {
-                            if (item.obj !== obj || (callback && callback !== item.fn)) {
-                                target.listeners[key].push(item);
-                            } else {
-                                item.obj.off(key, item.fn, item.ctx);
-                            }
+                D.Adapter.Promise.all(thenables).then(function (as) {
+                    mapObj(indexMap, function (key, value) {
+                        return result[value] = as[key];
+                    });
+                    resolve(result);
+                }, function (as) {
+                    reject(as);
+                });
+            });
+        }
+    }, {
+        key: 'chain',
+        value: function chain() {
+            var _this3 = this;
+
+            for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+                args[_key4] = arguments[_key4];
+            }
+
+            var prev = null;
+            var doRing = function doRing(rings, ring, resolve, reject) {
+                var nextRing = function nextRing(data) {
+                    prev = data;
+                    rings.length === 0 ? resolve(prev) : doRing(rings, rings.shift(), resolve, reject);
+                };
+
+                if (D.isArray(ring)) {
+                    ring.length === 0 ? nextRing([]) : _this3.parallel.apply(_this3, [ring].concat(_toConsumableArray(prev != null ? [prev] : []))).then(nextRing, reject);
+                } else {
+                    var value = D.isFunction(ring) ? ring.apply(_this3.context, prev != null ? [prev] : []) : ring;
+                    value && value.then ? value.then(nextRing, reject) : nextRing(value);
+                }
+            };
+
+            if (args.length === 0) return this.resolve();
+
+            return this.create(function (resolve, reject) {
+                doRing(args, args.shift(), resolve, reject);
+            });
+        }
+    }]);
+
+    return Promiser;
+}();
+
+D.Event = {
+    on: function on(name, fn, ctx) {
+        this._events || (this._events = {});
+        (this._events[name] || (this._events[name] = [])).push({ fn: fn, ctx: ctx });
+    },
+    off: function off(name, fn) {
+        if (!this._events || !name || !this._events[name]) return;
+        if (!fn) {
+            delete this._events[name];
+            return;
+        }
+
+        var result = [];
+        map(this._events[name], function (item) {
+            if (item.fn !== fn) result.push(item);
+        });
+
+        if (result.length === 0) {
+            delete this._events[name];
+            return;
+        }
+        this._events[name] = result;
+    },
+    trigger: function trigger(name) {
+        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+            args[_key5 - 1] = arguments[_key5];
+        }
+
+        if (!name || !this._events || !this._events[name]) return this;
+        map(this._events[name], function (item) {
+            return item.fn.apply(item.ctx, args);
+        });
+    },
+    delegateEvent: function delegateEvent(to) {
+        var me = this,
+            id = '--' + to.id,
+            target = to;
+
+        Object.assign(target, {
+            _listeners: {},
+
+            listenTo: function listenTo(obj, name, fn) {
+                (target._listeners[name] || (target._listeners[name] = [])).push({ fn: fn, obj: obj });
+                obj.on(name, fn, target);
+            },
+            stopListening: function stopListening(obj, name, fn) {
+                if (!obj) {
+                    mapObj(target._listeners, function (value, key) {
+                        return map(value, function (item) {
+                            return item.obj.off(key, item.fn);
                         });
                     });
+                    target._listeners = {};
+                    return;
+                }
 
-                    return target;
+                if (!name) {
+                    mapObj(target._listeners, function (value, key) {
+                        return map(value, function (item) {
+                            return me.off(key, item);
+                        });
+                    });
+                    target._listeners = {};
+                    return;
+                }
+
+                var result = [];
+                map(target._listeners[name], function (item) {
+                    return fn && fn !== item ? result.push(item) : me.off(name, item);
+                });
+                target._listeners[name] = result;
+
+                if (result.length === 0) delete target._listeners[name];
+            },
+            on: function on(name, fn) {
+                target.listenTo(me, name + id, fn);
+            },
+            off: function off(name, fn) {
+                target.stopListening(me, name && name + id, fn);
+            },
+            trigger: function trigger(name) {
+                if (!name) return target;
+
+                for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+                    args[_key6 - 1] = arguments[_key6];
+                }
+
+                args.unshift(name + id) && me.trigger.apply(me, args);
+            }
+        });
+        return this;
+    }
+};
+
+D.Request = {
+    get: function get(model, options) {
+        return this._ajax('GET', model, model.params, options);
+    },
+    post: function post(model, options) {
+        return this._ajax('POST', model, model.data, options);
+    },
+    put: function put(model, options) {
+        return this._ajax('PUT', model, model.data, options);
+    },
+    del: function del(model, options) {
+        return this._ajax('DELETE', model, model.data, options);
+    },
+    save: function save(model, options) {
+        return model.data && model.data[model._idKey] ? this.put(model, options) : this.post(model, options);
+    },
+    _url: function _url(model) {
+        var parts = [],
+            prefix = model.module._option('urlPrefix', model) || '',
+            urlRoot = model.app._option('urlRoot', model) || '',
+            urlSuffix = model.app._option('urlSuffix', model) || '';
+        var base = model._url() || '';
+
+        urlRoot && parts.push(urlRoot);
+        prefix && parts.push(prefix);
+        parts.push(model.module.name);
+
+        while (base.indexOf('../') === 0) {
+            parts.pop();
+            base = base.slice(3);
+        }
+
+        base && parts.push(base);
+        model.data && model.data[model._idKey] && parts.push(model.data[model._idKey]);
+        urlSuffix && parts.push(urlSuffix);
+
+        return parts.join('/');
+    },
+    _ajax: function _ajax(method, model, data, options) {
+        var params = Object.assign({ type: method }, options);
+
+        params.data = Object.assign({}, data, params.data);
+        params.url = this._url(model);
+
+        return model.Promise.create(function (resolve, reject) {
+            D.Adapter.ajax(params).then(function () {
+                for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+                    args[_key7] = arguments[_key7];
+                }
+
+                model.set(D.Adapter.ajaxResult(args), !params.slient);
+                resolve(args);
+            }, function () {
+                for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+                    args[_key8] = arguments[_key8];
+                }
+
+                return reject(args);
+            });
+        });
+    }
+};
+
+D.ComponentManager = {
+    _handlers: {},
+    _componentCache: {},
+
+    setDefaultHandler: function setDefaultHandler(creator) {
+        var destructor = arguments.length <= 1 || arguments[1] === undefined ? EMPTY : arguments[1];
+
+        this._defaultHandler = { creator: creator, destructor: destructor };
+    },
+    register: function register(name, creator, destructor) {
+        this.handlers[name] = { creator: creator, destructor: destructor || EMPTY };
+    },
+    _create: function _create(renderable, options) {
+        var _this4 = this;
+
+        var name = options.name;
+        var id = options.id;
+        var selector = options.selector;
+        var opt = options.options;
+
+        if (!name) renderable._error('Component name can not be null');
+
+        var handler = this._handlers[name] || this._defaultHandler;
+        if (!handler) renderable._error('No handler for component:', name);
+
+        var dom = selector ? renderable.$$(selector) : renderable.$(id);
+        var uid = id ? id : D.uniqueId('comp');
+
+        return renderable.chain(handler.creator(renderable, dom, opt), function (component) {
+            var cid = renderable.id + uid,
+                cache = _this4._componentCache[cid],
+                obj = { id: cid, handler: handler, index: D.uniqueId(cid), options: opt };
+
+            D.isArray(cache) ? cache.push(obj) : _this4._componentCache[cid] = cache ? [cache, obj] : obj;
+            return { id: id, component: component, index: obj.index };
+        });
+    },
+    _destroy: function _destroy(renderable, obj) {
+        var _this5 = this;
+
+        var id = renderable.id + obj.id,
+            cache = this._componentCache[id];
+        var current = cache;
+
+        if (D.isArray(cache)) {
+            this._componentCache[id] = [];
+            map(cache, function (item) {
+                item.index !== obj.index ? _this5._componentCache[id].push(item) : current = item;
+            });
+            this._componentCache[id].length === 0 && delete this._componentCache[id];
+        } else {
+            delete this._componentCache[id];
+        }
+
+        current.handler.destructor(renderable, obj.component, current.options);
+    }
+};
+
+D.Base = function () {
+    function Base(name) {
+        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var defaults = arguments[2];
+
+        _classCallCheck(this, Base);
+
+        this.options = options;
+        this.id = D.uniqueId('D');
+        this.name = name;
+        this.Promise = new D.Promise(this);
+
+        Object.assign(this, defaults);
+        if (options.mixin) this._mixin(options.mixin);
+        this._loadedPromise = this._initialize();
+    }
+
+    _createClass(Base, [{
+        key: '_initialize',
+        value: function _initialize() {}
+    }, {
+        key: '_option',
+        value: function _option(key) {
+            var value = this.options[key];
+
+            for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+                args[_key9 - 1] = arguments[_key9];
+            }
+
+            return D.isFunction(value) ? value.apply(this, args) : value;
+        }
+    }, {
+        key: '_error',
+        value: function _error(message) {
+            if (!D.isString(message)) throw message;
+
+            for (var _len10 = arguments.length, rest = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+                rest[_key10 - 1] = arguments[_key10];
+            }
+
+            throw new Error('[' + (this.module ? this.module.name + ':' : '') + this.name + '] ' + message + ' ' + rest.join(' '));
+        }
+    }, {
+        key: '_mixin',
+        value: function _mixin(obj) {
+            var _this6 = this,
+                _arguments = arguments;
+
+            mapObj(obj, function (value, key) {
+                var old = _this6[key];
+                if (!old) {
+                    _this6[key] = value;
+                    return;
+                }
+
+                if (D.isFunction(old)) {
+                    _this6[key] = function () {
+                        var args = slice.call(_arguments);
+                        args.unshift(old);
+                        return value.apply(_this6, args);
+                    };
                 }
             });
-            return me;
         }
-    };
+    }, {
+        key: 'chain',
+        value: function chain() {
+            var _Promise;
 
+            return (_Promise = this.Promise).chain.apply(_Promise, arguments);
+        }
+    }]);
 
-    Request = D.Request = {
-        url: function(model) {
-            var options = model.app.options,
-                base = model.url(),
-                urlRoot = model.app.option('urlRoot', model) || '',
-                urls = [], matches, protocol = '';
+    return Base;
+}();
 
-            matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
-            if (matches) {
-                protocol = matches[1];
-                urlRoot = matches[2];
-            }
-            urls.push(urlRoot);
+D.Renderable = function (_D$Base) {
+    _inherits(Renderable, _D$Base);
 
-            if (model.module.options.urlPrefix) {
-                urls.push(model.module.options.urlPrefix);
-            }
+    function Renderable(name, app, mod, loader, options) {
+        _classCallCheck(this, Renderable);
 
-            urls.push(model.module.name);
+        var _this7 = _possibleConstructorReturn(this, Object.getPrototypeOf(Renderable).call(this, name, options, {
+            app: app,
+            module: mod,
+            components: {},
+            _loader: loader,
+            _componentMap: {},
+            _events: {}
+        }));
 
-            while (base.indexOf('../') === 0) {
-                urls.pop();
-                base = base.slice(3);
-            }
-            if (base) urls.push(base);
+        _this7._eventHandlers = _this7._option('handlers');
+        app.delegateEvent(_this7);
+        return _this7;
+    }
 
-            if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
+    _createClass(Renderable, [{
+        key: '_initialize',
+        value: function _initialize() {
+            var _this8 = this;
 
-            if (options.urlSuffix) {
-                urls.push(urls.pop() + options.urlSuffix);
-            }
+            this._templateEngine = this._option('templateEngine') || this.module && this.module._templateEngine || this.app._templateEngine;
+            return this.chain([this._templateEngine._load(this), this._initializeEvents()], function (_ref) {
+                var _ref2 = _slicedToArray(_ref, 1);
 
-            return protocol + compose.apply(null, urls);
-        },
+                var template = _ref2[0];
+                return _this8._template = template;
+            });
+        }
+    }, {
+        key: 'render',
+        value: function render(options) {
+            return this._render(options, true);
+        }
+    }, {
+        key: '$',
+        value: function $(id) {
+            return this.$$('#' + this._wrapDomId(id))[0];
+        }
+    }, {
+        key: '$$',
+        value: function $$(selector) {
+            return this._element.querySelectorAll(selector);
+        }
+    }, {
+        key: '_render',
+        value: function _render() {
+            var _this9 = this;
 
-        get: function(model, options) {
-            return this.ajax({type: 'GET'}, model, model.getParams(), options);
-        },
+            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+            var update = arguments[1];
 
-        post: function(model, options) {
-            return this.ajax({type: 'POST'}, model, model.data, options);
-        },
+            if (!this._region) this._error('Region is null');
 
-        put: function(model, options) {
-            return this.ajax({type: 'PUT'}, model, model.data, options);
-        },
+            this.renderOptions = options;
+            return this.chain(this._loadedPromise, this._destroyComponents, function () {
+                return _this9.trigger('beforeRender');
+            }, function () {
+                return _this9._option('beforeRender');
+            }, this._beforeRender, this._serializeData, function (data) {
+                return _this9._renderTemplate(data, update);
+            }, this._renderComponents, this._afterRender, function () {
+                return _this9._option('afterRender');
+            }, function () {
+                return _this9.trigger('afterRender');
+            }, this);
+        }
+    }, {
+        key: '_setRegion',
+        value: function _setRegion(region) {
+            this._region = region;
+            this._bindEvents();
+        }
+    }, {
+        key: '_close',
+        value: function _close() {
+            var _this10 = this;
 
-        del: function(model, options) {
-            return this.ajax({type: 'DELETE'}, model, model.data, options);
-        },
+            if (!this._region) return this.Promise.resolve(this);
 
-        save: function(model, options) {
-            return model.data[model.idKey] ? this.put(model, options) : this.post(model, options);
-        },
+            return this.chain(function () {
+                return _this10.trigger('beforeClose');
+            }, function () {
+                return _this10._option('beforeClose');
+            }, this._beforeClose, [this._unbindEvents, this.destroyComponents, function () {
+                return _this10._region._empty(_this10);
+            }], this._afterClose, function () {
+                return _this10._option('afterClose');
+            }, function () {
+                return _this10.trigger('afterClose');
+            }, function () {
+                return delete _this10._region;
+            }, this);
+        }
+    }, {
+        key: '_serializeData',
+        value: function _serializeData() {
+            return {
+                Global: this.app.global,
+                Self: this
+            };
+        }
+    }, {
+        key: '_renderTemplate',
+        value: function _renderTemplate(data, update) {
+            this._templateEngine._execute(this, data, this._template, update);
+        }
+    }, {
+        key: '_initializeEvents',
+        value: function _initializeEvents(events) {
+            var _this11 = this;
 
-        ajax: function(params, model, data, options) {
-            options || (options = {});
-            assign(params, options);
-            assign(data, options.data);
+            mapObj(events || this._option('events'), function (value, key) {
+                var items = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/),
+                    result = { key: key };
 
-            params.url = this.url(model);
-            params.data = data;
+                if (items.length !== 2) _this11._error('Invalid event key');
+                result.eventType = items[0];
+                if (items[1].slice(-1) === '*') {
+                    result.id = _this11._wrapDomId(items[1].slice(0, -1));
+                    result.haveStar = true;
+                    result.selector = '[id^=' + result.id + ']';
+                } else {
+                    result.id = _this11._wrapDomId(items[1]);
+                    result.selector = '#' + result.id;
+                }
+                result.handler = _this11._createEventHandler(value, result);
+                _this11._events[key] = result;
+            });
+        }
+    }, {
+        key: '_createEventHandler',
+        value: function _createEventHandler(handlerName, _ref3) {
+            var _this12 = this;
 
-            return new Adapter.Promise(function(resolve, reject) {
-                Adapter.ajax(params).then(function() {
-                    var args = slice.call(arguments), resp = args[0];
-                    model.set(resp, !options.silent);
-                    resolve(args);
-                }, function() {
-                    reject(slice.call(arguments));
+            var haveStar = _ref3.haveStar;
+            var id = _ref3.id;
+            var disabledClass = this.app.options.disabledClass;
+
+            return function (event) {
+                if (!_this12._eventHandlers[handlerName]) _this12._error('No event handler for name:', handlerName);
+
+                var target = D.Adapter.getEventTarget(event),
+                    args = [event];
+                if (D.Adapter.hasClass(target, disabledClass)) return;
+                if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
+                _this12._eventHandlers[handlerName].apply(_this12, args);
+            };
+        }
+    }, {
+        key: '_bindEvents',
+        value: function _bindEvents() {
+            var _this13 = this;
+
+            mapObj(this._events, function (value) {
+                _this13._region._delegateDomEvent(_this13, value.eventType, value.selector, value.handler);
+            });
+        }
+    }, {
+        key: '_unbindEvents',
+        value: function _unbindEvents() {
+            this._region._undelegateDomEvents(this);
+        }
+    }, {
+        key: '_renderComponents',
+        value: function _renderComponents() {
+            var _this14 = this;
+
+            this.chain(map(this._option('components'), function (item) {
+                var i = D.isFunction(item) ? item.call(_this14) : item;
+                return i ? D.ComponentManager.create(_this14, i) : null;
+            }), function (components) {
+                return map(components, function (item) {
+                    if (!item) return;
+                    var id = item.id;
+                    var component = item.component;
+                    var index = item.index;var value = _this14.components[id];
+                    D.isArray(value) ? value.push(component) : _this14.components[id] = value ? [value, component] : component;
+                    _this14._componentMap[index] = item;
                 });
             });
         }
-    };
+    }, {
+        key: '_destroyComponents',
+        value: function _destroyComponents() {
+            var _this15 = this;
 
-
-    Factory = D.Factory = {
-
-        register: function(name, type) {
-            this.types || (this.types = {});
-            this.types[name] = type;
-        },
-
-        create: function(type) {
-            var args = slice.call(arguments, 1),
-                result, child, Ctor = function() {};
-
-            type = (this.types && this.types[type]) || this;
-            Ctor.prototype = type.prototype;
-            child = new Ctor();
-            result = type.apply(child, args);
-
-            return Object(result) === result ? result : child;
+            this.components = {};
+            mapObj(this._componentMap, function (value) {
+                return D.ComponentManager.destroy(_this15, value);
+            });
         }
+    }, {
+        key: '_wrapDomId',
+        value: function _wrapDomId(id) {
+            return this.id + id;
+        }
+    }, {
+        key: '_beforeRender',
+        value: function _beforeRender() {}
+    }, {
+        key: '_afterRender',
+        value: function _afterRender() {}
+    }, {
+        key: '_beforeClose',
+        value: function _beforeClose() {}
+    }, {
+        key: '_afterClose',
+        value: function _afterClose() {}
+    }, {
+        key: '_element',
+        get: function get() {
+            return this._region ? this._region._getElement(this) : null;
+        }
+    }]);
 
-    };
+    return Renderable;
+}(D.Base);
 
+D.RenderableContainer = function (_D$Renderable) {
+    _inherits(RenderableContainer, _D$Renderable);
 
-    Base = D.Base = function(idPrefix, options) {
-        this.options = options || {};
-        this.id = D.uniqueId(idPrefix);
-        this.Promise = new Promise(this);
-        this.initialize();
-    };
+    function RenderableContainer() {
+        _classCallCheck(this, RenderableContainer);
 
-    assign(Base.prototype, {
-        initialize: FN,
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(RenderableContainer).apply(this, arguments));
+    }
 
-        option: function(key) {
-            var value = this.options[key];
-            return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
-        },
+    _createClass(RenderableContainer, [{
+        key: '_initialize',
+        value: function _initialize() {
+            var promise = _get(Object.getPrototypeOf(RenderableContainer.prototype), '_initialize', this).call(this);
 
-        error: function(message) {
-            var msg;
-            if (!D.isString(message)) throw message;
+            this._items = {};
+            return this.chain(promise, this._initializeItems);
+        }
+    }, {
+        key: '_afterRender',
+        value: function _afterRender() {
+            return this.chain(this._initializeRegions, this._renderItems);
+        }
+    }, {
+        key: '_afterClose',
+        value: function _afterClose() {
+            return this._closeRegions();
+        }
+    }, {
+        key: '_initializeItems',
+        value: function _initializeItems() {
+            var _this17 = this;
 
-            msg = this.module ? ['[', this.module.name, ':'] : ['['];
-            msg = msg.concat([this.name, '] ', message]);
-            throw new Error(msg.join(''));
-        },
+            this.chain(mapObj(this._option('items'), function () {
+                var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+                var name = arguments[1];
 
-        mixin: function(mixins) {
-            var me = this;
-            if (!mixins) return;
-            mapObj(mixins, function(value, key) {
-                var old;
-                if (D.isFunction(value)) {
-                    old = me[key];
-                    me[key] = function() {
-                        var args = slice.call(arguments);
-                        if (old) args.unshift(old);
-                        return value.apply(me, args);
-                    };
-                } else {
-                    if (!me[key]) me[key] = value;
+                var opt = D.isFunction(options) ? options.call(_this17) : options;
+                if (D.isString(opt)) opt = { region: opt };
+
+                return _this17.app[options.isModule ? '_createModule' : '_createView'](name, _this17).then(function (item) {
+                    var i = item;
+                    i.moduleOptions = opt;
+                    _this17._items[name] = item;
+                    return item;
+                });
+            }));
+        }
+    }, {
+        key: '_initializeRegions',
+        value: function _initializeRegions() {
+            var _this18 = this;
+
+            this._regions = {};
+            return this.chain(this.closeRegions, map(this.$$('[data-region]'), function (el) {
+                var region = _this18._createRegion(el);
+                _this18._regions[region.name] = region;
+            }));
+        }
+    }, {
+        key: '_renderItems',
+        value: function _renderItems() {
+            var _this19 = this;
+
+            return this.chain(mapObj(this.items, function (item) {
+                var region = item.moduleOptions.region;
+
+                if (!region) return;
+                if (!_this19.regions[region]) _this19._error('Region: ' + region + ' is not defined');
+                _this19.regions[region].show(item);
+            }), this);
+        }
+    }, {
+        key: '_createRegion',
+        value: function _createRegion(el) {
+            var name = el.getAttribute('data-region');
+            return this.app._createRegion(el, name, this);
+        }
+    }, {
+        key: '_closeRegions',
+        value: function _closeRegions() {
+            var regions = this._regions;
+            if (!regions) return this;
+            delete this._regions;
+            return this.chain(mapObj(regions, function (region) {
+                return region.close();
+            }), this);
+        }
+    }, {
+        key: 'items',
+        get: function get() {
+            return this._items || {};
+        }
+    }, {
+        key: 'regions',
+        get: function get() {
+            return this._regions || {};
+        }
+    }]);
+
+    return RenderableContainer;
+}(D.Renderable);
+
+D.ActionCreator = function (_D$Renderable2) {
+    _inherits(ActionCreator, _D$Renderable2);
+
+    function ActionCreator() {
+        _classCallCheck(this, ActionCreator);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(ActionCreator).apply(this, arguments));
+    }
+
+    _createClass(ActionCreator, [{
+        key: '_initializeEvents',
+        value: function _initializeEvents() {
+            _get(Object.getPrototypeOf(ActionCreator.prototype), '_initializeEvents', this).call(this);
+            _get(Object.getPrototypeOf(ActionCreator.prototype), '_initializeEvents', this).call(this, this._option('actions'));
+        }
+    }, {
+        key: '_createEventHandler',
+        value: function _createEventHandler(name, obj) {
+            var isAction = !!(this._option('actions') || {})[obj.key];
+            return isAction ? this._createAction(name) : _get(Object.getPrototypeOf(ActionCreator.prototype), '_createEventHandler', this).call(this, name, obj);
+        }
+    }, {
+        key: '_createAction',
+        value: function _createAction(name) {
+            var _this21 = this;
+
+            var disabledClass = this.app.options.disabledClass;
+
+            var _ref4 = this._option('dataForActions') || {};
+
+            var dataForAction = _ref4[name];
+
+            var _ref5 = this._option('actionCallbacks') || {};
+
+            var actionCallback = _ref5[name];
+
+            return function (e) {
+                var target = D.Adapter.getEventTarget(event);
+                if (D.Adapter.hasClass(target, disabledClass)) return;
+                D.Adapter.addClass(target, disabledClass);
+
+                var data = _this21._getActionPayload(target);
+                _this21.chain(D.isFunction(dataForAction) ? dataForAction.call(_this21, data, e) : data, function (payload) {
+                    return payload !== false ? _this21.module.dispatch(name, payload) : false;
+                }, function (result) {
+                    return result !== false ? actionCallback && actionCallback.call(_this21, result) : false;
+                }).then(function () {
+                    return D.Adapter.removeClass(target, disabledClass);
+                }, function () {
+                    return D.Adapter.removeClass(target, disabledClass);
+                });
+            };
+        }
+    }, {
+        key: '_getActionPayload',
+        value: function _getActionPayload(target) {
+            var rootEl = this._element;
+            var current = target,
+                targetName = false;
+            while (current && current !== rootEl && current.tagName !== 'FORM') {
+                current = current.parentNode;
+            }current || (current = rootEl);
+            var data = current.tagName === 'FORM' ? D.Adapter.getFormData(current) : {};
+            map(current.querySelectorAll('[data-name][data-value]'), function (item) {
+                if (item === target) {
+                    targetName = target.getAttribute('data-name');
+                    data[targetName] = target.getAttribute('data-value');
+                    return;
+                }
+
+                var name = item.getAttribute('data-name');
+                if (targetName && targetName === name) return;
+
+                var value = item.getAttribute('data-value'),
+                    v = data[name];
+                D.isArray(v) ? v.push(value) : data[name] = v == null ? value : [v, value];
+            });
+            return data;
+        }
+    }]);
+
+    return ActionCreator;
+}(D.Renderable);
+
+D.View = function (_D$ActionCreator) {
+    _inherits(View, _D$ActionCreator);
+
+    function View() {
+        _classCallCheck(this, View);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(View).apply(this, arguments));
+    }
+
+    _createClass(View, [{
+        key: '_initialize',
+        value: function _initialize() {
+            this.bindings = {};
+            return this.chain(_get(Object.getPrototypeOf(View.prototype), '_initialize', this).call(this), this._initializeDataBinding);
+        }
+    }, {
+        key: '_initializeDataBinding',
+        value: function _initializeDataBinding() {
+            var _this23 = this;
+
+            this._dataBinding = {};
+            mapObj(this._option('bindings'), function (value, key) {
+                var model = _this23.bindings[key] = _this23.module.store.models[key];
+                if (!model) _this23._error('No model:', key);
+
+                if (!value) return;
+                _this23._dataBinding[key] = { model: model, value: value, fn: function fn() {
+                        if (value === true && _this23._region) _this23.render(_this23.renderOptions);
+                        if (D.isString(value)) _this23._option(value);
+                    } };
+            });
+        }
+    }, {
+        key: '_bindData',
+        value: function _bindData() {
+            var _this24 = this;
+
+            mapObj(this._dataBinding, function (value) {
+                return _this24.listenTo(value.model, 'changed', value.fn);
+            });
+        }
+    }, {
+        key: '_unbindData',
+        value: function _unbindData() {
+            this.stopListening();
+            this.bindings = {};
+        }
+    }, {
+        key: '_setRegion',
+        value: function _setRegion() {
+            var _get2;
+
+            for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
+                args[_key11] = arguments[_key11];
+            }
+
+            (_get2 = _get(Object.getPrototypeOf(View.prototype), '_setRegion', this)).call.apply(_get2, [this].concat(args));
+            this._bindData();
+        }
+    }, {
+        key: '_close',
+        value: function _close() {
+            var _get3;
+
+            for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
+                args[_key12] = arguments[_key12];
+            }
+
+            this.chain((_get3 = _get(Object.getPrototypeOf(View.prototype), '_close', this)).call.apply(_get3, [this].concat(args)), this._unbindData, this);
+        }
+    }, {
+        key: '_serializeData',
+        value: function _serializeData() {
+            var _this25 = this;
+
+            var data = _get(Object.getPrototypeOf(View.prototype), '_serializeData', this).call(this);
+            mapObj(this.bindings, function (value, key) {
+                return data[key] = value.get(true);
+            });
+            mapObj(this._option('dataForTemplate'), function (value, key) {
+                return data[key] = value.call(_this25, data);
+            });
+            return data;
+        }
+    }]);
+
+    return View;
+}(D.ActionCreator);
+
+D.Module = function (_D$RenderableContaine) {
+    _inherits(Module, _D$RenderableContaine);
+
+    function Module() {
+        _classCallCheck(this, Module);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Module).apply(this, arguments));
+    }
+
+    _createClass(Module, [{
+        key: '_initialize',
+        value: function _initialize() {
+            this.app._modules[this.name + '--' + this.id] = this;
+            this._initializeStore();
+            return _get(Object.getPrototypeOf(Module.prototype), '_initialize', this).call(this);
+        }
+    }, {
+        key: 'dispatch',
+        value: function dispatch(name, payload) {
+            this._store.dispatch(name, payload);
+        }
+    }, {
+        key: '_initializeStore',
+        value: function _initializeStore() {
+            this._store = this.app._createStore(this, this._option('store'));
+        }
+    }, {
+        key: '_afterClose',
+        value: function _afterClose() {
+            delete this.app._modules[this.name + '--' + this.id];
+            this._store._destory();
+            return _get(Object.getPrototypeOf(Module.prototype), '_afterClose', this).call(this);
+        }
+    }, {
+        key: '_beforeRender',
+        value: function _beforeRender() {
+            var _this27 = this;
+
+            return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_beforeRender', this).call(this), function () {
+                return _this27._store._loadEagerModels();
+            });
+        }
+    }, {
+        key: '_afterRender',
+        value: function _afterRender() {
+            var _this28 = this;
+
+            return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_afterRender', this).call(this), function () {
+                return _this28._store._loadLazyModels();
+            });
+        }
+    }, {
+        key: 'store',
+        get: function get() {
+            return this._store;
+        }
+    }]);
+
+    return Module;
+}(D.RenderableContainer);
+
+var CAPTURES = ['blur', 'focus', 'scroll', 'resize'];
+
+D.Region = function (_D$Base2) {
+    _inherits(Region, _D$Base2);
+
+    function Region(app, mod, el, name) {
+        _classCallCheck(this, Region);
+
+        var _this29 = _possibleConstructorReturn(this, Object.getPrototypeOf(Region).call(this, name || 'Region', {}, {
+            app: app,
+            module: mod,
+            _el: el,
+            _delegated: {}
+        }));
+
+        if (!_this29._el) _this29._error('The DOM element for region is required');
+        app.delegateEvent(_this29);
+        return _this29;
+    }
+
+    _createClass(Region, [{
+        key: 'show',
+        value: function show(renderable) {
+            var _this30 = this;
+
+            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+            if (this._isCurrent(renderable)) {
+                if (options.forceRender === false) return this.Promise.resolve(this._current);
+                return this._current._render(options, true);
+            }
+
+            return this.chain(D.isString(renderable) ? this.app._createModule(renderable) : renderable, function (item) {
+                if (!(item instanceof D.Renderable)) {
+                    _this30._error('The item is expected to be an instance of Renderable');
+                }
+                return item;
+            }, [function (item) {
+                return _this30.chain(item._region && item._region.close(), item);
+            }, function () {
+                return _this30.close();
+            }], function (_ref6) {
+                var _ref7 = _slicedToArray(_ref6, 1);
+
+                var item = _ref7[0];
+
+                _this30._current = item;
+                var attr = item.module ? item.module.name + ':' + item.name : item.name;
+                _this30._getElement().setAttribute('data-current', attr);
+                item._setRegion(_this30);
+                return item;
+            }, function (item) {
+                return item._render(options, false);
+            });
+        }
+    }, {
+        key: 'close',
+        value: function close() {
+            var _this31 = this;
+
+            return this.chain(this._current && this._current._close(), function () {
+                return delete _this31._current;
+            }, this);
+        }
+    }, {
+        key: '$$',
+        value: function $$(selector) {
+            return this._getElement().querySelectorAll(selector);
+        }
+    }, {
+        key: '_isCurrent',
+        value: function _isCurrent(renderable) {
+            if (!this._current) return false;
+            if (this._current.name === renderable) return true;
+            if (renderable && renderable.id === this._current.id) return true;
+            return false;
+        }
+    }, {
+        key: '_getElement',
+        value: function _getElement() {
+            return this._el;
+        }
+    }, {
+        key: '_empty',
+        value: function _empty() {
+            this._getElement().innerHTML = '';
+        }
+    }, {
+        key: '_createDelegateListener',
+        value: function _createDelegateListener(name) {
+            var _this32 = this;
+
+            return function (e) {
+                if (!_this32._delegated[name]) return;
+                var target = e.target;
+
+                map(_this32._delegated[name].items, function (item) {
+                    var els = _this32._getElement().querySelectorAll(item.selector);
+                    var matched = false;
+                    for (var i = 0; i < els.length; i++) {
+                        var el = els[i];
+                        if (el === target || el.contains(target)) {
+                            matched = el;
+                            break;
+                        }
+                    }
+                    matched && item.fn.call(item.renderable, e);
+                });
+            };
+        }
+    }, {
+        key: '_delegateDomEvent',
+        value: function _delegateDomEvent(renderable, name, selector, fn) {
+            var obj = this._delegated[name];
+            if (!obj) {
+                obj = this._delegated[name] = { listener: this._createDelegateListener(name), items: [] };
+                D.Adapter.addEventListener(this._getElement(), name, obj.listener, CAPTURES.indexOf(name) !== -1);
+            }
+            obj.items.push({ selector: selector, fn: fn, renderable: renderable });
+        }
+    }, {
+        key: '_undelegateDomEvents',
+        value: function _undelegateDomEvents(renderable) {
+            var _this33 = this;
+
+            mapObj(this._delegated, function (value, key) {
+                var items = [],
+                    obj = value;
+                map(obj.items, function (item) {
+                    if (item.renderable !== renderable) items.push(item);
+                });
+                obj.items = items;
+                if (items.length === 0) {
+                    delete _this33._delegated[key];
+                    D.Adapter.removeEventListener(_this33._getElement(), key, obj.listener);
                 }
             });
         }
-    });
+    }]);
 
+    return Region;
+}(D.Base);
 
-    (function() {
-        var defaultOptions = {
+D.TemplateEngine = function (_D$Base3) {
+    _inherits(TemplateEngine, _D$Base3);
+
+    function TemplateEngine(options) {
+        _classCallCheck(this, TemplateEngine);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(TemplateEngine).call(this, 'Template Engine', options, { _templateCache: {} }));
+    }
+
+    _createClass(TemplateEngine, [{
+        key: 'executeIdReplacement',
+        value: function executeIdReplacement(el, renderable) {
+            var _this35 = this;
+
+            var used = {};
+            map(el.querySelectorAll('[id]'), function (item) {
+                var id = item.getAttribute('id');
+                if (used[id]) _this35._error('Dom ID: ' + id + ' is already used');
+                used[id] = true;
+                item.setAttribute('id', renderable._wrapDomId(id));
+            });
+
+            var attrs = this._option('attributesReferToId') || ['for', 'data-target', 'data-parent'];
+
+            map(attrs, function (attr) {
+                return map(el.querySelectorAll('[' + attr + ']'), function (item) {
+                    var value = item.getAttribute(attr),
+                        withHash = value.charAt(0) === '#',
+                        wrapped = withHash ? '#' + renderable._wrapDomId(value.slice(1)) : renderable._wrapDomId(value);
+                    item.setAttribute(attr, wrapped);
+                });
+            });
+        }
+    }, {
+        key: '_load',
+        value: function _load(renderable) {
+            var id = renderable.id;
+            if (this._templateCache[id]) return this._templateCache[id];
+            return this._templateCache[id] = this._loadIt(renderable);
+        }
+    }, {
+        key: '_loadIt',
+        value: function _loadIt(renderable) {
+            return this._option(renderable instanceof D.Module ? 'loadModule' : 'loadView', renderable);
+        }
+    }, {
+        key: '_execute',
+        value: function _execute(renderable, data, template, update) {
+            var key = renderable instanceof D.Module ? 'executeModule' : 'executeView';
+            return this._option(key, renderable, data, renderable._element, template, update);
+        }
+    }]);
+
+    return TemplateEngine;
+}(D.Base);
+
+D.Store = function (_D$Base4) {
+    _inherits(Store, _D$Base4);
+
+    function Store(mod, options) {
+        _classCallCheck(this, Store);
+
+        var _this36 = _possibleConstructorReturn(this, Object.getPrototypeOf(Store).call(this, 'Store', options, {
+            app: mod.app,
+            module: mod,
+            _models: {}
+        }));
+
+        _this36._callbacks = _this36._option('callbacks');
+        _this36.app.delegateEvent(_this36);
+        return _this36;
+    }
+
+    _createClass(Store, [{
+        key: 'dispatch',
+        value: function dispatch(name, payload) {
+            var callback = undefined,
+                n = name,
+                p = payload;
+            if (D.isObject(n)) {
+                p = n.payload;
+                n = n.name;
+            }
+
+            callback = this._callbacks[n];
+            if (!callback) this._error('No action callback for name: ' + name);
+            return this.chain(callback.call(this._callbackContext, p));
+        }
+    }, {
+        key: '_initialize',
+        value: function _initialize() {
+            var _this37 = this;
+
+            this._initializeModels();
+            this._callbackContext = Object.assign({
+                models: this.models,
+                module: this.module,
+                app: this.app
+            }, D.Request);
+
+            mapObj(this._callbacks, function (value, key) {
+                if (key.slice(0, 4) !== 'app.') return;
+                _this37.listenTo(_this37.app, key, function (payload) {
+                    return value.call(_this37._callbackContext, payload);
+                });
+            });
+        }
+    }, {
+        key: '_initializeModels',
+        value: function _initializeModels() {
+            var _this38 = this;
+
+            mapObj(this._option('models'), function (value, key) {
+                var v = (D.isFunction(value) ? value.call(_this38) : value) || {};
+                if (v.shared === true) {
+                    _this38._models[key] = _this38.app.viewport.store[key];
+                    return;
+                }
+                _this38._models[key] = _this38.app._createModel(_this38, v);
+            });
+        }
+    }, {
+        key: '_loadEagerModels',
+        value: function _loadEagerModels() {
+            return this.chain(mapObj(this._models, function (model) {
+                return model.options.autoLoad === true ? D.Request.get(model) : null;
+            }));
+        }
+    }, {
+        key: '_loadLazyModels',
+        value: function _loadLazyModels() {
+            return this.chain(mapObj(this._models, function (model) {
+                var autoLoad = model.options.autoLoad;
+
+                return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
+            }));
+        }
+    }, {
+        key: '_destory',
+        value: function _destory() {
+            this.stopListening();
+        }
+    }, {
+        key: 'models',
+        get: function get() {
+            return this._models;
+        }
+    }]);
+
+    return Store;
+}(D.Base);
+
+D.Model = function (_D$Base5) {
+    _inherits(Model, _D$Base5);
+
+    function Model(store, options) {
+        _classCallCheck(this, Model);
+
+        var _this39 = _possibleConstructorReturn(this, Object.getPrototypeOf(Model).call(this, 'Model', options, {
+            app: store.module.app,
+            module: store.module,
+            store: store
+        }));
+
+        _this39._data = _this39._option('data') || {};
+        _this39._idKey = _this39._option('idKey') || _this39.app.options.idKey;
+        _this39._params = Object.assign({}, _this39._option('params'));
+        _this39.app.delegateEvent(_this39);
+        return _this39;
+    }
+
+    _createClass(Model, [{
+        key: 'set',
+        value: function set(data, trigger) {
+            var d = this.options.parse ? this._option('parse', data) : data;
+            this._data = this.options.root ? d[this.options.root] : d;
+            if (trigger) this.changed();
+        }
+    }, {
+        key: 'get',
+        value: function get(cloneIt) {
+            return cloneIt ? clone(this._data) : this._data;
+        }
+    }, {
+        key: 'clear',
+        value: function clear(trigger) {
+            this._data = D.isArray(this._data) ? [] : {};
+            if (trigger) this.changed();
+        }
+    }, {
+        key: 'changed',
+        value: function changed() {
+            this.trigger('changed');
+        }
+    }, {
+        key: '_url',
+        value: function _url() {
+            return this._option('url') || '';
+        }
+    }, {
+        key: 'fullUrl',
+        get: function get() {
+            return D.Request._url(this);
+        }
+    }, {
+        key: 'params',
+        get: function get() {
+            return this._params;
+        }
+    }, {
+        key: 'data',
+        get: function get() {
+            return this._data;
+        }
+    }]);
+
+    return Model;
+}(D.Base);
+
+D.Loader = function (_D$Base6) {
+    _inherits(Loader, _D$Base6);
+
+    _createClass(Loader, null, [{
+        key: '_analyse',
+        value: function _analyse(name) {
+            if (!D.isString(name)) {
+                return { loader: null, name: name };
+            }
+
+            var args = name.split(':'),
+                loader = args.length > 1 ? args.shift() : null;
+
+            return { loader: loader, name: args.shift(), args: args };
+        }
+    }]);
+
+    function Loader(app, options) {
+        _classCallCheck(this, Loader);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Loader).call(this, 'Loader', options, { app: app }));
+    }
+
+    _createClass(Loader, [{
+        key: 'loadResource',
+        value: function loadResource(path) {
+            var _this41 = this;
+
+            var _app$options = this.app.options;
+            var scriptRoot = _app$options.scriptRoot;
+            var getResource = _app$options.getResource;
+            var amd = _app$options.amd;
+            var fullPath = scriptRoot + '/' + path;
+
+            return this.Promise.create(function (resolve, reject) {
+                if (amd) {
+                    require([fullPath], resolve, reject);
+                } else if (getResource) {
+                    resolve(getResource.call(_this41.app, fullPath));
+                } else {
+                    resolve(require('./' + fullPath));
+                }
+            });
+        }
+    }, {
+        key: 'loadModuleResource',
+        value: function loadModuleResource(mod, path) {
+            return this.loadResource(mod.name + '/' + path);
+        }
+    }, {
+        key: 'loadModule',
+        value: function loadModule(name) {
+            return this.loadResource(name + '/' + this.app.options.fileNames.module);
+        }
+    }, {
+        key: 'loadView',
+        value: function loadView(name, mod) {
+            return this.loadModuleResource(mod, '' + this.app.options.fileNames.view + name);
+        }
+    }, {
+        key: 'loadRouter',
+        value: function loadRouter(path) {
+            var name = this.app.options.fileNames.router;
+            return this.loadResource(path ? path + '/' + name : name);
+        }
+    }]);
+
+    return Loader;
+}(D.Base);
+
+D.Application = function (_D$Base7) {
+    _inherits(Application, _D$Base7);
+
+    function Application(options) {
+        _classCallCheck(this, Application);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Application).call(this, options && options.name || 'Application', Object.assign({
             scriptRoot: 'app',
             urlRoot: '',
             urlSuffix: '',
             caseSensitiveHash: false,
-            defaultRegion: root.document.body,
+            defaultRegion: root && root.document.body,
             disabledClass: 'disabled',
-            attributesReferToId: ['for', 'data-target', 'data-parent'],
             getResource: null,
             idKey: 'id',
+            viewport: 'viewport',
 
             fileNames: {
                 module: 'index',
-                templates: 'templates',
                 view: 'view-',
-                template: 'template-',
                 router: 'router'
             },
 
@@ -474,1117 +1589,298 @@
                 pageSizeKey: '_pageSize',
                 recordCountKey: 'recordCount'
             }
-        };
+        }, options), {
+            global: {},
+            _modules: {},
+            _loaders: {}
+        }));
+    }
 
-        Application = Drizzle.Application = function(options) {
-            var opt = assign({}, defaultOptions, options);
-            this.modules = {};
-            this.global = {};
-            this.loaders = {};
-            this.regions = [];
-
-            parent(Application).call(this, 'A', opt);
-        };
-
-        extend(Application, Base, {
-            initialize: function() {
-                this.registerLoader(new SimpleLoader(this));
-                this.registerLoader(new Loader(this), true);
-                this.setRegion(new Region(this, null, this.options.defaultRegion));
-                mapObj(Helpers, function(value, key) {
-                    this.registerHelper(key, value);
-                }, this);
-            },
-
-            registerLoader: function(loader, isDefault) {
-                this.loaders[loader.name] = loader;
-                if (isDefault) this.defaultLoader = loader;
-            },
-
-            registerHelper: function(name, fn) {
-                var me = this;
-                handlebars.registerHelper(name, function() {
-                    var args = slice.call(arguments);
-                    return fn.apply(this, [me, handlebars].concat(args));
-                });
-            },
-
-            getLoader: function(name) {
-                var loader = Loader.analyse(name).loader;
-                return loader && this.loaders[loader] ? this.loaders[loader] : this.defaultLoader;
-            },
-
-            setRegion: function(region) {
-                this.region = region;
-                this.regions.unshift(region);
-            },
-
-            load: function() {
-                return chain(this, map(arguments, function(name) {
-                    return this.getLoader(name).loadModule(name);
-                }, this));
-            },
-
-            show: function(name, options) {
-                return this.region.show(name, options);
-            },
-
-            destory: function() {
-                this.off();
-                return chain(this, map(this.regions, function(region) {
-                    return region.close();
-                }));
-            },
-
-            startRoute: function(defaultRoute) {
-                var paths = slice.call(arguments, 1), router = this.router;
-                if (!this.router) {
-                    router = this.router = new Router(this);
-                }
-                return chain(this, router.mountRoutes.apply(router, paths), function() {
-                    return router.start(defaultRoute);
-                });
-            },
-
-            navigate: function(path, trigger) {
-                if (!this.router || !this.router.started) return;
-                this.router.navigate(path, trigger);
-            },
-
-            dispatch: function(name, payload) {
-                if (!payload) {
-                    payload = name.payload;
-                    name = name.name;
-                }
-                this.trigger('app.' + name, payload);
-            },
-
-            message: {
-                success: FN,
-                info: FN,
-                error: FN
-            }
-        });
-
-        assign(Application.prototype, Event);
-    })();
-
-
-    Model = D.Model = function(app, module, options) {
-        this.app = app;
-        this.module = module;
-        options || (options = {});
-        this.idKey = options.idKey || app.options.idKey;
-        this.params = assign({}, options.params);
-
-        parent(Model).call(this, 'D', options);
-        this.app.delegateEvent(this);
-    };
-
-    extend(Model, Base, {
-        initialize: function() {
-            this.data = this.options.data || {};
-        },
-
-        url: function() {
-            return this.option('url') || '';
-        },
-
-        getFullUrl: function() {
-            return Request.url(this);
-        },
-
-        getParams: function() {
-            return assign({}, this.params);
-        },
-
-        set: function(data, trigger) {
-            var parse = this.options.parse,
-                d = D.isFunction(parse) ? parse.call(this, data) : data;
-
-            this.data = this.options.root ? d[this.options.root] : d;
-            if (trigger) this.changed();
-            return this;
-        },
-
-        get: function(cloneIt) {
-            return cloneIt ? clone(this.data) : this.data;
-        },
-
-        changed: function() { this.trigger('change'); },
-
-        clear: function(trigger) {
-            this.data = D.isArray(this.data) ? [] : {};
-            if (trigger) this.changed();
+    _createClass(Application, [{
+        key: '_initialize',
+        value: function _initialize() {
+            this._templateEngine = this._option('templateEngine');
+            this.registerLoader('default', new D.Loader(this), true);
+            this._region = this._createRegion(this._option('defaultRegion'), 'Region');
+        }
+    }, {
+        key: 'registerLoader',
+        value: function registerLoader(name, loader, isDefault) {
+            this._loaders[name] = loader;
+            if (isDefault) this._defaultLoader = loader;
             return this;
         }
-    });
+    }, {
+        key: 'start',
+        value: function start(defaultHash) {
+            var _router,
+                _this43 = this;
 
-    assign(Model, Factory);
+            if (defaultHash) this._router = new D.Router(this);
 
-
-    Region = D.Region = function(app, module, el, name) {
-        this.app = app;
-        this.module = module;
-        this.el = el;
-        this.name = name || 'default';
-        if (!el) this.error('The DOM element for region is not found');
-
-        parent(Region).call(this, 'R');
-    };
-
-    extend(Region, Base, {
-        isCurrent: function(item) {
-            if (!this.current) return false;
-            if (D.isObject(item) && item.id === this.current.id) return true;
-            if (D.isString(item) && Loader.analyse(item).name === this.current.name) return true;
-
-            return false;
-        },
-
-        show: function(item, options) {
-            options || (options = {});
-            if (this.isCurrent(item)) {
-                if (options.forceRender === false) return this.Promise.resolve(this.current);
-                return this.current.render(options);
-            }
-
-            if (D.isString(item)) item = this.app.getLoader(item).loadModule(item);
-            return chain(this, item, function(obj) {
-                if (!obj.render && !obj.setRegion) this.error('Can not render ' + obj);
-                return obj;
-            }, [function(obj) {
-                return chain(this, obj.region && obj.region.close(), obj);
-            }, function() {
-                return this.close();
-            }], function(arg) {
-                var obj = arg[0], name = obj.module ? obj.module.name + ':' + obj.name : obj.name;
-                this.current = obj;
-                this.getElement().setAttribute('data-current', name);
-                return obj.setRegion(this);
-            }, function(obj) {
-                return obj.render(options);
-            });
-        },
-
-        close: function() {
-            return chain(this, this.current && this.current.close(), delete this.current, this);
-        },
-
-        getElement: function() {
-            return this.el;
-        },
-
-        $$: function(selector) { return this.el.querySelectorAll(selector); },
-
-        empty: function() { this.el.innerHTML = ''; },
-
-        delegateDomEvent: function(item, name, selector, fn) {
-            var n = name + '.events' + this.id + item.id;
-            Adapter.delegateDomEvent(this.el, n, selector, fn);
-        },
-
-        undelegateDomEvents: function(item) {
-            Adapter.undelegateDomEvents(this.el, '.events' + this.id + item.id);
-        }
-    });
-
-    assign(Region, Factory);
-
-
-    View = D.View = function(name, mod, loader, options) {
-        this.app = mod.app;
-        this.name = name;
-        this.module = mod;
-        this.loader = loader;
-        this.components = {};
-        this.eventKeys = {};
-
-        parent(View).call(this, 'V', options || {});
-        this.eventHandlers = this.option('handlers') || {};
-        this.app.delegateEvent(this);
-    };
-
-    extend(View, Base, {
-        initialize: function() {
-            if (this.options.mixin) this.mixin(this.options.mixin);
-            this.loadedPromise = this.loadTemplate();
-        },
-
-        loadTemplate: function() {
-            var template;
-            if (this.module.separatedTemplate === true) {
-                template = this.option('template') || this.name;
-                return chain(this, this.app.getLoader(template)
-                    .loadSeparatedTemplate(this, template), function(t) {
-                    this.template = t;
-                });
-            }
-            return chain(this, this.module.loadedPromise, function() {
-                this.template = this.module.template;
-            });
-        },
-
-        bindData: function() {
-            return chain(this, this.module.loadedPromise, function() {
-                var me = this, bind = me.option('bind') || {};
-                this.data = {};
-
-                mapObj(bind, function(value, key) {
-                    var model = me.data[key] = me.module.store[key];
-                    if (!model) me.error('No model:' + key);
-                    if (!value) return;
-                    me.listenTo(model, 'change', function() {
-                        if (value === true && me.region) me.render(me.renderOptions);
-                        if (D.isString(value)) me.option(value);
-                    });
-                });
-            });
-        },
-
-        unbindData: function() {
-            this.stopListening();
-            delete this.data;
-        },
-
-        getElement: function() {
-            return this.region ? this.region.getElement(this) : null;
-        },
-
-        wrapDomId: function(id) { return this.id + id; },
-
-        $: function(id) {
-            return this.$$('#' + this.wrapDomId(id))[0];
-        },
-
-        $$: function(selector) {
-            return this.getElement().querySelectorAll(selector);
-        },
-
-        setRegion: function(region) {
-            this.region = region;
-            this.virtualEl = this.getElement().cloneNode();
-            this.bindEvents();
-            this.bindActions();
-            return chain(this, this.bindData, this);
-        },
-
-        close: function() {
-            if (!this.region) return this.Promise.resolve(this);
-
-            return chain(this, function() {
-                return this.option('beforeClose');
-            }, this.beforeClose, [
-                this.unbindEvents, this.unbindData, this.destroyComponents, function() {
-                    return this.region.empty(this);
-                }
-            ], function() {
-                return this.option('afterClose');
-            }, this.afterClose, function() {
-                delete this.region;
+            return this.chain(defaultHash ? (_router = this._router)._mountRoutes.apply(_router, _toConsumableArray(this._option('routers'))) : false, this._region.show(this._option('viewport')), function (viewport) {
+                return _this43.viewport = viewport;
+            }, function () {
+                return defaultHash && _this43._router._start(defaultHash);
             }, this);
-        },
+        }
+    }, {
+        key: 'stop',
+        value: function stop() {
+            this.off();
+            this._region.close();
+        }
+    }, {
+        key: 'navigate',
+        value: function navigate(hash, trigger) {
+            if (!this._router) return;
+            this._router.navigate(hash, trigger);
+        }
+    }, {
+        key: 'dispatch',
+        value: function dispatch(name, payload) {
+            var n = D.isObject(name) ? name.name : name,
+                p = D.isObject(name) ? name.payload : payload;
+            this.trigger('app.' + n, p);
+        }
+    }, {
+        key: 'show',
+        value: function show(region, moduleName, options) {
+            return this.viewport.regions[region].show(moduleName, options);
+        }
+    }, {
+        key: '_getLoader',
+        value: function _getLoader(name, mod) {
+            return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
+        }
+    }, {
+        key: '_createModule',
+        value: function _createModule(name, parentModule) {
+            var _this44 = this;
 
-        analyseEventKey: function(token) {
-            var items, star, wid, id;
-            if (this.eventKeys[token]) return this.eventKeys[token];
+            var _D$Loader$_analyse = D.Loader._analyse(name);
 
-            items = token.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/);
-            id = items[1];
-            if (!id) this.error('Id is required');
+            var moduleName = _D$Loader$_analyse.name;
+            var loaderName = _D$Loader$_analyse.loader;
+            var loader = this._getLoader(loaderName, parent);
 
-            star = id.slice(-1) === '*';
-            wid = this.wrapDomId(star ? id.slice(0, -1) : id);
-            this.eventKeys[token] = [
-                items[0], id, star, wid, star ? '[id^=' + wid + ']' : '#' + wid
-            ];
-            return this.eventKeys[token];
-        },
+            return this.chain(loader.loadModule(moduleName), function () {
+                var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-        bindEvents: function() {
-            var me = this;
-            mapObj(me.option('events'), function(value, key) {
-                var star, wid, items, handler;
-                if (!me.eventHandlers[value]) me.error('No event handler:' + value);
-                items = me.analyseEventKey(key);
-                star = items[2];
-                wid = items[3];
+                return typeCache.createModule(options.type, moduleName, _this44, parentModule, loader, options);
+            });
+        }
+    }, {
+        key: '_createView',
+        value: function _createView(name, mod) {
+            var _this45 = this;
 
-                handler = function(e) {
-                    var target = Adapter.getEventTarget(e), args = [e];
-                    if (Adapter.hasClass(target, me.app.options.disabledClass)) return;
-                    if (star) args.unshift(target.getAttribute('id').slice(wid.length));
-                    me.eventHandlers[value].apply(me, args);
+            var _D$Loader$_analyse2 = D.Loader._analyse(name);
+
+            var viewName = _D$Loader$_analyse2.name;
+            var loaderName = _D$Loader$_analyse2.loader;
+            var loader = this._getLoader(loaderName, mod);
+
+            return this.chain(loader.loadView(viewName, mod), function () {
+                var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+                return typeCache.createView(options.type, viewName, _this45, mod, loader, options);
+            });
+        }
+    }, {
+        key: '_createRegion',
+        value: function _createRegion(el, name, mod) {
+            var _D$Loader$_analyse3 = D.Loader._analyse(name);
+
+            var regionName = _D$Loader$_analyse3.name;
+            var type = _D$Loader$_analyse3.loader;
+
+            return typeCache.createRegion(type, this, mod, el, regionName);
+        }
+    }, {
+        key: '_createStore',
+        value: function _createStore(mod) {
+            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+            return typeCache.createStore(options.type, mod, options);
+        }
+    }, {
+        key: '_createModel',
+        value: function _createModel(store) {
+            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+            return typeCache.createModel(options.type, store, options);
+        }
+    }]);
+
+    return Application;
+}(D.Base);
+
+Object.assign(D.Application.prototype, D.Event);
+
+var PUSH_STATE_SUPPORTED = root && root.history && 'pushState' in root.history;
+var ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
+
+var Route = function () {
+    function Route(app, router, path, fn) {
+        _classCallCheck(this, Route);
+
+        var pattern = path.replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1]).replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
+
+        this.pattern = new RegExp('^' + pattern + '$', app.options.caseSensitiveHash ? 'g' : 'gi');
+
+        this.app = app;
+        this.router = router;
+        this.path = path;
+        this.fn = fn;
+    }
+
+    _createClass(Route, [{
+        key: 'match',
+        value: function match(hash) {
+            this.pattern.lastIndex = 0;
+            return this.pattern.test(hash);
+        }
+    }, {
+        key: 'handle',
+        value: function handle(hash) {
+            var _router2,
+                _this46 = this;
+
+            this.pattern.lastIndex = 0;
+            var args = this.pattern.exec(hash).slice(1),
+                handlers = this.router._getInterceptors(this.path);
+
+            handlers.push(this.fn);
+            return (_router2 = this.router).chain.apply(_router2, _toConsumableArray(map(handlers, function (fn, i) {
+                return function (prev) {
+                    return fn.apply(_this46.router, i > 0 ? [prev].concat(args) : args);
                 };
-
-                me.delegateEvent(key, handler);
-            });
-        },
-
-        bindActions: function() {
-            mapObj(this.option('actions'), function(value, key) {
-                if (D.isString(value)) this.delegateEvent(key, this.createActionEventHandler(value));
-            }, this);
-        },
-
-        createActionEventHandler: function(name) {
-            var me = this, el = me.getElement(),
-                dataForAction = (me.option('dataForAction') || {})[name],
-                actionCallback = (me.option('actionCallbacks') || {})[name],
-                disabled = me.app.options.disabledClass;
-
-            return function(e) {
-                var target, rootEl, data;
-                rootEl = target = Adapter.getEventTarget(e);
-                if (Adapter.hasClass(target, disabled)) return;
-                Adapter.addClass(target, disabled);
-
-                while (rootEl && rootEl !== el && rootEl.tagName !== 'FORM') {
-                    rootEl = rootEl.parentNode;
-                }
-
-                data = me.getActionData(rootEl, target);
-                if (D.isFunction(dataForAction)) data = dataForAction.call(me, data, e);
-
-                chain(me, data, function(d) {
-                    if (d !== false) return me.module.dispatch(name, d);
-                    return false;
-                }, function(d) {
-                    if (d !== false) return actionCallback && actionCallback.call(this, d);
-                }).then(function() {
-                    Adapter.removeClass(target, disabled);
-                }, function() {
-                    Adapter.removeClass(target, disabled);
-                });
-            };
-        },
-
-        getActionData: function(el, target) {
-            var data, containsTarget = false, name, value, v;
-            el || (el = this.getElement());
-            data = el.tagName === 'FORM' ? Adapter.getFormData(el) : {};
-
-            map(el.querySelectorAll('[data-name][data-value]'), function(item) {
-                containsTarget = containsTarget || item === target;
-                name = item.getAttribute('data-name');
-                value = item.getAttribute('data-value');
-                v = data[name];
-                if (!v) {
-                    data[name] = value;
-                } else {
-                    if (!D.isArray(v)) v = data[name] = [data[name]];
-                    v.push(value);
-                }
-            });
-
-            if (containsTarget) {
-                name = target.getAttribute('data-name');
-                data[name] = target.getAttribute('data-value');
-            }
-
-            return data;
-        },
-
-        delegateEvent: function(token, handler) {
-            var items = this.analyseEventKey(token), name = items[0], selector = items[4];
-            this.region.delegateDomEvent(this, name, selector, handler);
-        },
-
-        unbindEvents: function() {
-            this.region.undelegateDomEvents(this);
-        },
-
-        render: function(options) {
-            if (!this.region) this.error('Region is null');
-            this.renderOptions = options || {};
-
-            return chain(this, this.loadedPromise, this.destroyComponents, function() {
-                return this.option('beforeRender');
-            },
-            this.beforeRender, this.serializeData, this.renderTemplate,
-            this.renderComponent, this.afterRender, function() {
-                return this.option('afterRender');
-            }, this);
-        },
-
-        serializeData: function() {
-            var data = {};
-            mapObj(this.data, function(value, key) {
-                data[key] = value.get(true);
-            });
-            mapObj(this.option('dataForTemplate'), function(value, key) {
-                data[key] = value.call(this, data);
-            }, this);
-            data.Global = this.app.global;
-            data.View = this;
-            return data;
-        },
-
-        renderTemplate: function(data) {
-            var used = {}, me = this, withHash, id;
-            me.virtualEl.innerHTML = me.template(data);
-            map(me.virtualEl.querySelectorAll('[id]'), function(item) {
-                id = item.getAttribute('id');
-                if (used[id]) me.error(id + ' already used');
-                used[id] = true;
-                item.setAttribute('id', me.wrapDomId(id));
-            });
-
-            map(me.app.options.attributesReferToId, function(attr) {
-                map(me.virtualEl.querySelectorAll('[' + attr + ']'), function(item) {
-                    id = item.getAttribute(attr);
-                    withHash = id.charAt(0) === '#';
-                    item.setAttribute(attr, withHash ? '#' + me.wrapDomId(id.slice(1)) : me.wrapDomId(id));
-                });
-            });
-
-            me.updateDom();
-        },
-
-        updateDom: function() {
-            this.getElement().innerHTML = this.virtualEl.innerHTML;
-        },
-
-        renderComponent: function() {
-            return chain(this, map(this.option('components'), function(item) {
-                if (D.isFunction(item)) item = item.call(this);
-                return item ? View.ComponentManager.create(this, item) : null;
-            }, this), function(components) {
-                map(components, function(item) {
-                    if (!item) return;
-                    this.components[item.id] = item.component;
-                }, this);
-            });
-        },
-
-        destroyComponents: function() {
-            mapObj(this.components, function(component, id) {
-                View.ComponentManager.destroy(id, this, component);
-            }, this);
-
-            this.components = {};
-        },
-
-        beforeClose: FN,
-        beforeRender: FN,
-        afterRender: FN,
-        afterClose: FN
-    });
-
-    assign(View, Factory);
-
-    View.ComponentManager = {
-        handlers: {},
-        componentCache: {},
-
-        register: function(name, creator, destructor) {
-            this.handlers[name] = { creator: creator, destructor: destructor || FN };
-        },
-
-        create: function(view, options) {
-            var me = this, handler, dom, id;
-            if (!options || !options.name) view.error('Component name can not be null');
-
-            handler = me.handlers[options.name] || Adapter.componentHandler(options.name);
-            dom = options.selector ? view.$$(options.selector) : view.$(options.id);
-            id = options.id || D.uniqueId('comp');
-
-            return chain(view, handler.creator(view, dom, options.options), function(component) {
-                me.componentCache[view.id + id] = { handler: handler, id: id, options: options.options };
-                return { id: id, component: component };
-            });
-        },
-
-        destroy: function(id, view, component) {
-            var info = this.componentCache[view.id + id];
-            delete this.componentCache[view.id + id];
-            if (info.handler.destructor) info.handler.destructor(view, component, info.options);
+            })));
         }
-    };
+    }]);
 
+    return Route;
+}();
 
-    Module = D.Module = function(name, app, loader, options) {
-        this.name = name;
-        this.app = app;
-        this.loader = loader;
-        options || (options = {});
+D.Router = function (_D$Base8) {
+    _inherits(Router, _D$Base8);
 
-        this.separatedTemplate = options.separatedTemplate === true;
-        parent(Module).call(this, 'M', options);
+    function Router(app) {
+        _classCallCheck(this, Router);
 
-        this.app.modules[this.id] = this;
-        this.actions = this.option('actions') || {};
-        this.app.delegateEvent(this);
-    };
+        var _this47 = _possibleConstructorReturn(this, Object.getPrototypeOf(Router).call(this, 'Router', {}, {
+            app: app,
+            _routes: [],
+            _interceptors: {},
+            _started: false
+        }));
 
-    extend(Module, Base, {
-        initialize: function() {
-            if (this.options.mixin) this.mixin(this.options.mixin);
-            this.loadedPromise = chain(this, [this.loadTemplate(), this.loadItems()]);
-
-            this.initLayout();
-            this.initStore();
-            this.actionContext = assign({
-                store: this.store,
-                app: this.app,
-                module: this
-            }, Request);
-        },
-
-        initLayout: function() {
-            var options = this.option('layout');
-            this.layout = new Layout('layout', this, this.loader, options);
-        },
-
-        initStore: function() {
-            this.store = {};
-            this.autoLoadAfterRender = [];
-            this.autoLoadBeforeRender = [];
-
-            mapObj(this.option('store') || {}, function(value, name) {
-                if (D.isFunction(value)) value = value.call(this) || {};
-                if (value.autoLoad) {
-                    (value.autoLoad === true ? this.autoLoadBeforeRender : this.autoLoadAfterRender).push(name);
-                }
-                this.store[name] = Model.create(value.type, this.app, this, value);
-            }, this);
-        },
-
-        loadTemplate: function() {
-            if (!this.separatedTemplate) {
-                return chain(this, this.loader.loadTemplate(this), function(template) {
-                    this.template = template;
-                });
-            }
-        },
-
-        loadItems: function() {
-            var me = this;
-            this.items = {};
-
-            return chain(me, mapObj(me.option('items') || {}, function(options, name) {
-                var method;
-                if (D.isFunction(options)) options = options.call(me);
-                if (D.isString(options)) options = {region: options};
-
-                method = options.isModule ? 'loadModule' : 'loadView';
-                me.app.getLoader(name)[method](name, me, options).then(function(obj) {
-                    obj.moduleOptions = options;
-                    me.items[obj.name] = obj;
-                });
-            }));
-        },
-
-        setRegion: function(region) {
-            this.region = region;
-            return chain(this, function() {
-                return this.layout.setRegion(region);
-            }, function() {
-                return this.layout.render();
-            }, this.bindGlobalAction, this.initRegions, this);
-        },
-
-        bindGlobalAction: function() {
-            var ctx = this.actionContext;
-            mapObj(this.actions, function(value, key) {
-                if (key.slice(0, 4) !== 'app.') return;
-                this.listenTo(this.app, key, function(payload) {
-                    value.call(ctx, payload);
-                });
-            }, this);
-        },
-
-        close: function() {
-            return chain(this, function() {
-                return this.option('beforeClose');
-            }, this.beforeClose, function() {
-                return this.layout.close();
-            }, this.closeRegions, this.afterClose, function() {
-                return this.option('afterClose');
-            }, function() {
-                this.stopListening();
-                delete this.app.modules[this.id];
-                delete this.region;
-                return this;
-            });
-        },
-
-        render: function(options) {
-            if (!this.region) this.error('region is null');
-            this.renderOptions = options || {};
-
-            return chain(this, this.loadedPromise, function() {
-                return this.option('beforeRender');
-            }, this.beforeRender, this.fetchDataBeforeRender, this.renderItems, this.afterRender, function() {
-                return this.option('afterRender');
-            }, this.fetchDataAfterRender, this);
-        },
-
-        closeRegions: function() {
-            var regions = this.regions;
-            delete this.regions;
-
-            return chain(this, mapObj(regions, function(region) {
-                return region.close();
-            }));
-        },
-
-        initRegions: function() {
-            var id, type;
-            if (this.regions) this.closeRegions();
-            this.regions = {};
-            map(this.layout.$$('[data-region]'), function(item) {
-                id = item.getAttribute('data-region');
-                type = item.getAttribute('region-type');
-                this.regions[id] = Region.create(type, this.app, this, item, id);
-            }, this);
-        },
-
-        renderItems: function() {
-            return chain(this, mapObj(this.items, function(item) {
-                var name = item.moduleOptions.region;
-                if (!name) {
-                    return false;
-                }
-                if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
-                return this.regions[name].show(item);
-            }, this));
-        },
-
-        fetchDataBeforeRender: function() {
-            return chain(this, map(this.autoLoadBeforeRender, function(item) {
-                return Request.get(this.store[item]);
-            }, this));
-        },
-
-        fetchDataAfterRender: function() {
-            return chain(this, map(this.autoLoadAfterRender, function(item) {
-                return Request.get(this.store[item]);
-            }, this));
-        },
-
-        dispatch: function(name, payload) {
-            var handler;
-            if (!payload) {
-                payload = name.payload;
-                name = name.name;
-            }
-
-            handler = this.actions[name];
-            if (!D.isFunction(handler)) this.error('No action handler for ' + name);
-            return chain(this, function() {
-                return handler.call(this.actionContext, payload);
-            });
-        },
-
-        beforeClose: FN,
-        beforeRender: FN,
-        afterRender: FN,
-        afterClose: FN
-    });
-
-    Layout = Module.Layout = function() {
-        parent(Layout).apply(this, arguments);
-    };
-
-    extend(Layout, View, {
-        initialize: function() {
-            this.isLayout = true;
-            this.loadedPromise = this.loadTemplate();
-        },
-
-        getElement: function() {
-            return this.region ? this.region.getElement(this.module) : null;
-        },
-
-        bindActions: FN,
-        bindData: FN
-    });
-
-
-    Loader = D.Loader = function(app) {
-        this.app = app;
-        this.name = 'loader';
-        this.fileNames = app.options.fileNames;
-        parent(Loader).call(this, 'L');
-    };
-
-    Loader.analyse = function(name) {
-        var names, loader = null;
-        if (!D.isString(name)) {
-            return { loader: null, name: name };
-        }
-
-        names = name.split(':');
-        if (names.length < 2) {
-            name = names.shift();
-        } else {
-            loader = names.shift();
-            name = names.shift();
-        }
-
-        return { loader: loader, name: name, args: names };
-    };
-
-    extend(Loader, Base, {
-        loadResource: function(path) {
-            var me = this, options = me.app.options,
-                fullPath = compose(options.scriptRoot, path);
-
-            return me.Promise.create(function(resolve, reject) {
-                if (options.amd) {
-                    require([fullPath], function(obj) {
-                        resolve(obj);
-                    }, function(e) {
-                        reject(e);
-                    });
-                } else if (options.getResource) {
-                    resolve(options.getResource(fullPath));
-                } else {
-                    resolve(require('./' + fullPath));
-                }
-            });
-        },
-
-        loadModuleResource: function(mod, path) {
-            return this.loadResource(compose(mod.name, path));
-        },
-
-        loadModule: function(path, parentModule) {
-            var name = Loader.analyse(path).name;
-            path = compose(name, this.fileNames.module);
-            return chain(this, this.loadResource(compose(path)), function(options) {
-                var mod = new Module(name, this.app, this, options);
-                if (parentModule) mod.module = parentModule;
-                return mod;
-            });
-        },
-
-        loadView: function(name, mod) {
-            var n = Loader.analyse(name).name, path = this.fileNames.view + n;
-            return chain(this, this.loadModuleResource(mod, path), function(options) {
-                options || (options = {});
-                return View.create(options.type, n, mod, this, options);
-            });
-        },
-
-        loadTemplate: function(mod) {
-            return this.loadModuleResource(mod, this.fileNames.templates);
-        },
-
-        loadSeparatedTemplate: function(view, name) {
-            return this.loadModuleResource(view.module, this.fileNames.template + name);
-        },
-
-        loadRouter: function(path) {
-            var name = Loader.analyse(path).name;
-            return this.loadResource(compose(name, this.fileNames.router));
-        }
-    });
-
-    SimpleLoader = D.SimpleLoader = function() {
-        parent(SimpleLoader).apply(this, arguments);
-        this.name = 'simple';
-    };
-
-    extend(SimpleLoader, Loader, {
-        loadModule: function(name, parentModule) {
-            var n = Loader.analyse(name).name,
-                mod = new Module(n, this.app, this, {separatedTemplate: true});
-
-            if (parentModule) mod.module = parentModule;
-
-            return this.Promise.resolve(mod);
-        },
-
-        loadView: function(name, mod) {
-            name = Loader.analyse(name).name;
-            return this.Promise.resolve(new View(name, mod, this, {}));
-        }
-    });
-
-
-    (function() {
-        var pushStateSupported = root.history && ('pushState' in root.history),
-            routerRegexps = [
-                /:([\w\d]+)/g, '([^\/]+)',
-                /\*([\w\d]+)/g, '(.*)'
-            ], Route;
-
-
-        Route = function(app, router, path, fn) {
-            var pattern = path.replace(routerRegexps[0], routerRegexps[1])
-                .replace(routerRegexps[2], routerRegexps[3]);
-            this.pattern = new RegExp('^' + pattern + '$', app.options.caseSensitiveHash ? 'g' : 'gi');
-
-            this.app = app;
-            this.router = router;
-            this.path = path;
-            this.fn = fn;
+        _this47._EVENT_HANDLER = function () {
+            return _this47._dispath(_this47._getHash());
         };
+        return _this47;
+    }
 
-        assign(Route.prototype, {
-            match: function(hash) {
-                this.pattern.lastIndex = 0;
-                return this.pattern.test(hash);
-            },
-
-            handle: function(hash) {
-                var me = this, p = me.router.Promise, args, handlers;
-                me.pattern.lastIndex = 0;
-                args = me.pattern.exec(hash).slice(1);
-
-                handlers = me.router.getInterceptors(me.path);
-                handlers.push(me.fn);
-
-                return p.chain.apply(p, map(handlers, function(route, i) {
-                    return function(prev) {
-                        return route.apply(me.router, (i > 0 ? [prev].concat(args) : args));
-                    };
-                }));
+    _createClass(Router, [{
+        key: 'navigate',
+        value: function navigate(path, trigger) {
+            if (!this._started) return;
+            if (PUSH_STATE_SUPPORTED) {
+                root.history.pushState({}, root.document.title, '#' + path);
+            } else {
+                root.location.replace('#' + path);
             }
-        });
 
-        Router = D.Router = function(app) {
-            this.app = app;
-            this.routes = [];
-            this.routeMap = {};
-            this.interceptors = {};
-            this.started = false;
-            parent(Router).call(this, 'R');
-        };
+            if (trigger !== false) this._dispath(path);
+        }
+    }, {
+        key: '_start',
+        value: function _start(defaultPath) {
+            if (this._started || !root) return;
+            D.Adapter.addEventListener(root, 'hashchange', this._EVENT_HANDLER, false);
 
-        extend(Router, Base, {
-            initialize: function() {
-                this.addRoute('/', this.app.options.defaultRouter || {});
-            },
+            var hash = this._getHash() || defaultPath;
+            this._started = true;
+            if (hash) this.navigate(hash);
+        }
+    }, {
+        key: '_stop',
+        value: function _stop() {
+            if (!this._started) return;
+            D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
+            this._started = false;
+        }
+    }, {
+        key: '_dispath',
+        value: function _dispath(path) {
+            if (path === this._previousHash) return;
+            this._previousHash = path;
 
-            getHash: function() {
-                return root.location.hash.slice(1);
-            },
-
-            start: function(defaultPath) {
-                var key, me = this, hash;
-                if (me.started) return;
-                key = 'hashchange.dr';
-
-                Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
-                hash = me.getHash() || defaultPath;
-                if (hash) me.navigate(hash);
-                me.started = true;
-            },
-
-            stop: function() {
-                Adapter.undelegateDomEvents(root, '.dr');
-            },
-
-            dispatch: function(hash) {
-                var i, route;
-                if (hash === this.previousHash) return;
-                this.previousHash = hash;
-
-                for (i = 0; i < this.routes.length; i++) {
-                    route = this.routes[i];
-                    if (route.match(hash)) {
-                        route.handle(hash);
-                        return;
-                    }
+            for (var i = 0; i < this._routes.length; i++) {
+                var route = this._routes[i];
+                if (route.match(path)) {
+                    route.handle(path);
+                    return;
                 }
-            },
+            }
+        }
+    }, {
+        key: '_mountRoutes',
+        value: function _mountRoutes() {
+            var _this48 = this;
 
-            navigate: function(path, trigger) {
-                trigger = trigger !== false;
-                if (pushStateSupported) {
-                    root.history.pushState({}, root.document.title, '#' + path);
-                } else {
-                    root.location.replace('#' + path);
-                }
+            var paths = slice.call(arguments);
+            return this.chain(map(paths, function (path) {
+                return _this48.app._getLoader(path).loadRouter(path);
+            }), function (options) {
+                return map(options, function (option, i) {
+                    return _this48._addRoute(paths[i], option);
+                });
+            });
+        }
+    }, {
+        key: '_addRoute',
+        value: function _addRoute(path, options) {
+            var _this49 = this;
 
-                if (trigger) this.dispatch(path);
-            },
+            var routes = options.routes;
+            var interceptors = options.interceptors;
 
-            mountRoutes: function() {
-                var paths = slice.call(arguments), me = this;
-                return chain(me, map(paths, function(path) {
-                    return me.app.getLoader(path).loadRouter(path);
-                }), function(routers) {
-                    map(routers, function(router, i) { me.addRoute(paths[i], router); });
-                }, this);
-            },
+            mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
+                var p = (path + key).replace(/^\/|\/$/g, '');
+                _this49._routes.unshift(new Route(_this49.app, _this49, p, options[value]));
+            });
 
-            addRoute: function(path, router) {
-                var routes = router.routes, interceptors = router.interceptors;
-                if (D.isFunction(routes)) routes = routes.call(this);
-                if (D.isFunction(interceptors)) interceptors = interceptors.call(this);
+            mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, function (value, key) {
+                var p = (path + key).replace(/^\/|\/$/g, '');
+                _this49._interceptors[p] = options[value];
+            });
+        }
+    }, {
+        key: '_getInterceptors',
+        value: function _getInterceptors(path) {
+            var result = [],
+                items = path.split('/');
 
-                mapObj(interceptors, function(value, key) {
-                    this.interceptors[compose(path, key)] = router[value];
-                }, this);
-
-                mapObj(routes, function(value, key) {
-                    this.routes.unshift(new Route(this.app, this, compose(path, key), router[value]));
-                }, this);
-            },
-
-            getInterceptors: function(path) {
-                var result = [], items = path.split('/'), key;
-
+            items.pop();
+            while (items.length > 0) {
+                var key = items.join('/');
+                if (this._interceptors[key]) result.unshift(this._interceptors[key]);
                 items.pop();
-                while (items.length > 0) {
-                    key = items.join('/');
-                    if (this.interceptors[key]) result.unshift(this.interceptors[key]);
-                    items.pop();
-                }
-
-                if (this.interceptors['']) result.unshift(this.interceptors['']);
-                return result;
             }
-        });
-    })();
 
-
-    Helpers = D.Helpers = {
-        layout: function(app, H, options) {
-            return this.View.isLayout ? options.fn(this) : '';
-        },
-
-        view: function(app, H, name, options) {
-            return !this.isLayout && this.View.name === name ? options.fn(this) : '';
+            if (this._interceptors['']) result.unshift(this._interceptors['']);
+            return result;
         }
-    };
-
-
-    PageableModel = D.PageableModel = function() {
-        var defaults;
-        parent(PageableModel).apply(this, arguments);
-        defaults = this.app.options.pagination;
-
-        this.pagination = {
-            page: this.options.page || 1,
-            pageCount: 0,
-            pageSize: this.options.pageSize || defaults.pageSize,
-            pageKey: this.options.pageKey || defaults.pageKey,
-            pageSizeKey: this.options.pageSizeKey || defaults.pageSizeKey,
-            recordCountKey: this.options.recordCountKey || defaults.recordCountKey
-        };
-    };
-
-    extend(PageableModel, Model, {
-        initialize: function() {
-            this.data = this.options.data || [];
-        },
-
-        set: function(data, trigger) {
-            var p = this.pagination;
-            data || (data = {});
-            p.recordCount = data[p.recordCountKey] || 0;
-            p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-            PageableModel.__super__.set.call(this, data, trigger);
-        },
-
-        getParams: function() {
-            var params = PageableModel.__super__.getParams.call(this) || {},
-                p = this.pagination;
-            params[p.pageKey] = p.page;
-            params[p.pageSizeKey] = p.pageSize;
-            if (this.app.options.pagination.params) {
-                params = this.app.options.pagination.params(params);
-            }
-            return params;
-        },
-
-        clear: function() {
-            this.pagination.page = 1;
-            this.pagination.recordCount = 0;
-            this.pagination.pageCount = 0;
-            PageableModel.__super__.clear.call(this);
-        },
-
-        turnToPage: function(page) {
-            if (page <= this.pagination.pageCount && page >= 1) this.pagination.page = page;
-            return this;
-        },
-
-        firstPage: function() { return this.turnToPage(1); },
-        lastPage: function() { this.turnToPage(this.pagination.pageCount); },
-        nextPage: function() { this.turnToPage(this.pagination.page + 1); },
-        prevPage: function() { this.turnToPage(this.pagination.page - 1); },
-
-        getPageInfo: function() {
-            var p = this.pagination, d;
-            if (this.data.length > 0) {
-                d = {
-                    page: p.page, start: (p.page - 1) * p.pageSize + 1,
-                    end: p.page * p.pageSize, total: p.recordCount
-                };
-            } else {
-                d = { page: p.page, start: 0, end: 0, total: 0 };
-            }
-
-            if (d.end > d.total) d.end = d.total;
-            return d;
+    }, {
+        key: '_getHash',
+        value: function _getHash() {
+            return root.location.hash.slice(1);
         }
-    });
+    }]);
 
-    Model.register('pageable', PageableModel);
-
-
-    MultiRegion = D.MultiRegion = function() {
-        parent(MultiRegion).apply(this, arguments);
-        this.items = {};
-        this.elements = {};
-    };
-
-    extend(MultiRegion, Region, {
-        activate: FN,
-
-        createElement: function() {
-            var el = root.document.createElement('div');
-            this.el.appendChild(el);
-            return el;
-        },
-
-        getKey: function(item) {
-            var key = null;
-            if (item.moduleOptions) key = item.moduleOptions.key;
-            if (!key && item.renderOptions) key = item.renderOptions.key;
-            if (!key) this.error('Region key is require');
-
-            return key;
-        },
-
-        getElement: function(item) {
-            var key;
-            if (!item) return this.el;
-            key = this.getKey(item);
-
-            this.items[key] = item;
-            this.elements[key] || (this.elements[key] = this.createElement(key, item));
-            return this.elements[key];
-        },
-
-        empty: function(item) {
-            var el;
-            if (item) {
-                el = this.getElement(item);
-                el.parentNode.removeChild(el);
-            } else {
-                this.el.innerHTML = '';
-            }
-        },
-
-        close: function() {
-            var items = this.items;
-            delete this.current;
-            this.elements = {};
-            this.items = {};
-
-            return chain(this, mapObj(items, function(item) {
-                return item.close();
-            }));
-        }
-    });
-
-
-    return Drizzle;
-});
+    return Router;
+}(D.Base);
+return Drizzle;
+}));

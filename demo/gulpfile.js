@@ -14,7 +14,7 @@ var fs = require('fs'),
     eslint = require('gulp-eslint'),
 
     libs = [
-        'jquery', 'handlebars/runtime', 'lodash/collection'
+        'handlebars/runtime', 'lodash/collection'
     ],
     options = {
         entries: ['./main.js'],

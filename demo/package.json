@@ -17,8 +17,9 @@
     "browserify": "^10.2.0",
     "browserify-handlebars": "^1.0.0",
     "express": "^4.12.4",
+    "get-form-data": "^1.2.5",
     "gulp": "^3.8.11",
-    "gulp-eslint": "^0.12.0",
+    "gulp-eslint": "^1.1.1",
     "gulp-handlebars": "^4.0.0",
     "gulp-sourcemaps": "^1.5.2",
     "gulp-util": "^3.0.4",
@@ -32,14 +33,15 @@
   "dependencies": {
     "drizzlejs": "^0.3.0",
     "handlebars": "^3.0.3",
-    "jquery": "^1.11.3",
     "lodash": "^3.8.0",
-    "purecss": "^0.6.0",
-    "vdom-virtualize": "0.0.7"
+    "purecss": "^0.6.0"
   },
   "sleet": {
-      "handlebars": {
-          "block": ["layout", "view"]
-      }
+    "handlebars": {
+      "block": [
+        "module",
+        "view"
+      ]
+    }
   }
 }

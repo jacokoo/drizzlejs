@@ -1,29 +1,47 @@
 var D = require('drizzlejs'),
-    $ = require('jquery'),
-    vr = require('vdom-virtualize'),
-    diff = require('virtual-dom/diff'),
-    patch = require('virtual-dom/patch'),
-    app;
+    H = require('handlebars/runtime'),
+    getFormData = require('get-form-data'), app;
 
-require('drizzlejs/dist/jquery-adapter')(window, $, D);
+H.registerHelper('module', function(options) {
+    return (this.Self instanceof D.Module) ? options.fn(this) : '';
+});
 
-if ('forEach' in Array.prototype) {
-    D.View.prototype.updateDom = function() {
-        var el = this.getElement();
-        if (!el.innerHTML.replace(/^\s|\s$/g, '').length) {
-            el.innerHTML = this.virtualEl.innerHTML;
-        } else {
-            patch(el, diff(vr(el), vr(this.virtualEl)));
-        }
-    };
-}
+H.registerHelper('view', function(name, options) {
+    return (this.Self instanceof D.View) && this.Self.name === name ? options.fn(this) : '';
+});
+
+D.adapt({
+    getFormData: function(el) {
+        return getFormData(el);
+    }
+});
 
 window.app = app = new D.Application({
     defaultRegion: document.getElementById('content'),
-    urlRoot: 'api'
+    urlRoot: 'api',
+    routers: [''],
+    templateEngine: new D.TemplateEngine({
+        loadModule: function(mod) {
+            return mod._loader.loadModuleResource(mod, 'templates');
+        },
+
+        loadView: function(view) {
+            return function() { return view.module._template; };
+        },
+
+        executeModule: function(mod, data, el, template) {
+            el.innerHTML = template(data);
+            this.executeIdReplacement(el, mod);
+        },
+
+        executeView: function(view, data, el, template) {
+            el.innerHTML = template(data);
+            this.executeIdReplacement(el, view);
+        }
+    })
 });
 
-app.startRoute('todos', '/');
+app.start('todos');
 
 /*
 
