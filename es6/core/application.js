@@ -32,21 +32,13 @@ D.Application = class Application extends D.Base {
         });
     }
 
-    initialize () {
-
+    _initialize () {
+        this._templateEngine = this._option('templateEngine');
     }
 
     registerLoader (name, loader, isDefault) {
         this.loaders[name] = loader;
         if (isDefault) this._defaultLoader = loader;
-    }
-
-    set templateEngine (engine) {
-        this._templateEngine = engine;
-    }
-
-    get templateEngine () {
-        return this._templateEngine || this._option('templateEngine');
     }
 
     _getLoader (name) {

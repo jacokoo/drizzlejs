@@ -7,10 +7,10 @@ D.Base = class Base {
 
         Object.assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
-        this.initialize();
+        this._initialize();
     }
 
-    initialize () {
+    _initialize () {
     }
 
     _option (key, ...args) {

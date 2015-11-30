@@ -13,8 +13,11 @@ D.Renderable = class Renderable extends D.Base {
         app.delegateEvent(this);
     }
 
-    initialize () {
-        this._loadedPromise = this.chain([app.templateEngine._load(this), this._initializeEvents()]);
+    _initialize () {
+        this._loadedPromise = this.chain(
+            [app._templateEngine._load(this), this._initializeEvents()],
+            ([template]) => this._template = template
+        );
     }
 
     render (options) {
@@ -68,7 +71,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _renderTemplate (data) {
-
+        this.app._templateEngine._execute(this, data, this._template);
     }
 
     _initializeEvents (events) {
