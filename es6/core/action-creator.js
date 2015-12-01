@@ -1,16 +1,11 @@
 D.ActionCreator = class ActionCreator extends D.Renderable {
-    constructor (...args) {
-        super(...args);
-        this._actions = this._option('actions') || {};
-    }
-
     _initializeEvents () {
         super._initializeEvents();
         super._initializeEvents(this._actions);
     }
 
     _createEventHandler (name, obj) {
-        return this._actions[obj.key] ? this._createAction(name) : super._createEventHandler(name, obj);
+        return (this._option('actions') || {})[obj.key] ? this._createAction(name) : super._createEventHandler(name, obj);
     }
 
     _createAction (name) {

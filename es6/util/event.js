@@ -1,7 +1,7 @@
 D.Event = {
-    on (name, fn, context) {
+    on (name, fn, ctx) {
         this._events || (this._events = {});
-        (this._events[name] || (this._events[name] = [])).push({fn: fn, ctx: context});
+        (this._events[name] || (this._events[name] = [])).push({fn, ctx});
     },
 
     off (name, fn) {
@@ -26,12 +26,18 @@ D.Event = {
         Object.assign(target, {
             _listeners: {},
 
-            on (name, fn) {
-                (target._listeners[name] || (target._listeners[name] = [])).push(fn)
-                me.on(name, fn, target);
+            listenTo (obj, name, fn) {
+                (target._listeners[name] || (target._listeners[name] = [])).push({fn, obj});
+                obj.on(name, fn, target);
             },
 
-            off (name, fn) {
+            stopListening (obj, name, fn) {
+                if (!obj) {
+                    mapObj(target._listeners, (value, key) => map(value, (item) => item.obj.off(key, item.fn)))
+                    target._listeners = {};
+                    return;
+                }
+
                 if (!name) {
                     mapObj(target._listeners, (value, key) => map(value, (item) => me.off(key, item)));
                     target._listeners = {};
@@ -43,6 +49,14 @@ D.Event = {
                 target._listeners[name] = result;
 
                 if (result.length === 0) delete target._listeners[name];
+            },
+
+            on (name, fn, context) {
+                target.listenTo(me, name + id, context);
+            },
+
+            off (name, fn) {
+                target.stopListening(me, (name && name + id), fn);
             },
 
             trigger (name, ...args) {
