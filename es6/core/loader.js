@@ -1,13 +1,13 @@
 D.Loader = class Loader extends D.Base {
     static _analyse (name) {
         if (!D.isString(name)) {
-            return {loader: null, name: name};
+            return {loader: null, name};
         }
 
-        let names = name.split(':'), loader = n;
-            loader = names.length > 1 ? names.shift() : null;
+        let args = name.split(':'), loader = n;
+            loader = args.length > 1 ? args.shift() : null;
 
-        return {loader: loader, name: names.shift(), args: names};
+        return {loader, name: args.shift(), args};
     }
 
     constructor (app, options) {
