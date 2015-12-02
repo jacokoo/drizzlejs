@@ -39,6 +39,7 @@ D.Renderable = class Renderable extends D.Base {
         return this.chain(
             this._loadedPromise,
             this._destroyComponents,
+            () => this.trigger('beforeRender'),
             () => this._option('beforeRender'),
             this._beforeRender,
             this._serializeData,
@@ -46,6 +47,7 @@ D.Renderable = class Renderable extends D.Base {
             this._renderComponents,
             this._afterRender,
             () => this._option('afterRender'),
+            () => this.trigger('afterRender'),
             this
         );
     }
@@ -56,7 +58,17 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _close () {
-        this._unbindEvents();
+        if (!this._region) return this.Promise.resolve(this);
+
+        return this.chain(
+            () => this._option('beforeClose'),
+            this._beforeClose,
+            [this._unbindEvents, this.destroyComponents, () => this._region._empty(this)],
+            () => this._option('afterClose'),
+            this._afterClose,
+            () => delete this._region,
+            this
+        );
     }
 
     get _element {
