@@ -62,6 +62,10 @@ D.Application = class Application extends D.Base {
             return typeCache.createView(options.type, viewName, mod, loader, options);
         });
     }
+
+    _createRegion (el, name, mod) {
+
+    }
 };
 
 Object.assign(D.Application.prototype, D.Event);

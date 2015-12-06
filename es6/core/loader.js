@@ -11,7 +11,7 @@ D.Loader = class Loader extends D.Base {
     }
 
     constructor (app, options) {
-        super('Default Loader', options, {app: app});
+        super('Loader', options, {app: app});
     }
 
     loadResource (path) {
