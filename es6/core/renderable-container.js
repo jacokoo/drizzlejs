@@ -9,10 +9,10 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
     }
 
     _initialize () {
-        super._initialize();
+        let promise = super._initialize();
 
         this._items = {};
-        this._loadedPromise = this.chain(this._loadedPromise, this._initializeItems);
+        return this.chain(promise, this._initializeItems);
     }
 
     _afterRender () {

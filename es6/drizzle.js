@@ -47,7 +47,7 @@ map(['Function', 'Array', 'String', 'Object'], (item) => {
     }
 });
 
-map(['Module', 'View', 'Region', 'Model'], (item) => {
+map(['Module', 'View', 'Region', 'Model', 'Store'], (item) => {
     D['register' + item] = (name, clazz) => typeCache.register(item, name, clazz);
     typeCache['create' + item] = (name, ...args) => typeCache.create(item, name, ...args);
 });

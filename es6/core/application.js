@@ -66,6 +66,14 @@ D.Application = class Application extends D.Base {
     _createRegion (el, name, mod) {
 
     }
+
+    _createStore (mod, options) {
+        
+    }
+
+    _createModel (mod, store, options) {
+
+    }
 };
 
 Object.assign(D.Application.prototype, D.Event);

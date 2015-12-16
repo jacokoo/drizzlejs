@@ -7,7 +7,7 @@ D.Base = class Base {
 
         Object.assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
-        this._initialize();
+        this._loadedPromise = this._initialize();
     }
 
     _initialize () {

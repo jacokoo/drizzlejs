@@ -1,9 +1,7 @@
 D.View = class View extends ActionCreator {
     _initialize () {
         this.bindings = {};
-
-        super._initialize();
-        this._initializeDataBinding();
+        return this.chain(super._initialize(), this._initializeDataBinding);
     }
 
     _initializeDataBinding () {

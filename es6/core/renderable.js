@@ -14,7 +14,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _initialize () {
-        this._loadedPromise = this.chain(
+        return this.chain(
             [app._templateEngine._load(this), this._initializeEvents()],
             ([template]) => this._template = template
         );
