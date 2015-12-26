@@ -20,6 +20,7 @@ var fs = require('fs'),
     csso = require('gulp-csso'),
     uglify = require('gulp-uglify'),
     htmlmin = require('gulp-htmlmin'),
+    sleet = require('gulp-sleet'),
     eslint = require('gulp-eslint');
 
 var libs = [
@@ -99,6 +100,12 @@ gulp.task('build-main', function() {
 });
 
 gulp.task('main', main);
+
+gulp.task('sleet', function() {
+    gulp.src('./**/*.sleet')
+        .pipe(sleet())
+        .pipe(gulp.dest('./'));
+});
 
 gulp.task('clean-build', function(cb) {
     del(['./dist'], cb);

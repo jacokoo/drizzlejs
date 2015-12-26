@@ -44,10 +44,7 @@
   },
   "sleet": {
     "handlebars": {
-      "block": [
-        "layout",
-        "view"
-      ]
+      "block": [ "layout", "view" ]
     }
   }
 }
