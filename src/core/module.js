@@ -20,7 +20,9 @@ extend(Module, Base, {
         this.initLayout();
         this.initStore();
         this.actionContext = assign({
-            store: this.store
+            store: this.store,
+            app: this.app,
+            module: this
         }, Request);
     },
 
@@ -54,7 +56,6 @@ extend(Module, Base, {
     loadItems: function() {
         var me = this;
         this.items = {};
-        this.inRegionItems = {};
 
         return chain(me, mapObj(me.option('items') || {}, function(options, name) {
             var method;
@@ -65,7 +66,6 @@ extend(Module, Base, {
             me.app.getLoader(name)[method](name, me, options).then(function(obj) {
                 obj.moduleOptions = options;
                 me.items[obj.name] = obj;
-                if (options.region) me.inRegionItems[options.region] = obj;
             });
         }));
     },
@@ -136,9 +136,13 @@ extend(Module, Base, {
     },
 
     renderItems: function() {
-        return chain(this, mapObj(this.inRegionItems, function(item, name) {
+        return chain(this, mapObj(this.items, function(item) {
+            var name = item.moduleOptions.region;
+            if (!name) {
+                return false;
+            }
             if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
-            this.regions[name].show(item);
+            return this.regions[name].show(item);
         }, this));
     },
 
@@ -164,7 +168,7 @@ extend(Module, Base, {
         handler = this.actions[name];
         if (!D.isFunction(handler)) this.error('No action handler for ' + name);
         return chain(this, function() {
-            handler.call(this.actionContext, payload);
+            return handler.call(this.actionContext, payload);
         });
     },
 
@@ -182,6 +186,10 @@ extend(Layout, View, {
     initialize: function() {
         this.isLayout = true;
         this.loadedPromise = this.loadTemplate();
+    },
+
+    getElement: function() {
+        return this.region ? this.region.getElement(this.module) : null;
     },
 
     bindActions: FN,

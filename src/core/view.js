@@ -39,9 +39,10 @@ extend(View, Base, {
             mapObj(bind, function(value, key) {
                 var model = me.data[key] = me.module.store[key];
                 if (!model) me.error('No model:' + key);
-                if (value !== true) return;
+                if (!value) return;
                 me.listenTo(model, 'change', function() {
-                    if (me.region) me.render(me.renderOptions);
+                    if (value === true && me.region) me.render(me.renderOptions);
+                    if (D.isString(value)) me.option(value);
                 });
             });
         });
@@ -135,6 +136,7 @@ extend(View, Base, {
     createActionEventHandler: function(name) {
         var me = this, el = me.getElement(),
             dataForAction = (me.option('dataForAction') || {})[name],
+            actionCallback = (me.option('actionCallbacks') || {})[name],
             disabled = me.app.options.disabledClass;
 
         return function(e) {
@@ -152,6 +154,11 @@ extend(View, Base, {
 
             chain(me, data, function(d) {
                 if (d !== false) return me.module.dispatch(name, d);
+                return false;
+            }, function(d) {
+                if (d !== false) return actionCallback && actionCallback.call(this, d);
+            }).then(function() {
+                Adapter.removeClass(target, disabled);
             }, function() {
                 Adapter.removeClass(target, disabled);
             });
@@ -209,7 +216,7 @@ extend(View, Base, {
     serializeData: function() {
         var data = {};
         mapObj(this.data, function(value, key) {
-            data[key] = value.data;
+            data[key] = value.get(true);
         });
         mapObj(this.option('dataForTemplate'), function(value, key) {
             data[key] = value.call(this, data);

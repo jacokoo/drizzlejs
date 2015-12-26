@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.3.7
+ * DrizzleJS v0.3.18
  * -------------------------------------
  * Copyright (c) 2015 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -57,7 +57,6 @@
     assign = function(target) {
         if (!target) return target;
         map(slice.call(arguments, 1), function(arg) {
-            if (!arg) return;
             mapObj(arg, function(value, key) {
                 target[key] = value;
             });
@@ -87,6 +86,25 @@
             .replace(/^\/|\/$/g, '');
     },
 
+    clone = function(target) {
+        var result;
+        if (D.isObject(target)) {
+            result = {};
+            mapObj(target, function(value, key) {
+                result[key] = clone(value);
+            });
+            return result;
+        }
+
+        if (D.isArray(target)) {
+            return map(target, function(value) {
+                return clone(value);
+            });
+        }
+
+        return target;
+    },
+
     Application, Base, Loader, Model, Module, MultiRegion,
     PageableModel, Region, Router, View, Layout, Adapter,
     Event, Factory, Helpers, Request, Promise, SimpleLoader;
@@ -112,7 +130,7 @@
         addClass: function(el, name) { return el.classList.add(name); },
         removeClass: function(el, name) { return el.classList.remove(name); },
 
-        getEventTarget: function(e) { return e.target; },
+        getEventTarget: function(e) { return e.currentTarget || e.target; },
 
         componentHandler: function(name) {
             return {
@@ -292,7 +310,15 @@
         url: function(model) {
             var options = model.app.options,
                 base = model.url(),
-                urls = [options.urlRoot];
+                urlRoot = model.app.option('urlRoot', model) || '',
+                urls = [], matches, protocol = '';
+
+            matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
+            if (matches) {
+                protocol = matches[1];
+                urlRoot = matches[2];
+            }
+            urls.push(urlRoot);
 
             if (model.module.options.urlPrefix) {
                 urls.push(model.module.options.urlPrefix);
@@ -306,13 +332,13 @@
             }
             if (base) urls.push(base);
 
-            if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
+            if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
             if (options.urlSuffix) {
                 urls.push(urls.pop() + options.urlSuffix);
             }
 
-            return compose.apply(null, urls);
+            return protocol + compose.apply(null, urls);
         },
 
         get: function(model, options) {
@@ -346,7 +372,7 @@
             return new Adapter.Promise(function(resolve, reject) {
                 Adapter.ajax(params).then(function() {
                     var args = slice.call(arguments), resp = args[0];
-                    model.set(resp).changed();
+                    model.set(resp, !options.silent);
                     resolve(args);
                 }, function() {
                     reject(slice.call(arguments));
@@ -390,7 +416,7 @@
 
         option: function(key) {
             var value = this.options[key];
-            return D.isFunction(value) ? value.call(this) : value;
+            return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
         },
 
         error: function(message) {
@@ -581,6 +607,10 @@
             return this;
         },
 
+        get: function(cloneIt) {
+            return cloneIt ? clone(this.data) : this.data;
+        },
+
         changed: function() { this.trigger('change'); },
 
         clear: function(trigger) {
@@ -616,7 +646,7 @@
             options || (options = {});
             if (this.isCurrent(item)) {
                 if (options.forceRender === false) return this.Promise.resolve(this.current);
-                return this.current.render();
+                return this.current.render(options);
             }
 
             if (D.isString(item)) item = this.app.getLoader(item).loadModule(item);
@@ -703,9 +733,10 @@
                 mapObj(bind, function(value, key) {
                     var model = me.data[key] = me.module.store[key];
                     if (!model) me.error('No model:' + key);
-                    if (value !== true) return;
+                    if (!value) return;
                     me.listenTo(model, 'change', function() {
-                        if (me.region) me.render(me.renderOptions);
+                        if (value === true && me.region) me.render(me.renderOptions);
+                        if (D.isString(value)) me.option(value);
                     });
                 });
             });
@@ -799,6 +830,7 @@
         createActionEventHandler: function(name) {
             var me = this, el = me.getElement(),
                 dataForAction = (me.option('dataForAction') || {})[name],
+                actionCallback = (me.option('actionCallbacks') || {})[name],
                 disabled = me.app.options.disabledClass;
 
             return function(e) {
@@ -816,6 +848,11 @@
 
                 chain(me, data, function(d) {
                     if (d !== false) return me.module.dispatch(name, d);
+                    return false;
+                }, function(d) {
+                    if (d !== false) return actionCallback && actionCallback.call(this, d);
+                }).then(function() {
+                    Adapter.removeClass(target, disabled);
                 }, function() {
                     Adapter.removeClass(target, disabled);
                 });
@@ -873,7 +910,7 @@
         serializeData: function() {
             var data = {};
             mapObj(this.data, function(value, key) {
-                data[key] = value.data;
+                data[key] = value.get(true);
             });
             mapObj(this.option('dataForTemplate'), function(value, key) {
                 data[key] = value.call(this, data);
@@ -988,7 +1025,9 @@
             this.initLayout();
             this.initStore();
             this.actionContext = assign({
-                store: this.store
+                store: this.store,
+                app: this.app,
+                module: this
             }, Request);
         },
 
@@ -1022,7 +1061,6 @@
         loadItems: function() {
             var me = this;
             this.items = {};
-            this.inRegionItems = {};
 
             return chain(me, mapObj(me.option('items') || {}, function(options, name) {
                 var method;
@@ -1033,7 +1071,6 @@
                 me.app.getLoader(name)[method](name, me, options).then(function(obj) {
                     obj.moduleOptions = options;
                     me.items[obj.name] = obj;
-                    if (options.region) me.inRegionItems[options.region] = obj;
                 });
             }));
         },
@@ -1104,9 +1141,13 @@
         },
 
         renderItems: function() {
-            return chain(this, mapObj(this.inRegionItems, function(item, name) {
+            return chain(this, mapObj(this.items, function(item) {
+                var name = item.moduleOptions.region;
+                if (!name) {
+                    return false;
+                }
                 if (!this.regions[name]) this.error('Region:' + name + ' is not defined');
-                this.regions[name].show(item);
+                return this.regions[name].show(item);
             }, this));
         },
 
@@ -1132,7 +1173,7 @@
             handler = this.actions[name];
             if (!D.isFunction(handler)) this.error('No action handler for ' + name);
             return chain(this, function() {
-                handler.call(this.actionContext, payload);
+                return handler.call(this.actionContext, payload);
             });
         },
 
@@ -1150,6 +1191,10 @@
         initialize: function() {
             this.isLayout = true;
             this.loadedPromise = this.loadTemplate();
+        },
+
+        getElement: function() {
+            return this.region ? this.region.getElement(this.module) : null;
         },
 
         bindActions: FN,
@@ -1321,7 +1366,7 @@
             start: function(defaultPath) {
                 var key, me = this, hash;
                 if (me.started) return;
-                key = pushStateSupported ? 'popstate.dr' : 'hashchange.dr';
+                key = 'hashchange.dr';
 
                 Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
                 hash = me.getHash() || defaultPath;
@@ -1410,8 +1455,9 @@
 
 
     PageableModel = D.PageableModel = function() {
-        var defaults = this.app.options.pagination;
+        var defaults;
         parent(PageableModel).apply(this, arguments);
+        defaults = this.app.options.pagination;
 
         this.pagination = {
             page: this.options.page || 1,
@@ -1428,12 +1474,12 @@
             this.data = this.options.data || [];
         },
 
-        set: function(data) {
+        set: function(data, trigger) {
             var p = this.pagination;
             data || (data = {});
             p.recordCount = data[p.recordCountKey] || 0;
             p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-            PageableModel.__super__.set.call(this, data);
+            PageableModel.__super__.set.call(this, data, trigger);
         },
 
         getParams: function() {
@@ -1441,7 +1487,9 @@
                 p = this.pagination;
             params[p.pageKey] = p.page;
             params[p.pageSizeKey] = p.pageSize;
-
+            if (this.app.options.pagination.params) {
+                params = this.app.options.pagination.params(params);
+            }
             return params;
         },
 
@@ -1453,7 +1501,7 @@
         },
 
         turnToPage: function(page) {
-            if (page <= this.pagination.pageCount || page >= 1) this.pagination.page = page;
+            if (page <= this.pagination.pageCount && page >= 1) this.pagination.page = page;
             return this;
         },
 

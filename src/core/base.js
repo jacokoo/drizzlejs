@@ -10,7 +10,7 @@ assign(Base.prototype, {
 
     option: function(key) {
         var value = this.options[key];
-        return D.isFunction(value) ? value.call(this) : value;
+        return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
     },
 
     error: function(message) {
@@ -27,15 +27,15 @@ assign(Base.prototype, {
         if (!mixins) return;
         mapObj(mixins, function(value, key) {
             var old;
-            if (D.isFunction(value)) {
+            if (!me[key]) {
+                me[key] = value;
+            } else if (D.isFunction(value)) {
                 old = me[key];
-                me[key] = function() {
+                me[key] = function () {
                     var args = slice.call(arguments);
-                    if (old) args.unshift(old);
+                    args.unshift(old);
                     return value.apply(me, args);
-                };
-            } else {
-                if (!me[key]) me[key] = value;
+                }
             }
         });
     }

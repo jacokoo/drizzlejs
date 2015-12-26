@@ -50,7 +50,6 @@
     assign = function(target) {
         if (!target) return target;
         map(slice.call(arguments, 1), function(arg) {
-            if (!arg) return;
             mapObj(arg, function(value, key) {
                 target[key] = value;
             });
@@ -76,8 +75,26 @@
     },
 
     compose = function() {
-        return slice.call(arguments).join('/').replace(/\/{2,}/g, '/')
-            .replace(/^\/|\/$/g, '');
+        return slice.call(arguments).join('/').replace(/\/{2,}/g, '/').replace(/^\/|\/$/g, '');
+    },
+
+    clone = function(target) {
+        var result;
+        if (D.isObject(target)) {
+            result = {};
+            mapObj(target, function(value, key) {
+                result[key] = clone(value);
+            });
+            return result;
+        }
+
+        if (D.isArray(target)) {
+            return map(target, function(value) {
+                return clone(value);
+            });
+        }
+
+        return target;
     },
 
     Application, Base, Loader, Model, Module, MultiRegion,

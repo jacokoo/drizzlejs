@@ -25,8 +25,6 @@ window.app = app = new D.Application({
 
 app.startRoute('todos', '/');
 
-
-
 /*
 
 virtual dom support via diff-dom

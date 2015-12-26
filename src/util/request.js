@@ -2,7 +2,15 @@ Request = D.Request = {
     url: function(model) {
         var options = model.app.options,
             base = model.url(),
-            urls = [options.urlRoot];
+            urlRoot = model.app.option('urlRoot', model) || '',
+            urls = [], matches, protocol = '';
+
+        matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
+        if (matches) {
+            protocol = matches[1];
+            urlRoot = matches[2];
+        }
+        urls.push(urlRoot);
 
         if (model.module.options.urlPrefix) {
             urls.push(model.module.options.urlPrefix);
@@ -16,13 +24,13 @@ Request = D.Request = {
         }
         if (base) urls.push(base);
 
-        if (model.data[model.idKey]) urls.push(model.data[model.idKey]);
+        if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
 
         if (options.urlSuffix) {
             urls.push(urls.pop() + options.urlSuffix);
         }
 
-        return compose.apply(null, urls);
+        return protocol + compose.apply(null, urls);
     },
 
     get: function(model, options) {
@@ -56,7 +64,7 @@ Request = D.Request = {
         return new Adapter.Promise(function(resolve, reject) {
             Adapter.ajax(params).then(function() {
                 var args = slice.call(arguments), resp = args[0];
-                model.set(resp).changed();
+                model.set(resp, !options.silent);
                 resolve(args);
             }, function() {
                 reject(slice.call(arguments));

@@ -35,6 +35,10 @@ extend(Model, Base, {
         return this;
     },
 
+    get: function(cloneIt) {
+        return cloneIt ? clone(this.data) : this.data;
+    },
+
     changed: function() { this.trigger('change'); },
 
     clear: function(trigger) {
