@@ -34,7 +34,7 @@ D.Loader = class Loader extends D.Base {
     }
 
     loadModule (name) {
-        return this.loadResource(`${moduleName}/${this.app.options.fileNames.module}`);
+        return this.loadResource(`${name}/${this.app.options.fileNames.module}`);
     }
 
     loadView (name, mod) {
@@ -42,6 +42,6 @@ D.Loader = class Loader extends D.Base {
     }
 
     loadRouter (path) {
-
+        return this.loadResource(`${path}/${this.app.options.fileNames.router}`);
     }
 }

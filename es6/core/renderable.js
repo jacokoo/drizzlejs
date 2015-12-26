@@ -7,7 +7,8 @@ D.Renderable = class Renderable extends D.Base {
             _loader: loader,
             _componentMap: {},
             _events: {},
-            _eventHandlers: this._option('handlers')
+            _eventHandlers: this._option('handlers'),
+            _templateEngine: this._option('templateEngine') || mod && mod._templateEngine || app._templateEngine
         });
 
         app.delegateEvent(this);
@@ -15,7 +16,7 @@ D.Renderable = class Renderable extends D.Base {
 
     _initialize () {
         return this.chain(
-            [app._templateEngine._load(this), this._initializeEvents()],
+            [this._templateEngine._load(this), this._initializeEvents()],
             ([template]) => this._template = template
         );
     }
@@ -61,11 +62,13 @@ D.Renderable = class Renderable extends D.Base {
         if (!this._region) return this.Promise.resolve(this);
 
         return this.chain(
+            () => this.trigger('beforeClose'),
             () => this._option('beforeClose'),
             this._beforeClose,
             [this._unbindEvents, this.destroyComponents, () => this._region._empty(this)],
-            () => this._option('afterClose'),
             this._afterClose,
+            () => this._option('afterClose'),
+            () => this.trigger('afterClose'),
             () => delete this._region,
             this
         );
@@ -83,7 +86,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _renderTemplate (data) {
-        this.app._templateEngine._execute(this, data, this._template);
+        this._templateEngine._execute(this, data, this._template);
     }
 
     _initializeEvents (events) {
