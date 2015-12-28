@@ -16,14 +16,14 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
         return (e) => {
             let target = D.Adapter.getEventTarget(event);
             if (D.Adapter.hasClass(target, disabledClass)) return;
-            D.Adapter.addClass(disabledClass);
+            D.Adapter.addClass(target, disabledClass);
 
             let data = this._getActionPayload(target);
             this.chain(
                 D.isFunction(dataForAction) ? dataForAction.call(this, data, e) : data,
                 (payload) => paylaod !== false ? this.module.dispatch(name, payload) : false,
                 (result) => result !== false ? actionCallback && actionCallback.call(this, result)
-            ).then(() => D.Adapter.removeClass(disabledClass), () => D.Adapter.removeClass(disabledClass));
+            ).then(() => D.Adapter.removeClass(target, disabledClass), () => D.Adapter.removeClass(target, disabledClass));
         }
     }
 

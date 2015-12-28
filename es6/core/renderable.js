@@ -1,7 +1,7 @@
 D.Renderable = class Renderable extends D.Base {
-    constructor (name, app, mod, loader, options) {
+    constructor (name, mod, loader, options) {
         super(name, options, {
-            app,
+            app: mod.app,
             module: mod,
             components: {},
             _loader: loader,
