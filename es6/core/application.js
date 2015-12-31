@@ -27,18 +27,30 @@ D.Application = class Application extends D.Base {
         }, options), {
             global: {},
             _modules: {},
-            _loaders: {},
-            _regions: []
+            _loaders: {}
         });
     }
 
     _initialize () {
         this._templateEngine = this._option('templateEngine');
+        this.registerLoader('default', new D.Loader(), true);
+        this._region = this._createRegion(this._option('defaultRegion'), 'Region');
     }
 
     registerLoader (name, loader, isDefault) {
         this.loaders[name] = loader;
         if (isDefault) this._defaultLoader = loader;
+        return this;
+    }
+
+    start (defaultRouter) {
+        return this.chain(
+            defaultRouter ? false : () => {
+
+            }
+            this._region.show(this._option('viewport')),
+            (viewport) => this.viewport = viewport
+        );
     }
 
     _getLoader (name) {
@@ -68,7 +80,7 @@ D.Application = class Application extends D.Base {
     }
 
     _createStore (mod, options) {
-        
+
     }
 
     _createModel (mod, store, options) {
