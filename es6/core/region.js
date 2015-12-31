@@ -1,7 +1,7 @@
 D.Region = class Region extends D.Base {
-    constructor (app, mod, el, name) {
+    constructor (mod, el, name) {
         super(name || 'Region', {
-            app,
+            app: mod.app,
             _el: el,
             module: mod
         });

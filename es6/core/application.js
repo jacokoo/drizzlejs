@@ -53,22 +53,22 @@ D.Application = class Application extends D.Base {
         );
     }
 
-    _getLoader (name) {
-        return name && this._loaders[name] || this._defaultLoader;
+    _getLoader (name, mod) {
+        return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
     }
 
     _createModule (name, parent) {
         let {name: moduleName, loader: loaderName} = D.Loader._analyse(name),
-            loader = this._getLoader(loaderName);
+            loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
-            return typeCache.createModule(options.type, moduleName, this, loader, options, parent);
+            return typeCache.createModule(options.type, moduleName, parent, loader, options);
         });
     }
 
     _createView (name, mod) {
         let {name: viewName, loader: loaderName} = D.Loader._analyse(name),
-            loader = this._getLoader(loaderName);
+            loader = this._getLoader(loaderName, mod);
 
         return this.chain(loader.loadView(viewName, mod), (options = {}) => {
             return typeCache.createView(options.type, viewName, mod, loader, options);
@@ -76,15 +76,16 @@ D.Application = class Application extends D.Base {
     }
 
     _createRegion (el, name, mod) {
-
+        let {name: regionName, loader: type} = D.Loader._analyse(name);
+        return typeCache.createRegion(type, mod, el, regionName);
     }
 
-    _createStore (mod, options) {
-
+    _createStore (mod, options = {}) {
+        return typeCache.createStore(options.type, mod, options);
     }
 
-    _createModel (mod, store, options) {
-
+    _createModel (store, options = {}) {
+        return typeCache.createModel(options.type, store, options);
     }
 };
 

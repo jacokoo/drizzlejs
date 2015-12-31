@@ -1,9 +1,9 @@
 D.Model = class Model extends D.Base {
-    constructor (app, mod, store, options) {
+    constructor (store, options) {
         super('Model', options, {
-            app,
+            app: store.module.app,
+            module: store.module,
             store,
-            module: mod,
             _data: this._option('data') || {},
             _idKey: this._option('idKey') || app.options.idKey,
             _params: Object.assign({}, this._option('params'))

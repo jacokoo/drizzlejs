@@ -1,7 +1,7 @@
 D.Store = class Store extends D.Base {
-    constructor (app, mod, options) {
+    constructor (mod, options) {
         super('Store', options, {
-            app,
+            app: mod.app,
             module: mod,
             _models: {},
             _callbacks: this._option('callbacks')
@@ -36,7 +36,7 @@ D.Store = class Store extends D.Base {
     _initializeModels () {
         mapObj(this._option('models'), (value, key) => {
             if (D.isFunction(value)) value = value.call(this) || {};
-            this._models[key] = this.app._createModel(this.module, this, value);
+            this._models[key] = this.app._createModel(this, value);
         });
     }
 
