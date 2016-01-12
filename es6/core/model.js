@@ -3,12 +3,13 @@ D.Model = class Model extends D.Base {
         super('Model', options, {
             app: store.module.app,
             module: store.module,
-            store,
-            _data: this._option('data') || {},
-            _idKey: this._option('idKey') || app.options.idKey,
-            _params: Object.assign({}, this._option('params'))
+            store
         });
-        app.delegateEvent(this);
+
+        this._data = this._option('data') || {};
+        this._idKey = this._option('idKey') || this.app.options.idKey;
+        this._params = Object.assign({}, this._option('params'));
+        this.app.delegateEvent(this);
     }
 
     get fullUrl () { return D.Request._url(this); }
@@ -18,8 +19,8 @@ D.Model = class Model extends D.Base {
     get data () { return this._data; }
 
     set (data, trigger) {
-        data = this._option('parse', data);
-        this._data = this.options.root ? data[this.options.root] : data;
+        const d = this._option('parse', data);
+        this._data = this.options.root ? d[this.options.root] : d;
         if (trigger) this.changed();
     }
 

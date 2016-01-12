@@ -45,9 +45,6 @@ D.Application = class Application extends D.Base {
 
     start (defaultRouter) {
         return this.chain(
-            defaultRouter ? false : () => {
-
-            }
             this._region.show(this._option('viewport')),
             (viewport) => this.viewport = viewport
         );
@@ -58,25 +55,25 @@ D.Application = class Application extends D.Base {
     }
 
     _createModule (name, parent) {
-        let {name: moduleName, loader: loaderName} = D.Loader._analyse(name),
+        const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
-            return typeCache.createModule(options.type, moduleName, parent, loader, options);
+            return typeCache.createModule(options.type, moduleName, this, parent, loader, options);
         });
     }
 
     _createView (name, mod) {
-        let {name: viewName, loader: loaderName} = D.Loader._analyse(name),
+        const { name: viewName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, mod);
 
         return this.chain(loader.loadView(viewName, mod), (options = {}) => {
-            return typeCache.createView(options.type, viewName, mod, loader, options);
+            return typeCache.createView(options.type, viewName, this, mod, loader, options);
         });
     }
 
     _createRegion (el, name, mod) {
-        let {name: regionName, loader: type} = D.Loader._analyse(name);
+        const { name: regionName, loader: type } = D.Loader._analyse(name);
         return typeCache.createRegion(type, mod, el, regionName);
     }
 

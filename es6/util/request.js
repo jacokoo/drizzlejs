@@ -20,11 +20,11 @@ D.Request = {
     },
 
     _url (model) {
-        let base = model._url() || '',
-            parts = [],
+        const parts = [],
             prefix = model.module._option('urlPrefix', model) || '',
             urlRoot = model.app._option('urlRoot', model) || '',
             urlSuffix = model.app._option('urlSuffix', model) || '';
+        let base = model._url() || '';
 
         urlRoot && parts.push(urlRoot);
         prefix && parts.push(prefix);
@@ -43,7 +43,7 @@ D.Request = {
     },
 
     _ajax (method, model, data, options) {
-        var params = Object.assign({type: method}, options);
+        const params = Object.assign({ type: method }, options);
 
         params.data = Object.assign({}, data, params.data);
         params.url = this._url(model);

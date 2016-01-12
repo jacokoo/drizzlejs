@@ -1,26 +1,26 @@
 D.Loader = class Loader extends D.Base {
     static _analyse (name) {
         if (!D.isString(name)) {
-            return {loader: null, name};
+            return { loader: null, name };
         }
 
-        let args = name.split(':'), loader = n;
+        const args = name.split(':'),
             loader = args.length > 1 ? args.shift() : null;
 
-        return {loader, name: args.shift(), args};
+        return { loader, name: args.shift(), args };
     }
 
     constructor (app, options) {
-        super('Loader', options, {app: app});
+        super('Loader', options, { app });
     }
 
     loadResource (path) {
-        let {scriptRoot, getResource, amd} = this.app.options,
+        const { scriptRoot, getResource, amd } = this.app.options,
             fullPath = `${scriptRoot}/${path}`;
 
         return this.Promise.create((resolve, reject) => {
             if (amd) {
-                require([fullPath], ((obj) => resolve(obj)), ((e) => reject(e)));
+                require([fullPath], (obj) => resolve(obj), (e) => reject(e));
             } else if (getResource) {
                 resolve(getResource.call(this.app, fullPath));
             } else {
@@ -44,4 +44,4 @@ D.Loader = class Loader extends D.Base {
     loadRouter (path) {
         return this.loadResource(`${path}/${this.app.options.fileNames.router}`);
     }
-}
+};

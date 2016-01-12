@@ -1,10 +1,10 @@
 D.TemplateEngine = class TemplateEngine extends D.Base {
     constructor (options) {
-        super('Template Engine', options, {_templateCache: {}});
+        super('Template Engine', options, { _templateCache: {} });
     }
 
     _load (renderable) {
-        let id = renderable.id;
+        const id = renderable.id;
         if (this._templateCache[id]) return this._templateCache[id];
         return this._templateCache[id] = this._option('load', renderable);
     }

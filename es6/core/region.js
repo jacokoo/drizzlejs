@@ -15,9 +15,8 @@ D.Region = class Region extends D.Base {
             return this._current._render(options, true);
         }
 
-        if (D.isString(renderable)) renderable = this.app._createModule(renderable);
         return this.chain(
-            renderable,
+            D.isString(renderable) ? this.app._createModule(renderable) : renderable,
             (item) => {
                 if (!(item instanceof D.Renderable)) this.error('The item is expected to be an instance of Renderable');
                 return item;

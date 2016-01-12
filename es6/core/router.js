@@ -1,9 +1,9 @@
-const PUSH_STATE_SUPPORTED = root.history && ('pushState' in root.history),
-const ROUTER_REGEXPS = [ /:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
+const PUSH_STATE_SUPPORTED = root.history && ('pushState' in root.history);
+const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
 class Route {
     constructor (app, router, path, fn) {
-        let pattern = path
+        const pattern = path
             .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
             .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
 
@@ -13,7 +13,6 @@ class Route {
         this.router = router;
         this.path = path;
         this.fn = fn;
-
     }
 
     match (hash) {
@@ -23,15 +22,15 @@ class Route {
 
     handle (hash) {
         this.pattern.lastIndex = 0;
-        let args = this.pattern.exec(hash).slice(1),
-            handlers = this.router._getInterceptors(me.path);
+        const args = this.pattern.exec(hash).slice(1),
+            handlers = this.router._getInterceptors(this.path);
 
-        handlers.push(me.fn);
+        handlers.push(this.fn);
         return this.router.chain(...map(handlers, (fn, i) => {
             return (prev) => fn.apply(this.router, (i > 0 ? [prev].concat(args) : args));
         }));
     }
-};
+}
 
 D.Router = class Router extends D.Base {
     constructor (app) {
@@ -50,6 +49,5 @@ D.Router = class Router extends D.Base {
     _getHash () {
         return root.location.hash.slice(1);
     }
-
 
 };

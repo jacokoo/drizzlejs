@@ -14,26 +14,29 @@ D.Base = class Base {
     }
 
     _option (key, ...args) {
-        let value = this.options[key];
+        const value = this.options[key];
         return D.isFunction(value) ? value.apply(this, args) : value;
     }
 
     _error (message, ...rest) {
         if (!D.isString(message)) throw message;
-        throw new Error(`[${this.module ? this.module.name + ':' : ''}${this.name}] ${message} ${rest.join(' ')}`)
+        throw new Error(`[${this.module ? this.module.name + ':' : ''}${this.name}] ${message} ${rest.join(' ')}`);
     }
 
     _mixin (obj) {
         mapObj(obj, (value, key) => {
-            let old = this[key];
-            if (!old) return this[key] = value;
+            const old = this[key];
+            if (!old) {
+                this[key] = value;
+                return;
+            }
 
             if (D.isFunction(old)) {
                 this[key] = () => {
-                    let args = slice.call(arguments);
+                    const args = slice.call(arguments);
                     args.unshift(old);
                     return value.apply(this, args);
-                }
+                };
             }
         });
     }

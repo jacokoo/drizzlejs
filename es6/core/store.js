@@ -3,25 +3,24 @@ D.Store = class Store extends D.Base {
         super('Store', options, {
             app: mod.app,
             module: mod,
-            _models: {},
-            _callbacks: this._option('callbacks')
+            _models: {}
         });
-
-        app.delegateEvent(this);
+        this._callbacks = this._option('callbacks');
+        this.app.delegateEvent(this);
     }
 
     get models () {return this._models;}
 
     dispatch (name, payload) {
-        let callback;
-        if (D.isObject(name)) {
-            payload = name.payload;
-            name = name.name;
+        let callback, n = name, p = payload;
+        if (D.isObject(n)) {
+            p = n.payload;
+            n = n.name;
         }
 
-        callback = this._callbacks[name];
+        callback = this._callbacks[n];
         if (!callback) this.error(`No action callback for name: ${name}`);
-        return this.chain(callback.call(this._callbackContext, payload));
+        return this.chain(callback.call(this._callbackContext, p));
     }
 
     _initialize () {
@@ -35,20 +34,24 @@ D.Store = class Store extends D.Base {
 
     _initializeModels () {
         mapObj(this._option('models'), (value, key) => {
-            if (D.isFunction(value)) value = value.call(this) || {};
-            this._models[key] = this.app._createModel(this, value);
+            const v = (D.isFunction(value) ? value.call(this) : v) || {};
+            if (v.shared === true) {
+                this._models[key] = this.app.viewport.store[key];
+                return;
+            }
+            this._models[key] = this.app._createModel(this, v);
         });
     }
 
     _loadEagerModels () {
-        return this.chain(mapObj(this._models, (model, key) => {
+        return this.chain(mapObj(this._models, (model) => {
             return model.options.autoLoad === true ? D.Request.get(model) : null;
         }));
     }
 
     _loadLazyModels () {
-        return this.chain(mapObj(this._models, (model, key) => {
-            let {autoLoad} = model.options;
+        return this.chain(mapObj(this._models, (model) => {
+            const { autoLoad } = model.options;
             return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
         }));
     }

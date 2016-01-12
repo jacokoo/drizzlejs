@@ -19,9 +19,9 @@ D.Promise = class Promiser {
 
     parallel (items, ...args) {
         return this.create((resolve, reject) => {
-            let result = [], thenables = [], indexMap = {};
+            const result = [], thenables = [], indexMap = {};
             map(items, (item, i) => {
-                let value = D.isFunction(item) ? item.apply(this.context, args) : item;
+                const value = D.isFunction(item) ? item.apply(this.context, args) : item;
                 if (value && value.then) {
                     indexMap[thenables.length] = i;
                     thenables.push(value);
@@ -32,30 +32,31 @@ D.Promise = class Promiser {
 
             if (thenables.length === 0) return resolve(result);
 
-            D.Adapter.Promise.all(thenables).then((args) => {
-                mapObj(indexMap, (key, value) => result[value] = args[key]);
+            D.Adapter.Promise.all(thenables).then((as) => {
+                mapObj(indexMap, (key, value) => result[value] = as[key]);
                 resolve(result);
-            }, (args) => {
-                reject(args);
+            }, (as) => {
+                reject(as);
             });
         });
     }
 
     chain (...args) {
-        let prev = null,
-            doRing = (rings, ring, resolve, reject) => {
-                let nextRing = (data) => {
-                    prev = data;
-                    rings.length === 0 ? resolve(prev) : doRing(rings, rings.shift(), resolve, reject);
-                }
-
-                if (D.isArray(ring)) {
-                    ring.length > 0 ? this.parallel(ring, ...(prev != null ? [prev] : [])).then(nextRing, reject) : nextRing([]);
-                } else {
-                    let value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
-                    value && value.then ? value.then(nextRing, reject) : nextRing(value);
-                }
+        let prev = null;
+        const doRing = (rings, ring, resolve, reject) => {
+            const nextRing = (data) => {
+                prev = data;
+                rings.length === 0 ? resolve(prev) : doRing(rings, rings.shift(), resolve, reject);
             };
+
+            if (D.isArray(ring)) {
+                ring.length === 0 ? nextRing([]) :
+                    this.parallel(ring, ...(prev != null ? [prev] : [])).then(nextRing, reject);
+            } else {
+                const value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
+                value && value.then ? value.then(nextRing, reject) : nextRing(value);
+            }
+        };
 
         if (args.length === 0) return this.resolve();
 

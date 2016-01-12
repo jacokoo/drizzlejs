@@ -4,6 +4,10 @@ D.Module = class Module extends D.RenderableContainer {
         return super._initialize();
     }
 
+    get store () {
+        return this._store;
+    }
+
     _initializeStore () {
         this._store = this.app._createStore(this, this._option('store'));
     }

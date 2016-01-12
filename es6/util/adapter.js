@@ -1,7 +1,8 @@
-const events = {};
-const createHandler = function(region, name, selector) {
+const __events = {};
+const __createHandler = function(region, name, selector) {
     return (e) => {
-        let target = e.target, matched = false;
+        const target = e.target;
+        let matched = false;
         map(region.getElement().querySelectorAll(selector), (el) => {
             if (el === target || el.contains(target)) {
                 matched = el;
@@ -11,35 +12,36 @@ const createHandler = function(region, name, selector) {
         matched && region.trigger(name, e);
     };
 };
+const __captures = ['blur', 'focus', 'scroll', 'resize'];
 
 D.Adapter = {
-    Promise: Promise,
+    Promise,
 
     ajax (params) { throw new Error('Ajax is not implemented'); },
 
     ajaxResult (args) { return args[0]; },
 
-    getEventTarget (event) { return e.currentTarget || e.target; },
+    getEventTarget (e) { return e.currentTarget || e.target; },
 
     getFormData (el) {
 
     },
 
     delegateDomEvent (region, renderable, name, selector, fn) {
-        let event = `${name}-${region.id}`, id = `${region.id}-${renderable.id}`;
+        const event = `${name}-${region.id}`, id = `${region.id}-${renderable.id}`;
         renderable.listenTo(region, event, fn);
-        (events[id] || (events[id] = {}));
-        let handler = events[id][name] = createHandler(region, event, selector);
-        region.getElement().addEventListener(name, handler, false);
+        (__events[id] || (__events[id] = {}));
+        const handler = __events[id][name] = __createHandler(region, event, selector);
+        region.getElement().addEventListener(name, handler, __captures.indexOf(name) !== -1);
     },
 
     undelegateDomEvents (region, renderable) {
-        let id = `${region.id}-${renderable.id}`;
+        const id = `${region.id}-${renderable.id}`;
         renderable.stopListening(region);
-        mapObj(events[id], (handler, name) => {
+        mapObj(__events[id], (handler, name) => {
             region.getElement.removeEventListener(name, handler);
         });
-        delete events[id];
+        delete __events[id];
     },
 
     hasClass (el, clazz) { return el.classList.contains(clazz); },
