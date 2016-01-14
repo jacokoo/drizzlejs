@@ -5,7 +5,8 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
     }
 
     _createEventHandler (name, obj) {
-        return (this._option('actions') || {})[obj.key] ? this._createAction(name) : super._createEventHandler(name, obj);
+        const isAction = !!(this._option('actions') || {})[obj.key];
+        return isAction ? this._createAction(name) : super._createEventHandler(name, obj);
     }
 
     _createAction (name) {
@@ -23,7 +24,10 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
                 D.isFunction(dataForAction) ? dataForAction.call(this, data, e) : data,
                 (payload) => payload !== false ? this.module.dispatch(name, payload) : false,
                 (result) => result !== false ? actionCallback && actionCallback.call(this, result) : false
-            ).then(() => D.Adapter.removeClass(target, disabledClass), () => D.Adapter.removeClass(target, disabledClass));
+            ).then(
+                () => D.Adapter.removeClass(target, disabledClass),
+                () => D.Adapter.removeClass(target, disabledClass)
+            );
         };
     }
 

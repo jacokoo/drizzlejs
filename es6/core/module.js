@@ -8,6 +8,10 @@ D.Module = class Module extends D.RenderableContainer {
         return this._store;
     }
 
+    dispatch (name, payload) {
+        this._store.dispatch(name, payload);
+    }
+
     _initializeStore () {
         this._store = this.app._createStore(this, this._option('store'));
     }

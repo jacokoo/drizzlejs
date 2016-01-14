@@ -29,7 +29,8 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             if (D.isString(opt)) opt = { region: opt };
 
             return this.app[options.isModule ? '_createModule' : '_createView'](name, parent).then((item) => {
-                item.moduleOptions = options;
+                const i = item;
+                i.moduleOptions = options;
                 this._items[name] = item;
                 return item;
             });
@@ -60,8 +61,8 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
 
     _closeRegions () {
         const regions = this._regions;
-        if (!regions) return;
+        if (!regions) return this;
         delete this._regions;
-        return this.chain(mapObj(regions, (region) => region.close()));
+        return this.chain(mapObj(regions, (region) => region.close()), this);
     }
 };

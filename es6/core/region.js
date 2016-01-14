@@ -26,7 +26,8 @@ D.Region = class Region extends D.Base {
             ],
             ([item]) => {
                 this._current = item;
-                this._getElement().setAttribute('data-current', item.module ? `${item.module.name}:${item.name}` : item.name);
+                const attr = item.module ? `${item.module.name}:${item.name}` : item.name;
+                this._getElement().setAttribute('data-current', attr);
                 return item._setRegion(this);
             },
             (item) => item._render(options, false)

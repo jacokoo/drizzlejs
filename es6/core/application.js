@@ -43,11 +43,36 @@ D.Application = class Application extends D.Base {
         return this;
     }
 
-    start (defaultRouter) {
+    start (defaultHash) {
+        if (defaultHash) this._router = new D.Router(this);
+
         return this.chain(
+            defaultHash ? this._router._mountRoutes(this._option('routers')) : false,
             this._region.show(this._option('viewport')),
-            (viewport) => this.viewport = viewport
+            (viewport) => this.viewport = viewport,
+            () => defaultHash && this._router._start(defaultHash),
+            this
         );
+    }
+
+    stop () {
+        this.off();
+        this._region.close();
+    }
+
+    navigate (hash, trigger) {
+        if (!this._router) return;
+        this._router.navigate(hash, trigger);
+    }
+
+    dispatch (name, payload) {
+        const n = D.isObject(name) ? name.name : name,
+            p = D.isObject(name) ? name.payload : payload;
+        this.trigger(`app.${n}`, p);
+    }
+
+    show (region, moduleName, options) {
+        this.viewport.regions[region].show(moduleName, options);
     }
 
     _getLoader (name, mod) {

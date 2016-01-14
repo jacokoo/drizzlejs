@@ -43,7 +43,7 @@ D.Renderable = class Renderable extends D.Base {
             () => this._option('beforeRender'),
             this._beforeRender,
             this._serializeData,
-            this._renderTemplate,
+            (data) => this._renderTemplate(data, update),
             this._renderComponents,
             this._afterRender,
             () => this._option('afterRender'),
@@ -84,8 +84,8 @@ D.Renderable = class Renderable extends D.Base {
         };
     }
 
-    _renderTemplate (data) {
-        this._templateEngine._execute(this, data, this._template);
+    _renderTemplate (data, update) {
+        this._templateEngine._execute(this, data, this._template, update);
     }
 
     _initializeEvents (events) {

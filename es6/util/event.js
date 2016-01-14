@@ -6,12 +6,18 @@ D.Event = {
 
     off (name, fn) {
         if (!this._events || !name || !this._events[name]) return;
-        if (!fn) return delete this._events[name];
+        if (!fn) {
+            delete this._events[name];
+            return;
+        }
 
         const result = [];
         map(this._events[name], (item) => {if (item.fn !== fn) result.push(item);});
 
-        if (result.length === 0) return (delete this._events[name]);
+        if (result.length === 0) {
+            delete this._events[name];
+            return;
+        }
         this._events[name] = result;
     },
 

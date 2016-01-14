@@ -149,7 +149,7 @@ D.Adapter = {
     Promise: Promise,
 
     ajax: function ajax(params) {
-        throw new Error('Ajax is not implemented');
+        throw new Error('Ajax is not implemented', params);
     },
     ajaxResult: function ajaxResult(args) {
         return args[0];
@@ -157,22 +157,32 @@ D.Adapter = {
     getEventTarget: function getEventTarget(e) {
         return e.currentTarget || e.target;
     },
-    getFormData: function getFormData(el) {},
+    getFormData: function getFormData(el) {
+        throw new Error('getFormData is not implemented', el);
+    },
     delegateDomEvent: function delegateDomEvent(region, renderable, name, selector, fn) {
         var event = name + '-' + region.id,
             id = region.id + '-' + renderable.id;
         renderable.listenTo(region, event, fn);
         __events[id] || (__events[id] = {});
         var handler = __events[id][name] = __createHandler(region, event, selector);
-        region.getElement().addEventListener(name, handler, __captures.indexOf(name) !== -1);
+        this.addEventListener(region.getElement(), name, handler, __captures.indexOf(name) !== -1);
     },
     undelegateDomEvents: function undelegateDomEvents(region, renderable) {
+        var _this = this;
+
         var id = region.id + '-' + renderable.id;
         renderable.stopListening(region);
         mapObj(__events[id], function (handler, name) {
-            region.getElement.removeEventListener(name, handler);
+            _this.removeEventListener(region.getElement(), name, handler);
         });
         delete __events[id];
+    },
+    addEventListener: function addEventListener(el, name, handler, useCapture) {
+        el.addEventListener(name, handler, useCapture);
+    },
+    removeEventListener: function removeEventListener(el, name, handler) {
+        el.removeEventListener(el, name, handler);
     },
     hasClass: function hasClass(el, clazz) {
         return el.classList.contains(clazz);
@@ -195,10 +205,10 @@ D.Promise = function () {
     _createClass(Promiser, [{
         key: 'create',
         value: function create(fn) {
-            var _this = this;
+            var _this2 = this;
 
             return new D.Adapter.Promise(function (resolve, reject) {
-                fn.call(_this.context, resolve, reject);
+                fn.call(_this2.context, resolve, reject);
             });
         }
     }, {
@@ -214,7 +224,7 @@ D.Promise = function () {
     }, {
         key: 'parallel',
         value: function parallel(items) {
-            var _this2 = this;
+            var _this3 = this;
 
             for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
                 args[_key3 - 1] = arguments[_key3];
@@ -225,7 +235,7 @@ D.Promise = function () {
                     thenables = [],
                     indexMap = {};
                 map(items, function (item, i) {
-                    var value = D.isFunction(item) ? item.apply(_this2.context, args) : item;
+                    var value = D.isFunction(item) ? item.apply(_this3.context, args) : item;
                     if (value && value.then) {
                         indexMap[thenables.length] = i;
                         thenables.push(value);
@@ -249,7 +259,7 @@ D.Promise = function () {
     }, {
         key: 'chain',
         value: function chain() {
-            var _this3 = this;
+            var _this4 = this;
 
             for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
                 args[_key4] = arguments[_key4];
@@ -263,9 +273,9 @@ D.Promise = function () {
                 };
 
                 if (D.isArray(ring)) {
-                    ring.length === 0 ? nextRing([]) : _this3.parallel.apply(_this3, [ring].concat(_toConsumableArray(prev != null ? [prev] : []))).then(nextRing, reject);
+                    ring.length === 0 ? nextRing([]) : _this4.parallel.apply(_this4, [ring].concat(_toConsumableArray(prev != null ? [prev] : []))).then(nextRing, reject);
                 } else {
-                    var value = D.isFunction(ring) ? ring.apply(_this3.context, prev != null ? [prev] : []) : ring;
+                    var value = D.isFunction(ring) ? ring.apply(_this4.context, prev != null ? [prev] : []) : ring;
                     value && value.then ? value.then(nextRing, reject) : nextRing(value);
                 }
             };
@@ -288,14 +298,20 @@ D.Event = {
     },
     off: function off(name, fn) {
         if (!this._events || !name || !this._events[name]) return;
-        if (!fn) return delete this._events[name];
+        if (!fn) {
+            delete this._events[name];
+            return;
+        }
 
         var result = [];
         map(this._events[name], function (item) {
             if (item.fn !== fn) result.push(item);
         });
 
-        if (result.length === 0) return delete this._events[name];
+        if (result.length === 0) {
+            delete this._events[name];
+            return;
+        }
         this._events[name] = result;
     },
     trigger: function trigger(name) {
@@ -445,7 +461,7 @@ D.ComponentManager = {
         this.handlers[name] = { creator: creator, destructor: destructor || EMPTY };
     },
     _create: function _create(renderable, options) {
-        var _this4 = this;
+        var _this5 = this;
 
         var name = options.name;
         var id = options.id;
@@ -462,15 +478,15 @@ D.ComponentManager = {
 
         return renderable.chain(handler.creator(renderable, dom, opt), function (component) {
             var cid = renderable.id + uid,
-                cache = _this4._componentCache[cid],
+                cache = _this5._componentCache[cid],
                 obj = { id: cid, handler: handler, index: D.uniqueId(cid), options: opt };
 
-            D.isArray(cache) ? cache.push(obj) : _this4._componentCache[cid] = cache ? [cache, obj] : obj;
+            D.isArray(cache) ? cache.push(obj) : _this5._componentCache[cid] = cache ? [cache, obj] : obj;
             return { id: id, component: component, index: obj.index };
         });
     },
     _destroy: function _destroy(renderable, obj) {
-        var _this5 = this;
+        var _this6 = this;
 
         var id = renderable.id + obj.id,
             cache = this._componentCache[id];
@@ -479,7 +495,7 @@ D.ComponentManager = {
         if (D.isArray(cache)) {
             this._componentCache[id] = [];
             map(cache, function (item) {
-                item.index !== obj.index ? _this5._componentCache[id].push(item) : current = item;
+                item.index !== obj.index ? _this6._componentCache[id].push(item) : current = item;
             });
             this._componentCache[id].length === 0 && delete this._componentCache[id];
         } else {
@@ -535,21 +551,21 @@ D.Base = function () {
     }, {
         key: '_mixin',
         value: function _mixin(obj) {
-            var _this6 = this,
+            var _this7 = this,
                 _arguments = arguments;
 
             mapObj(obj, function (value, key) {
-                var old = _this6[key];
+                var old = _this7[key];
                 if (!old) {
-                    _this6[key] = value;
+                    _this7[key] = value;
                     return;
                 }
 
                 if (D.isFunction(old)) {
-                    _this6[key] = function () {
+                    _this7[key] = function () {
                         var args = slice.call(_arguments);
                         args.unshift(old);
-                        return value.apply(_this6, args);
+                        return value.apply(_this7, args);
                     };
                 }
             });
@@ -572,7 +588,7 @@ D.Renderable = function (_D$Base) {
     function Renderable(name, app, mod, loader, options) {
         _classCallCheck(this, Renderable);
 
-        var _this7 = _possibleConstructorReturn(this, Object.getPrototypeOf(Renderable).call(this, name, options, {
+        var _this8 = _possibleConstructorReturn(this, Object.getPrototypeOf(Renderable).call(this, name, options, {
             app: app,
             module: mod,
             components: {},
@@ -581,22 +597,22 @@ D.Renderable = function (_D$Base) {
             _events: {}
         }));
 
-        _this7._eventHandlers = _this7._option('handlers');
-        _this7._templateEngine = _this7._option('templateEngine') || mod && mod._templateEngine || app._templateEngine;
-        app.delegateEvent(_this7);
-        return _this7;
+        _this8._eventHandlers = _this8._option('handlers');
+        _this8._templateEngine = _this8._option('templateEngine') || mod && mod._templateEngine || app._templateEngine;
+        app.delegateEvent(_this8);
+        return _this8;
     }
 
     _createClass(Renderable, [{
         key: '_initialize',
         value: function _initialize() {
-            var _this8 = this;
+            var _this9 = this;
 
             return this.chain([this._templateEngine._load(this), this._initializeEvents()], function (_ref) {
                 var _ref2 = _slicedToArray(_ref, 1);
 
                 var template = _ref2[0];
-                return _this8._template = template;
+                return _this9._template = template;
             });
         }
     }, {
@@ -617,7 +633,7 @@ D.Renderable = function (_D$Base) {
     }, {
         key: '_render',
         value: function _render() {
-            var _this9 = this;
+            var _this10 = this;
 
             var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
             var update = arguments[1];
@@ -626,13 +642,15 @@ D.Renderable = function (_D$Base) {
 
             this.renderOptions = options;
             return this.chain(this._loadedPromise, this._destroyComponents, function () {
-                return _this9.trigger('beforeRender');
+                return _this10.trigger('beforeRender');
             }, function () {
-                return _this9._option('beforeRender');
-            }, this._beforeRender, this._serializeData, this._renderTemplate, this._renderComponents, this._afterRender, function () {
-                return _this9._option('afterRender');
+                return _this10._option('beforeRender');
+            }, this._beforeRender, this._serializeData, function (data) {
+                return _this10._renderTemplate(data, update);
+            }, this._renderComponents, this._afterRender, function () {
+                return _this10._option('afterRender');
             }, function () {
-                return _this9.trigger('afterRender');
+                return _this10.trigger('afterRender');
             }, this);
         }
     }, {
@@ -644,22 +662,22 @@ D.Renderable = function (_D$Base) {
     }, {
         key: '_close',
         value: function _close() {
-            var _this10 = this;
+            var _this11 = this;
 
             if (!this._region) return this.Promise.resolve(this);
 
             return this.chain(function () {
-                return _this10.trigger('beforeClose');
+                return _this11.trigger('beforeClose');
             }, function () {
-                return _this10._option('beforeClose');
+                return _this11._option('beforeClose');
             }, this._beforeClose, [this._unbindEvents, this.destroyComponents, function () {
-                return _this10._region._empty(_this10);
+                return _this11._region._empty(_this11);
             }], this._afterClose, function () {
-                return _this10._option('afterClose');
+                return _this11._option('afterClose');
             }, function () {
-                return _this10.trigger('afterClose');
+                return _this11.trigger('afterClose');
             }, function () {
-                return delete _this10._region;
+                return delete _this11._region;
             }, this);
         }
     }, {
@@ -672,58 +690,58 @@ D.Renderable = function (_D$Base) {
         }
     }, {
         key: '_renderTemplate',
-        value: function _renderTemplate(data) {
-            this._templateEngine._execute(this, data, this._template);
+        value: function _renderTemplate(data, update) {
+            this._templateEngine._execute(this, data, this._template, update);
         }
     }, {
         key: '_initializeEvents',
         value: function _initializeEvents(events) {
-            var _this11 = this;
+            var _this12 = this;
 
             mapObj(events || this._option('events'), function (value, key) {
                 var items = key.replace(/(^\s+)|(\s+$)/g, '').split(/\s+/),
                     result = { key: key };
 
-                if (items.length !== 2) _this11._error('Invalid event key');
+                if (items.length !== 2) _this12._error('Invalid event key');
                 result.eventType = items[0];
                 if (items[1].slice(-1) === '*') {
-                    result.id = _this11._wrapDomId(items[1].slice(0, -1));
+                    result.id = _this12._wrapDomId(items[1].slice(0, -1));
                     result.haveStar = true;
                     result.selector = '[id^=' + result.id + ']';
                 } else {
-                    result.id = _this11._wrapDomId(items[1]);
+                    result.id = _this12._wrapDomId(items[1]);
                     result.selector = '#' + result.id;
                 }
-                result.handler = _this11._createEventHandler(value, result);
-                _this11._events[key] = result;
+                result.handler = _this12._createEventHandler(value, result);
+                _this12._events[key] = result;
             });
         }
     }, {
         key: '_createEventHandler',
         value: function _createEventHandler(handlerName, _ref3) {
-            var _this12 = this;
+            var _this13 = this;
 
             var haveStar = _ref3.haveStar;
             var id = _ref3.id;
             var disabledClass = this.app.options.disabledClass;
 
             return function (event) {
-                if (!_this12._eventHandlers[handlerName]) _this12._error('No event handler for name:', handlerName);
+                if (!_this13._eventHandlers[handlerName]) _this13._error('No event handler for name:', handlerName);
 
                 var target = D.Adapter.getEventTarget(event),
                     args = [event];
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
-                _this12._eventHandlers[handlerName].apply(_this12, args);
+                _this13._eventHandlers[handlerName].apply(_this13, args);
             };
         }
     }, {
         key: '_bindEvents',
         value: function _bindEvents() {
-            var _this13 = this;
+            var _this14 = this;
 
             mapObj(this._events, function (value) {
-                _this13._region._delegateDomEvent(_this13, value.eventType, value.selector, value.handler);
+                _this14._region._delegateDomEvent(_this14, value.eventType, value.selector, value.handler);
             });
         }
     }, {
@@ -734,30 +752,30 @@ D.Renderable = function (_D$Base) {
     }, {
         key: '_renderComponents',
         value: function _renderComponents() {
-            var _this14 = this;
+            var _this15 = this;
 
             this.chain(map(this._option('components'), function (item) {
-                var i = D.isFunction(item) ? item.call(_this14) : item;
-                return i ? D.ComponentManager.create(_this14, i) : null;
+                var i = D.isFunction(item) ? item.call(_this15) : item;
+                return i ? D.ComponentManager.create(_this15, i) : null;
             }), function (components) {
                 return map(components, function (item) {
                     if (!item) return;
                     var id = item.id;
                     var component = item.component;
-                    var index = item.index;var value = _this14.components[id];
-                    D.isArray(value) ? value.push(component) : _this14.components[id] = value ? [value, component] : component;
-                    _this14._componentMap[index] = item;
+                    var index = item.index;var value = _this15.components[id];
+                    D.isArray(value) ? value.push(component) : _this15.components[id] = value ? [value, component] : component;
+                    _this15._componentMap[index] = item;
                 });
             });
         }
     }, {
         key: '_destroyComponents',
         value: function _destroyComponents() {
-            var _this15 = this;
+            var _this16 = this;
 
             this.components = {};
             mapObj(this._componentMap, function (value) {
-                return D.ComponentManager.destroy(_this15, value);
+                return D.ComponentManager.destroy(_this16, value);
             });
         }
     }, {
@@ -817,18 +835,19 @@ D.RenderableContainer = function (_D$Renderable) {
     }, {
         key: '_initializeItems',
         value: function _initializeItems() {
-            var _this17 = this;
+            var _this18 = this;
 
             this.chain(mapObj(this._option('items'), function () {
                 var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
                 var name = arguments[1];
 
-                var opt = D.isFunction(options) ? options.call(_this17) : options;
+                var opt = D.isFunction(options) ? options.call(_this18) : options;
                 if (D.isString(opt)) opt = { region: opt };
 
-                return _this17.app[options.isModule ? '_createModule' : '_createView'](name, parent).then(function (item) {
-                    item.moduleOptions = options;
-                    _this17._items[name] = item;
+                return _this18.app[options.isModule ? '_createModule' : '_createView'](name, parent).then(function (item) {
+                    var i = item;
+                    i.moduleOptions = options;
+                    _this18._items[name] = item;
                     return item;
                 });
             }));
@@ -836,25 +855,25 @@ D.RenderableContainer = function (_D$Renderable) {
     }, {
         key: '_initializeRegions',
         value: function _initializeRegions() {
-            var _this18 = this;
+            var _this19 = this;
 
             this._regions = {};
             return this.chain(this.closeRegions, map(this.$$('[data-region]'), function (el) {
-                var region = _this18._createRegion(el);
-                _this18._regions[region.name] = region;
+                var region = _this19._createRegion(el);
+                _this19._regions[region.name] = region;
             }));
         }
     }, {
         key: '_renderItems',
         value: function _renderItems() {
-            var _this19 = this;
+            var _this20 = this;
 
             return this.chain(mapObj(this.items, function (item) {
                 var region = item.moduleOptions.region;
 
                 if (!region) return;
-                if (!_this19.regions[region]) _this19.error('Region: ' + region + ' is not defined');
-                _this19.regions[region].show(item);
+                if (!_this20.regions[region]) _this20.error('Region: ' + region + ' is not defined');
+                _this20.regions[region].show(item);
             }), this);
         }
     }, {
@@ -867,11 +886,11 @@ D.RenderableContainer = function (_D$Renderable) {
         key: '_closeRegions',
         value: function _closeRegions() {
             var regions = this._regions;
-            if (!regions) return;
+            if (!regions) return this;
             delete this._regions;
             return this.chain(mapObj(regions, function (region) {
                 return region.close();
-            }));
+            }), this);
         }
     }, {
         key: 'items',
@@ -906,12 +925,13 @@ D.ActionCreator = function (_D$Renderable2) {
     }, {
         key: '_createEventHandler',
         value: function _createEventHandler(name, obj) {
-            return (this._option('actions') || {})[obj.key] ? this._createAction(name) : _get(Object.getPrototypeOf(ActionCreator.prototype), '_createEventHandler', this).call(this, name, obj);
+            var isAction = !!(this._option('actions') || {})[obj.key];
+            return isAction ? this._createAction(name) : _get(Object.getPrototypeOf(ActionCreator.prototype), '_createEventHandler', this).call(this, name, obj);
         }
     }, {
         key: '_createAction',
         value: function _createAction(name) {
-            var _this21 = this;
+            var _this22 = this;
 
             var disabledClass = this.app.options.disabledClass;
 
@@ -928,11 +948,11 @@ D.ActionCreator = function (_D$Renderable2) {
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 D.Adapter.addClass(target, disabledClass);
 
-                var data = _this21._getActionPayload(target);
-                _this21.chain(D.isFunction(dataForAction) ? dataForAction.call(_this21, data, e) : data, function (payload) {
-                    return payload !== false ? _this21.module.dispatch(name, payload) : false;
+                var data = _this22._getActionPayload(target);
+                _this22.chain(D.isFunction(dataForAction) ? dataForAction.call(_this22, data, e) : data, function (payload) {
+                    return payload !== false ? _this22.module.dispatch(name, payload) : false;
                 }, function (result) {
-                    return result !== false ? actionCallback && actionCallback.call(_this21, result) : false;
+                    return result !== false ? actionCallback && actionCallback.call(_this22, result) : false;
                 }).then(function () {
                     return D.Adapter.removeClass(target, disabledClass);
                 }, function () {
@@ -989,27 +1009,27 @@ D.View = function (_D$ActionCreator) {
     }, {
         key: '_initializeDataBinding',
         value: function _initializeDataBinding() {
-            var _this23 = this;
+            var _this24 = this;
 
             this._dataBinding = {};
             mapObj(this._option('bindings'), function (value, key) {
-                var model = _this23.bindings[key] = _this23.module.store[key];
-                if (!model) _this23._error('No model:', key);
+                var model = _this24.bindings[key] = _this24.module.store[key];
+                if (!model) _this24._error('No model:', key);
 
                 if (!value) return;
-                _this23._dataBinding[key] = { model: model, value: value, fn: function fn() {
-                        if (value === true && _this23._region) _this23.render(_this23.renderOptions);
-                        if (D.isString(value)) _this23._option(value);
+                _this24._dataBinding[key] = { model: model, value: value, fn: function fn() {
+                        if (value === true && _this24._region) _this24.render(_this24.renderOptions);
+                        if (D.isString(value)) _this24._option(value);
                     } };
             });
         }
     }, {
         key: '_bindData',
         value: function _bindData() {
-            var _this24 = this;
+            var _this25 = this;
 
             mapObj(this._dataBinding, function (value) {
-                return _this24.listenTo(value.model, 'change', value.fn);
+                return _this25.listenTo(value.model, 'change', value.fn);
             });
         }
     }, {
@@ -1044,14 +1064,14 @@ D.View = function (_D$ActionCreator) {
     }, {
         key: '_serializeData',
         value: function _serializeData() {
-            var _this25 = this;
+            var _this26 = this;
 
             var data = _get(Object.getPrototypeOf(View.prototype), '_serializeData', this).call(this);
             mapObj(this.bindings, function (value, key) {
                 return data[key] = value.get(true);
             });
             mapObj(this._option('dataForTemplate'), function (value, key) {
-                return data[key] = value.call(_this25, data);
+                return data[key] = value.call(_this26, data);
             });
             return data;
         }
@@ -1076,6 +1096,11 @@ D.Module = function (_D$RenderableContaine) {
             return _get(Object.getPrototypeOf(Module.prototype), '_initialize', this).call(this);
         }
     }, {
+        key: 'dispatch',
+        value: function dispatch(name, payload) {
+            this._store.dispatch(name, payload);
+        }
+    }, {
         key: '_initializeStore',
         value: function _initializeStore() {
             this._store = this.app._createStore(this, this._option('store'));
@@ -1090,19 +1115,19 @@ D.Module = function (_D$RenderableContaine) {
     }, {
         key: '_beforeRender',
         value: function _beforeRender() {
-            var _this27 = this;
+            var _this28 = this;
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_beforeRender', this).call(this), function () {
-                return _this27._store._loadEagerModels();
+                return _this28._store._loadEagerModels();
             });
         }
     }, {
         key: '_afterRender',
         value: function _afterRender() {
-            var _this28 = this;
+            var _this29 = this;
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_afterRender', this).call(this), function () {
-                return _this28._store._loadLazyModels();
+                return _this29._store._loadLazyModels();
             });
         }
     }, {
@@ -1121,20 +1146,20 @@ D.Region = function (_D$Base2) {
     function Region(mod, el, name) {
         _classCallCheck(this, Region);
 
-        var _this29 = _possibleConstructorReturn(this, Object.getPrototypeOf(Region).call(this, name || 'Region', {
+        var _this30 = _possibleConstructorReturn(this, Object.getPrototypeOf(Region).call(this, name || 'Region', {
             app: mod.app,
             _el: el,
             module: mod
         }));
 
-        if (!_this29._el) _this29.error('The DOM element for region is required');
-        return _this29;
+        if (!_this30._el) _this30.error('The DOM element for region is required');
+        return _this30;
     }
 
     _createClass(Region, [{
         key: 'show',
         value: function show(renderable) {
-            var _this30 = this;
+            var _this31 = this;
 
             var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -1144,20 +1169,21 @@ D.Region = function (_D$Base2) {
             }
 
             return this.chain(D.isString(renderable) ? this.app._createModule(renderable) : renderable, function (item) {
-                if (!(item instanceof D.Renderable)) _this30.error('The item is expected to be an instance of Renderable');
+                if (!(item instanceof D.Renderable)) _this31.error('The item is expected to be an instance of Renderable');
                 return item;
             }, [function (item) {
-                return _this30.chain(item._region && item._region.close(), item);
+                return _this31.chain(item._region && item._region.close(), item);
             }, function () {
-                return _this30.close();
+                return _this31.close();
             }], function (_ref6) {
                 var _ref7 = _slicedToArray(_ref6, 1);
 
                 var item = _ref7[0];
 
-                _this30._current = item;
-                _this30._getElement().setAttribute('data-current', item.module ? item.module.name + ':' + item.name : item.name);
-                return item._setRegion(_this30);
+                _this31._current = item;
+                var attr = item.module ? item.module.name + ':' + item.name : item.name;
+                _this31._getElement().setAttribute('data-current', attr);
+                return item._setRegion(_this31);
             }, function (item) {
                 return item._render(options, false);
             });
@@ -1165,10 +1191,10 @@ D.Region = function (_D$Base2) {
     }, {
         key: 'close',
         value: function close() {
-            var _this31 = this;
+            var _this32 = this;
 
             return this.chain(this._current && this._current.close(), function () {
-                return delete _this31._current;
+                return delete _this32._current;
             }, this);
         }
     }, {
@@ -1241,15 +1267,15 @@ D.Store = function (_D$Base4) {
     function Store(mod, options) {
         _classCallCheck(this, Store);
 
-        var _this33 = _possibleConstructorReturn(this, Object.getPrototypeOf(Store).call(this, 'Store', options, {
+        var _this34 = _possibleConstructorReturn(this, Object.getPrototypeOf(Store).call(this, 'Store', options, {
             app: mod.app,
             module: mod,
             _models: {}
         }));
 
-        _this33._callbacks = _this33._option('callbacks');
-        _this33.app.delegateEvent(_this33);
-        return _this33;
+        _this34._callbacks = _this34._option('callbacks');
+        _this34.app.delegateEvent(_this34);
+        return _this34;
     }
 
     _createClass(Store, [{
@@ -1270,25 +1296,34 @@ D.Store = function (_D$Base4) {
     }, {
         key: '_initialize',
         value: function _initialize() {
+            var _this35 = this;
+
             this._initializeModels();
             this._callbackContext = Object.assign({
                 models: this.models,
                 module: this.module,
                 app: this.app
             }, D.Request);
+
+            mapObj(this._callbacks, function (value, key) {
+                if (key.slice(0, 4) !== 'app.') return;
+                _this35.listenTo(_this35.app, key, function (payload) {
+                    return value.call(_this35._callbackContext, payload);
+                });
+            });
         }
     }, {
         key: '_initializeModels',
         value: function _initializeModels() {
-            var _this34 = this;
+            var _this36 = this;
 
             mapObj(this._option('models'), function (value, key) {
-                var v = (D.isFunction(value) ? value.call(_this34) : v) || {};
+                var v = (D.isFunction(value) ? value.call(_this36) : v) || {};
                 if (v.shared === true) {
-                    _this34._models[key] = _this34.app.viewport.store[key];
+                    _this36._models[key] = _this36.app.viewport.store[key];
                     return;
                 }
-                _this34._models[key] = _this34.app._createModel(_this34, v);
+                _this36._models[key] = _this36.app._createModel(_this36, v);
             });
         }
     }, {
@@ -1328,17 +1363,17 @@ D.Model = function (_D$Base5) {
     function Model(store, options) {
         _classCallCheck(this, Model);
 
-        var _this35 = _possibleConstructorReturn(this, Object.getPrototypeOf(Model).call(this, 'Model', options, {
+        var _this37 = _possibleConstructorReturn(this, Object.getPrototypeOf(Model).call(this, 'Model', options, {
             app: store.module.app,
             module: store.module,
             store: store
         }));
 
-        _this35._data = _this35._option('data') || {};
-        _this35._idKey = _this35._option('idKey') || _this35.app.options.idKey;
-        _this35._params = Object.assign({}, _this35._option('params'));
-        _this35.app.delegateEvent(_this35);
-        return _this35;
+        _this37._data = _this37._option('data') || {};
+        _this37._idKey = _this37._option('idKey') || _this37.app.options.idKey;
+        _this37._params = Object.assign({}, _this37._option('params'));
+        _this37.app.delegateEvent(_this37);
+        return _this37;
     }
 
     _createClass(Model, [{
@@ -1415,7 +1450,7 @@ D.Loader = function (_D$Base6) {
     _createClass(Loader, [{
         key: 'loadResource',
         value: function loadResource(path) {
-            var _this37 = this;
+            var _this39 = this;
 
             var _app$options = this.app.options;
             var scriptRoot = _app$options.scriptRoot;
@@ -1431,7 +1466,7 @@ D.Loader = function (_D$Base6) {
                         return reject(e);
                     });
                 } else if (getResource) {
-                    resolve(getResource.call(_this37.app, fullPath));
+                    resolve(getResource.call(_this39.app, fullPath));
                 } else {
                     resolve(require('./' + fullPath));
                 }
@@ -1515,12 +1550,40 @@ D.Application = function (_D$Base7) {
         }
     }, {
         key: 'start',
-        value: function start(defaultRouter) {
-            var _this39 = this;
+        value: function start(defaultHash) {
+            var _this41 = this;
 
-            return this.chain(this._region.show(this._option('viewport')), function (viewport) {
-                return _this39.viewport = viewport;
-            });
+            if (defaultHash) this._router = new D.Router(this);
+
+            return this.chain(defaultHash ? this._router._mountRoutes(this._option('routers')) : false, this._region.show(this._option('viewport')), function (viewport) {
+                return _this41.viewport = viewport;
+            }, function () {
+                return defaultHash && _this41._router._start(defaultHash);
+            }, this);
+        }
+    }, {
+        key: 'stop',
+        value: function stop() {
+            this.off();
+            this._region.close();
+        }
+    }, {
+        key: 'navigate',
+        value: function navigate(hash, trigger) {
+            if (!this._router) return;
+            this._router.navigate(hash, trigger);
+        }
+    }, {
+        key: 'dispatch',
+        value: function dispatch(name, payload) {
+            var n = D.isObject(name) ? name.name : name,
+                p = D.isObject(name) ? name.payload : payload;
+            this.trigger('app.' + n, p);
+        }
+    }, {
+        key: 'show',
+        value: function show(region, moduleName, options) {
+            this.viewport.regions[region].show(moduleName, options);
         }
     }, {
         key: '_getLoader',
@@ -1530,7 +1593,7 @@ D.Application = function (_D$Base7) {
     }, {
         key: '_createModule',
         value: function _createModule(name, parent) {
-            var _this40 = this;
+            var _this42 = this;
 
             var _D$Loader$_analyse = D.Loader._analyse(name);
 
@@ -1541,13 +1604,13 @@ D.Application = function (_D$Base7) {
             return this.chain(loader.loadModule(moduleName), function () {
                 var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-                return typeCache.createModule(options.type, moduleName, _this40, parent, loader, options);
+                return typeCache.createModule(options.type, moduleName, _this42, parent, loader, options);
             });
         }
     }, {
         key: '_createView',
         value: function _createView(name, mod) {
-            var _this41 = this;
+            var _this43 = this;
 
             var _D$Loader$_analyse2 = D.Loader._analyse(name);
 
@@ -1558,7 +1621,7 @@ D.Application = function (_D$Base7) {
             return this.chain(loader.loadView(viewName, mod), function () {
                 var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-                return typeCache.createView(options.type, viewName, _this41, mod, loader, options);
+                return typeCache.createView(options.type, viewName, _this43, mod, loader, options);
             });
         }
     }, {
@@ -1619,7 +1682,7 @@ var Route = function () {
         key: 'handle',
         value: function handle(hash) {
             var _router,
-                _this42 = this;
+                _this44 = this;
 
             this.pattern.lastIndex = 0;
             var args = this.pattern.exec(hash).slice(1),
@@ -1628,7 +1691,7 @@ var Route = function () {
             handlers.push(this.fn);
             return (_router = this.router).chain.apply(_router, _toConsumableArray(map(handlers, function (fn, i) {
                 return function (prev) {
-                    return fn.apply(_this42.router, i > 0 ? [prev].concat(args) : args);
+                    return fn.apply(_this44.router, i > 0 ? [prev].concat(args) : args);
                 };
             })));
         }
@@ -1643,17 +1706,108 @@ D.Router = function (_D$Base8) {
     function Router(app) {
         _classCallCheck(this, Router);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(Router).call(this, 'Router', {}, {
+        var _this45 = _possibleConstructorReturn(this, Object.getPrototypeOf(Router).call(this, 'Router', {}, {
             app: app,
             _routes: [],
-            _routeMap: {},
-            _interceptors: {}
+            _interceptors: {},
+            _started: false
         }));
+
+        _this45._EVENT_HANDLER = function () {
+            return _this45._dispath(_this45._getHash());
+        };
+        return _this45;
     }
 
     _createClass(Router, [{
-        key: '_initialize',
-        value: function _initialize() {}
+        key: 'navigate',
+        value: function navigate(path, trigger) {
+            if (PUSH_STATE_SUPPORTED) {
+                root.history.pushState({}, root.document.title, '#' + path);
+            } else {
+                root.location.replace('#' + path);
+            }
+
+            if (trigger !== false) this._dispath(path);
+        }
+    }, {
+        key: '_start',
+        value: function _start(defaultPath) {
+            if (this._started) return;
+            D.Adapter.addEventListener(root, 'hashchange', this._EVENT_HANDLER, false);
+
+            var hash = this._getHash() || defaultPath;
+            if (hash) this.navigate(hash);
+            this._started = true;
+        }
+    }, {
+        key: '_stop',
+        value: function _stop() {
+            D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
+            this._started = false;
+        }
+    }, {
+        key: '_dispath',
+        value: function _dispath(path) {
+            if (path === this._previousHash) return;
+            this._previousHash = path;
+
+            for (var i = 0; i < this.routes.length; i++) {
+                var route = this.routes[i];
+                if (route.match(path)) {
+                    route.handle(path);
+                    return;
+                }
+            }
+        }
+    }, {
+        key: '_mountRoutes',
+        value: function _mountRoutes() {
+            var _this46 = this;
+
+            var paths = slice.call(arguments);
+            return this.chain(map(paths, function (path) {
+                return _this46.app._getLoader(path).loadRouter(path);
+            }), function (options) {
+                return map(options, function (option, i) {
+                    return _this46._addRoute(paths[i], option);
+                });
+            });
+        }
+    }, {
+        key: '_addRoute',
+        value: function _addRoute(path, options) {
+            var _this47 = this;
+
+            var routes = options.routes;
+            var interceptors = options.interceptors;
+
+            mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
+                var p = (path + key).replace(/^\/|\/$/g, '');
+                _this47._routes.unshift(new Route(_this47.app, _this47, p, options[value]));
+            });
+
+            mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, function (value, key) {
+                var p = (path + key).replace(/^\/|\/$/g, '');
+                _this47._interceptors[p] = options[value];
+            });
+        }
+    }, {
+        key: '_getInterceptors',
+        value: function _getInterceptors(path) {
+            var result = [],
+                items = path.split('/');
+
+            items.pop();
+            while (items.length > 0) {
+                var key = items.join('/');
+                if (this._interceptors[key]) result.unshift(this._interceptors[key]);
+                items.pop();
+            }
+
+            if (this.interceptors['']) result.unshift(this.interceptors['']);
+            return result;
+        }
     }, {
         key: '_getHash',
         value: function _getHash() {

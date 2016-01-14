@@ -21,7 +21,7 @@ var banner =
 ' */\n\n';
 
 var trimTrailingSpaces = function(file, cb) {
-    file.contents = new Buffer(String(file.contents).replace(/[ \t]+\n/g, '\n'));
+    file.contents = new Buffer(String(file.contents).replace(/[ \t]+\n/g, '\n').replace(/\n+$/g, '\n'));
     cb(null, file);
 }
 

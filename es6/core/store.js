@@ -30,6 +30,11 @@ D.Store = class Store extends D.Base {
             module: this.module,
             app: this.app
         }, D.Request);
+
+        mapObj(this._callbacks, (value, key) => {
+            if (key.slice(0, 4) !== 'app.') return;
+            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+        });
     }
 
     _initializeModels () {
