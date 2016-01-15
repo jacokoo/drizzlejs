@@ -28,17 +28,23 @@ var trimTrailingSpaces = function(file, cb) {
 gulp.task('clean', function(cb) { del(['dist'], cb) });
 
 gulp.task('build', ['clean'], function() {
-    return gulp.src('es6/drizzle.js')
+    return gulp.src('src/drizzle.js')
         .pipe(preprocess())
-        .pipe(header(banner))
         .pipe(map(trimTrailingSpaces))
         .pipe(eslint())
         .pipe(eslint.format())
+        .pipe(rename('drizzle.combined.js'))
+        .pipe(gulp.dest('src'))
+        .pipe(rename('drizzle.js'))
         .pipe(babel({presets: ['es2015']}))
         .pipe(umd({exports: function() { return 'Drizzle';}}))
+        .pipe(header(banner))
         .pipe(gulp.dest('dist'))
         .pipe(rename('drizzle.min.js'))
-        .pipe(uglify({ preserveComments: 'some' }))
+        .pipe(uglify({
+            preserveComments: 'license',
+            output: { max_line_len: 500, ascii_only: true }
+        }))
         .pipe(sourcemaps.init())
         .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest('dist'));

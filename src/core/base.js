@@ -1,42 +1,46 @@
-Base = D.Base = function(idPrefix, options) {
-    this.options = options || {};
-    this.id = D.uniqueId(idPrefix);
-    this.Promise = new Promise(this);
-    this.initialize();
-};
+D.Base = class Base {
+    constructor (name, options = {}, defaults) {
+        this.options = options;
+        this.id = D.uniqueId('D');
+        this.name = name;
+        this.Promise = new D.Promise(this);
 
-assign(Base.prototype, {
-    initialize: FN,
+        Object.assign(this, defaults);
+        if (options.mixin) this._mixin(options.mixin);
+        this._loadedPromise = this._initialize();
+    }
 
-    option: function(key) {
-        var value = this.options[key];
-        return D.isFunction(value) ? value.apply(this, slice.call(arguments, 1)) : value;
-    },
+    _initialize () {
+    }
 
-    error: function(message) {
-        var msg;
+    _option (key, ...args) {
+        const value = this.options[key];
+        return D.isFunction(value) ? value.apply(this, args) : value;
+    }
+
+    _error (message, ...rest) {
         if (!D.isString(message)) throw message;
+        throw new Error(`[${this.module ? this.module.name + ':' : ''}${this.name}] ${message} ${rest.join(' ')}`);
+    }
 
-        msg = this.module ? ['[', this.module.name, ':'] : ['['];
-        msg = msg.concat([this.name, '] ', message]);
-        throw new Error(msg.join(''));
-    },
+    _mixin (obj) {
+        mapObj(obj, (value, key) => {
+            const old = this[key];
+            if (!old) {
+                this[key] = value;
+                return;
+            }
 
-    mixin: function(mixins) {
-        var me = this;
-        if (!mixins) return;
-        mapObj(mixins, function(value, key) {
-            var old;
-            if (!me[key]) {
-                me[key] = value;
-            } else if (D.isFunction(value)) {
-                old = me[key];
-                me[key] = function () {
-                    var args = slice.call(arguments);
+            if (D.isFunction(old)) {
+                this[key] = (...args) => {
                     args.unshift(old);
-                    return value.apply(me, args);
-                }
+                    return value.apply(this, args);
+                };
             }
         });
     }
-});
+
+    chain (...args) {
+        return this.Promise.chain(...args);
+    }
+};

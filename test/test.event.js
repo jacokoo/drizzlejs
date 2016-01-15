@@ -4,7 +4,7 @@ describe('Event', function() {
         var app;
 
         beforeEach(function() {
-            app = Drizzle.assign({}, Drizzle.Event);
+            app = Object.assign({}, Drizzle.Event);
         });
 
         it('should be triggered', function() {
@@ -14,9 +14,9 @@ describe('Event', function() {
             };
             app.on('a', h);
 
-            expect(app.events).to.have.key('a')
-            expect(app.events.a).to.have.length(1).is.an.array;
-            expect(app.events.a[0].fn).to.equal(h);
+            expect(app._events).to.have.key('a')
+            expect(app._events.a).to.have.length(1).is.an.array;
+            expect(app._events.a[0].fn).to.equal(h);
 
             app.trigger('a', 1);
             app.trigger('a', 1);
@@ -59,10 +59,10 @@ describe('Event', function() {
             app.trigger('b');
             expect(i).to.equal(3);
 
-            app.off('a', h, ctx);
+            app.off('a', h, ctx);   // context don't matter anything
             app.trigger('a');
             app.trigger('b')
-            expect(i).to.equal(5);
+            expect(i).to.equal(4);
         });
 
         it('should be detached(listener)', function() {
@@ -109,7 +109,7 @@ describe('Event', function() {
         var app, target, target2;
 
         beforeEach(function() {
-            app = Drizzle.assign({}, Drizzle.Event);
+            app = Object.assign({}, Drizzle.Event);
             target = { id: 't1', name: 'target'};
             target2 = { id: 't2', name: 'target2'};
             app.delegateEvent(target);
@@ -123,8 +123,8 @@ describe('Event', function() {
             };
 
             target.on('a', h);
-            expect(app.events).to.have.key('a--t1');
-            expect(app.events['a--t1'][0].fn).to.equal(h);
+            expect(app._events).to.have.key('a--t1');
+            expect(app._events['a--t1'][0].fn).to.equal(h);
 
             target.trigger('a');
             expect(i).to.equal(1);

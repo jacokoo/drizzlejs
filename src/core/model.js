@@ -1,51 +1,41 @@
-Model = D.Model = function(app, module, options) {
-    this.app = app;
-    this.module = module;
-    options || (options = {});
-    this.idKey = options.idKey || app.options.idKey;
-    this.params = assign({}, options.params);
+D.Model = class Model extends D.Base {
+    constructor (store, options) {
+        super('Model', options, {
+            app: store.module.app,
+            module: store.module,
+            store
+        });
 
-    parent(Model).call(this, 'D', options);
-    this.app.delegateEvent(this);
-};
-
-extend(Model, Base, {
-    initialize: function() {
-        this.data = this.options.data || {};
-    },
-
-    url: function() {
-        return this.option('url') || '';
-    },
-
-    getFullUrl: function() {
-        return Request.url(this);
-    },
-
-    getParams: function() {
-        return assign({}, this.params);
-    },
-
-    set: function(data, trigger) {
-        var parse = this.options.parse,
-            d = D.isFunction(parse) ? parse.call(this, data) : data;
-
-        this.data = this.options.root ? d[this.options.root] : d;
-        if (trigger) this.changed();
-        return this;
-    },
-
-    get: function(cloneIt) {
-        return cloneIt ? clone(this.data) : this.data;
-    },
-
-    changed: function() { this.trigger('change'); },
-
-    clear: function(trigger) {
-        this.data = D.isArray(this.data) ? [] : {};
-        if (trigger) this.changed();
-        return this;
+        this._data = this._option('data') || {};
+        this._idKey = this._option('idKey') || this.app.options.idKey;
+        this._params = Object.assign({}, this._option('params'));
+        this.app.delegateEvent(this);
     }
-});
 
-assign(Model, Factory);
+    get fullUrl () { return D.Request._url(this); }
+
+    get params () { return this._params; }
+
+    get data () { return this._data; }
+
+    set (data, trigger) {
+        const d = this.options.parse ? this._option('parse', data) : data;
+        this._data = this.options.root ? d[this.options.root] : d;
+        if (trigger) this.changed();
+    }
+
+    get (cloneIt) {
+        return cloneIt ? clone(this._data) : this._data;
+    }
+
+    clear (trigger) {
+        this._data = D.isArray(this._data) ? [] : {};
+        if (trigger) this.changed();
+    }
+
+    changed () { this.trigger('changed'); }
+
+    _url () {
+        return this._option('url') || '';
+    }
+};

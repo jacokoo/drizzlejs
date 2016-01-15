@@ -19,37 +19,7 @@ D.adapt({
 window.app = app = new D.Application({
     defaultRegion: document.getElementById('content'),
     urlRoot: 'api',
-    routers: [''],
-    templateEngine: new D.TemplateEngine({
-        loadModule: function(mod) {
-            return mod._loader.loadModuleResource(mod, 'templates');
-        },
-
-        loadView: function(view) {
-            return function() { return view.module._template; };
-        },
-
-        executeModule: function(mod, data, el, template) {
-            el.innerHTML = template(data);
-            this.executeIdReplacement(el, mod);
-        },
-
-        executeView: function(view, data, el, template) {
-            el.innerHTML = template(data);
-            this.executeIdReplacement(el, view);
-        }
-    })
+    routers: ['']
 });
 
 app.start('todos');
-
-/*
-
-virtual dom support via diff-dom
-
-var diffDom = require('diff-dom');
-var dd = new diffDom();
-D.View.prototype.updateDom = function() {
-    dd.apply(this.getEl(), dd.diff(this.getEl(), this.virtualEl));
-}
-*/

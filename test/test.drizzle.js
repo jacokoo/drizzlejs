@@ -40,43 +40,9 @@ describe('Drizzle', function() {
         expect(d.uniqueId('hello')).to.equal('hello' + (Number(id) + 2));
     });
 
-    it('#assign', function() {
-        var a = {}, tmp;
-        expect(d.assign(null, {a: 1})).to.be.null;
-        expect(d.assign({}, {a: 1, b: 2}, {c: 3})).to.deep.equal({a: 1, b: 2, c: 3});
-        expect(d.assign(a)).to.equal(a).and.not.have.keys;
-        expect(d.assign(a, {a: 1})).to.equal(a).and.deep.equal({a: 1});
-
-        tmp = Array.prototype.map;
-        Array.prototype.map = null;
-        expect(d.assign({}, {a: 1}, {b: 2})).to.deep.equal({a: 1, b: 2});
-        Array.prototype.map = tmp;
+    it('#adapter', function() {
+        var h = function() {};
+        Drizzle.adapt({ h: h});
+        expect(Drizzle.Adapter.h).to.equal(h);
     });
-
-    it('#extend', function() {
-        var A = function(firstname) {
-            this.a = 'a'
-            this.firstname = firstname;
-        }, B = function(firstname, lastname) {
-            this.b = 'b';
-            this.lastname = lastname;
-            B.__super__.constructor.call(this, firstname);
-        }, b;
-
-        A.echo = function() { return 'static a'; };
-        A.prototype.echo = function() {return this.a;};
-
-        d.extend(B, A, {
-            hello: function() {return 'hello ' + this.firstname + this.lastname},
-            echo: function() {return this.b}
-        });
-
-        b = new B('jaco', 'koo');
-        expect(b.a).to.equal('a');
-        expect(b.b).to.equal('b');
-        expect(b.hello()).to.equal('hello jacokoo');
-        expect(b.echo()).to.equal('b');
-        expect(B.echo()).to.equal('static a');
-    });
-
 });

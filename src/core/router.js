@@ -1,137 +1,126 @@
-(function() {
-    var pushStateSupported = root.history && ('pushState' in root.history),
-        routerRegexps = [
-            /:([\w\d]+)/g, '([^\/]+)',
-            /\*([\w\d]+)/g, '(.*)'
-        ], Route;
+const PUSH_STATE_SUPPORTED = root && root.history && ('pushState' in root.history);
+const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
+class Route {
+    constructor (app, router, path, fn) {
+        const pattern = path
+            .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
+            .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
 
-    Route = function(app, router, path, fn) {
-        var pattern = path.replace(routerRegexps[0], routerRegexps[1])
-            .replace(routerRegexps[2], routerRegexps[3]);
-        this.pattern = new RegExp('^' + pattern + '$', app.options.caseSensitiveHash ? 'g' : 'gi');
+        this.pattern = new RegExp(`^${pattern}$`, app.options.caseSensitiveHash ? 'g' : 'gi');
 
         this.app = app;
         this.router = router;
         this.path = path;
         this.fn = fn;
-    };
+    }
 
-    assign(Route.prototype, {
-        match: function(hash) {
-            this.pattern.lastIndex = 0;
-            return this.pattern.test(hash);
-        },
+    match (hash) {
+        this.pattern.lastIndex = 0;
+        return this.pattern.test(hash);
+    }
 
-        handle: function(hash) {
-            var me = this, p = me.router.Promise, args, handlers;
-            me.pattern.lastIndex = 0;
-            args = me.pattern.exec(hash).slice(1);
+    handle (hash) {
+        this.pattern.lastIndex = 0;
+        const args = this.pattern.exec(hash).slice(1),
+            handlers = this.router._getInterceptors(this.path);
 
-            handlers = me.router.getInterceptors(me.path);
-            handlers.push(me.fn);
+        handlers.push(this.fn);
+        return this.router.chain(...map(handlers, (fn, i) => {
+            return (prev) => fn.apply(this.router, (i > 0 ? [prev].concat(args) : args));
+        }));
+    }
+}
 
-            return p.chain.apply(p, map(handlers, function(route, i) {
-                return function(prev) {
-                    return route.apply(me.router, (i > 0 ? [prev].concat(args) : args));
-                };
-            }));
+D.Router = class Router extends D.Base {
+    constructor (app) {
+        super('Router', {}, {
+            app,
+            _routes: [],
+            _interceptors: {},
+            _started: false
+        });
+
+        this._EVENT_HANDLER = () => this._dispath(this._getHash());
+    }
+
+    navigate (path, trigger) {
+        if (!this._started) return;
+        if (PUSH_STATE_SUPPORTED) {
+            root.history.pushState({}, root.document.title, '#' + path);
+        } else {
+            root.location.replace('#' + path);
         }
-    });
 
-    Router = D.Router = function(app) {
-        this.app = app;
-        this.routes = [];
-        this.routeMap = {};
-        this.interceptors = {};
-        this.started = false;
-        parent(Router).call(this, 'R');
-    };
+        if (trigger !== false) this._dispath(path);
+    }
 
-    extend(Router, Base, {
-        initialize: function() {
-            this.addRoute('/', this.app.options.defaultRouter || {});
-        },
+    _start (defaultPath) {
+        if (this._started || !root) return;
+        D.Adapter.addEventListener(root, 'hashchange', this._EVENT_HANDLER, false);
 
-        getHash: function() {
-            return root.location.hash.slice(1);
-        },
+        const hash = this._getHash() || defaultPath;
+        this._started = true;
+        if (hash) this.navigate(hash);
+    }
 
-        start: function(defaultPath) {
-            var key, me = this, hash;
-            if (me.started) return;
-            key = 'hashchange.dr';
+    _stop () {
+        if (!this._started) return;
+        D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
+        this._started = false;
+    }
 
-            Adapter.delegateDomEvent(root, key, null, function() { me.dispatch(me.getHash()); });
-            hash = me.getHash() || defaultPath;
-            if (hash) me.navigate(hash);
-            me.started = true;
-        },
+    _dispath (path) {
+        if (path === this._previousHash) return;
+        this._previousHash = path;
 
-        stop: function() {
-            Adapter.undelegateDomEvents(root, '.dr');
-        },
-
-        dispatch: function(hash) {
-            var i, route;
-            if (hash === this.previousHash) return;
-            this.previousHash = hash;
-
-            for (i = 0; i < this.routes.length; i++) {
-                route = this.routes[i];
-                if (route.match(hash)) {
-                    route.handle(hash);
-                    return;
-                }
+        for (let i = 0; i < this._routes.length; i++) {
+            const route = this._routes[i];
+            if (route.match(path)) {
+                route.handle(path);
+                return;
             }
-        },
+        }
+    }
 
-        navigate: function(path, trigger) {
-            trigger = trigger !== false;
-            if (pushStateSupported) {
-                root.history.pushState({}, root.document.title, '#' + path);
-            } else {
-                root.location.replace('#' + path);
-            }
+    _mountRoutes () {
+        const paths = slice.call(arguments);
+        return this.chain(
+            map(paths, (path) => this.app._getLoader(path).loadRouter(path)),
+            (options) => map(options, (option, i) => this._addRoute(paths[i], option))
+        );
+    }
 
-            if (trigger) this.dispatch(path);
-        },
+    _addRoute (path, options) {
+        const { routes, interceptors } = options;
 
-        mountRoutes: function() {
-            var paths = slice.call(arguments), me = this;
-            return chain(me, map(paths, function(path) {
-                return me.app.getLoader(path).loadRouter(path);
-            }), function(routers) {
-                map(routers, function(router, i) { me.addRoute(paths[i], router); });
-            }, this);
-        },
+        mapObj(D.isFunction(routes) ? routes.apply(this) : routes, (value, key) => {
+            const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
+            this._routes.unshift(new Route(this.app, this, p, options[value]));
+        });
 
-        addRoute: function(path, router) {
-            var routes = router.routes, interceptors = router.interceptors;
-            if (D.isFunction(routes)) routes = routes.call(this);
-            if (D.isFunction(interceptors)) interceptors = interceptors.call(this);
+        mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, (value, key) => {
+            const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
+            this._interceptors[p] = options[value];
+        });
+    }
 
-            mapObj(interceptors, function(value, key) {
-                this.interceptors[compose(path, key)] = router[value];
-            }, this);
+    _getInterceptors (path) {
+        const result = [], items = path.split('/');
 
-            mapObj(routes, function(value, key) {
-                this.routes.unshift(new Route(this.app, this, compose(path, key), router[value]));
-            }, this);
-        },
-
-        getInterceptors: function(path) {
-            var result = [], items = path.split('/'), key;
-
+        items.pop();
+        while (items.length > 0) {
+            const key = items.join('/');
+            if (this._interceptors[key]) result.unshift(this._interceptors[key]);
             items.pop();
-            while (items.length > 0) {
-                key = items.join('/');
-                if (this.interceptors[key]) result.unshift(this.interceptors[key]);
-                items.pop();
-            }
-
-            if (this.interceptors['']) result.unshift(this.interceptors['']);
-            return result;
         }
-    });
-})();
+
+        if (this._interceptors['']) result.unshift(this._interceptors['']);
+        return result;
+    }
+
+    _getHash () {
+        return root.location.hash.slice(1);
+    }
+
+};

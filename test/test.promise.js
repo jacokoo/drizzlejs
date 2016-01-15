@@ -48,24 +48,40 @@ describe('Promise', function() {
         });
     });
 
-    describe('#when', function() {
-        it('should return a resolved thenable object', function(done) {
-            var p = promise.when(1);
-            expect(p.then).to.be.a.function;
-            p.then(function(obj) {
-                expect(obj).to.equal(1);
-                done()
+    describe('#parallel', function() {
+        it('should receive same arguments', function(done) {
+            promise.parallel([function(a, b) {
+                expect(this).to.equal(context);
+                expect(a).to.equal(1);
+                expect(b).to.equal(2);
+                return 3;
+            }, function(a, b) {
+                expect(this).to.equal(context);
+                expect(a).to.equal(1);
+                expect(b).to.equal(2);
+                return 4;
+            }], 1, 2).then(function(args) {
+                expect(args.length).to.equal(2);
+                expect(args[0]).to.equal(3);
+                expect(args[1]).to.equal(4);
+                done();
             });
         });
 
-        it('the function should be called', function(done) {
-            promise.when(function(obj) {
-                expect(obj).to.equal('a');
-                expect(this).to.equal(context);
-                expect(this.hello()).to.equal('hello jaco');
-                return 'returned'
-            }, 'a').then(function(obj) {
-                expect(obj).to.equal('returned');
+        it('should be resolved after all the items are resovled', function(done) {
+            var a = delay(200, 1), b = delay(400, 2);
+            promise.parallel([a, b]).then(function(args) {
+                expect(args).to.have.length(2);
+                expect(args[0]).to.equal(1);
+                expect(args[1]).to.equal(2);
+
+                done();
+            });
+        });
+
+        it('should be interupted', function(done) {
+            promise.parallel([delay(200, 1), promise.reject(2)]).then(null, function(args) {
+                expect(args).to.equal(2);
                 done();
             });
         });
@@ -94,7 +110,7 @@ describe('Promise', function() {
             });
         });
 
-        it('not thenable objects will pass through directly', function(done) {
+        it('none thenable objects will pass through directly', function(done) {
             promise.chain(1).then(function(obj) {
                 expect(obj).to.equal(1);
             });

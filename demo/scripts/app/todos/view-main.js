@@ -1,5 +1,4 @@
-var _ = require('lodash/collection'),
-    $ = require('jquery');
+var _ = require('lodash/collection');
 
 exports.bindings = {
     todos: true
@@ -12,11 +11,11 @@ exports.events = {
 
 exports.handlers = {
     showEdit: function(id, e) {
-        $(e.target).closest('li').addClass('editing');
+        e.target.parentNode.parentNode.classList.add('editing');
         this.$('input-' + id).focus();
     },
     cancelEdit: function(id, e) {
-        $(e.target).closest('li').removeClass('editing');
+        e.target.parentNode.parentNode.classList.remove('editing');
     }
 };
 
@@ -43,7 +42,7 @@ exports.actions = {
     'keypress input-*': 'updateTodo'
 };
 
-exports. dataForActions = {
+exports.dataForActions = {
     completeTodo: function(data, e) {
         data.completed = e.target.checked;
         return data;

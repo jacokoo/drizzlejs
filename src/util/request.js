@@ -1,74 +1,58 @@
-Request = D.Request = {
-    url: function(model) {
-        var options = model.app.options,
-            base = model.url(),
-            urlRoot = model.app.option('urlRoot', model) || '',
-            urls = [], matches, protocol = '';
+D.Request = {
+    get (model, options) {
+        return this._ajax('GET', model, model.params, options);
+    },
 
-        matches = urlRoot.match(/^(https?:\/\/)(.*)$/);
-        if (matches) {
-            protocol = matches[1];
-            urlRoot = matches[2];
-        }
-        urls.push(urlRoot);
+    post (model, options) {
+        return this._ajax('POST', model, model.data, options);
+    },
 
-        if (model.module.options.urlPrefix) {
-            urls.push(model.module.options.urlPrefix);
-        }
+    put (model, options) {
+        return this._ajax('PUT', model, model.data, options);
+    },
 
-        urls.push(model.module.name);
+    del (model, options) {
+        return this._ajax('DELETE', model, model.data, options);
+    },
+
+    save (model, options) {
+        return model.data && model.data[model._idKey] ? this.put(model, options) : this.post(model, options);
+    },
+
+    _url (model) {
+        const parts = [],
+            prefix = model.module._option('urlPrefix', model) || '',
+            urlRoot = model.app._option('urlRoot', model) || '',
+            urlSuffix = model.app._option('urlSuffix', model) || '';
+        let base = model._url() || '';
+
+        urlRoot && parts.push(urlRoot);
+        prefix && parts.push(prefix);
+        parts.push(model.module.name);
 
         while (base.indexOf('../') === 0) {
-            urls.pop();
+            parts.pop();
             base = base.slice(3);
         }
-        if (base) urls.push(base);
 
-        if (model.data && model.data[model.idKey]) urls.push(model.data[model.idKey]);
+        base && parts.push(base);
+        model.data && model.data[model._idKey] && parts.push(model.data[model._idKey]);
+        urlSuffix && parts.push(parts.pop() + urlSuffix);
 
-        if (options.urlSuffix) {
-            urls.push(urls.pop() + options.urlSuffix);
-        }
-
-        return protocol + compose.apply(null, urls);
+        return parts.join('/');
     },
 
-    get: function(model, options) {
-        return this.ajax({type: 'GET'}, model, model.getParams(), options);
-    },
+    _ajax (method, model, data, options) {
+        const params = Object.assign({ type: method }, options);
 
-    post: function(model, options) {
-        return this.ajax({type: 'POST'}, model, model.data, options);
-    },
+        params.data = Object.assign({}, data, params.data);
+        params.url = this._url(model);
 
-    put: function(model, options) {
-        return this.ajax({type: 'PUT'}, model, model.data, options);
-    },
-
-    del: function(model, options) {
-        return this.ajax({type: 'DELETE'}, model, model.data, options);
-    },
-
-    save: function(model, options) {
-        return model.data[model.idKey] ? this.put(model, options) : this.post(model, options);
-    },
-
-    ajax: function(params, model, data, options) {
-        options || (options = {});
-        assign(params, options);
-        assign(data, options.data);
-
-        params.url = this.url(model);
-        params.data = data;
-
-        return new Adapter.Promise(function(resolve, reject) {
-            Adapter.ajax(params).then(function() {
-                var args = slice.call(arguments), resp = args[0];
-                model.set(resp, !options.silent);
+        return model.Promise.create((resolve, reject) => {
+            D.Adapter.ajax(params).then((...args) => {
+                model.set(D.Adapter.ajaxResult(args), !params.slient);
                 resolve(args);
-            }, function() {
-                reject(slice.call(arguments));
-            });
+            }, (...args) => reject(args));
         });
     }
 };

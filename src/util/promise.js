@@ -1,53 +1,80 @@
-Promise = D.Promise = function(context) {
-    this.context = context;
-};
+D.Promise = class Promiser {
+    constructor (context) {
+        this.context = context;
+    }
 
-assign(Promise.prototype, {
-    create: function(fn) {
-        var ctx = this.context;
-        return new Adapter.Promise(function(resolve, reject) {
-            fn.call(ctx, resolve, reject);
-        });
-    },
-
-    resolve: function(data) {
-        return Adapter.Promise.resolve(data);
-    },
-
-    reject: function(data) {
-        return Adapter.Promise.reject(data);
-    },
-
-    when: function(obj) {
-        var args = slice.call(arguments, 1), result;
-        result = D.isFunction(obj) ? obj.apply(this.context, args) : obj;
-        return Adapter.Promise.resolve(result);
-    },
-
-    chain: function() {
-        var me = this, args, prev = null, doRing = function(rings, resolve, reject, ring, i) {
-            var promise;
-            if (D.isArray(ring)) {
-                promise = Adapter.Promise.all(map(ring, function(item) {
-                    return me.when.apply(me, i > 0 ? [item, prev] : [item]);
-                }));
-            } else {
-                promise = me.when.apply(me, i > 0 ? [ring, prev] : [ring]);
-            }
-
-            promise.then(function(data) {
-                prev = data;
-                rings.length === 0 ? resolve(prev) : doRing(rings, resolve, reject, rings.shift(), i + 1);
-            }, function(data) {
-                reject(data);
-            });
-        };
-
-        args = slice.call(arguments);
-        if (args.length === 0) return me.resolve();
-
-        return me.create(function(resolve, reject) {
-            doRing(args, resolve, reject, args.shift(), 0);
+    create (fn) {
+        return new D.Adapter.Promise((resolve, reject) => {
+            fn.call(this.context, resolve, reject);
         });
     }
-});
+
+    resolve (data) {
+        return D.Adapter.Promise.resolve(data);
+    }
+
+    reject (data) {
+        return D.Adapter.Promise.reject(data);
+    }
+
+    parallel (items, ...args) {
+        return this.create((resolve, reject) => {
+            const result = [], thenables = [], indexMap = {};
+            map(items, (item, i) => {
+                let value;
+                try {
+                    value = D.isFunction(item) ? item.apply(this.context, args) : item;
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+                if (value && value.then) {
+                    indexMap[thenables.length] = i;
+                    thenables.push(value);
+                } else {
+                    result[i] = value;
+                }
+            });
+
+            if (thenables.length === 0) return resolve(result);
+
+            D.Adapter.Promise.all(thenables).then((as) => {
+                mapObj(indexMap, (key, value) => result[value] = as[key]);
+                resolve(result);
+            }, (as) => {
+                reject(as);
+            });
+        });
+    }
+
+    chain (...args) {
+        let prev = null;
+        const doRing = (rings, ring, resolve, reject) => {
+            const nextRing = (data) => {
+                prev = data;
+                rings.length === 0 ? resolve(prev) : doRing(rings, rings.shift(), resolve, reject);
+            };
+
+            if (D.isArray(ring)) {
+                ring.length === 0 ? nextRing([]) :
+                    this.parallel(ring, ...(prev != null ? [prev] : [])).then(nextRing, reject);
+            } else {
+                let value;
+                try {
+                    value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
+                } catch (e) {
+                    reject(e);
+                    return;
+                }
+
+                value && value.then ? value.then(nextRing, reject) : nextRing(value);
+            }
+        };
+
+        if (args.length === 0) return this.resolve();
+
+        return this.create((resolve, reject) => {
+            doRing(args, args.shift(), resolve, reject);
+        });
+    }
+};

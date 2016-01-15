@@ -1,73 +1,76 @@
-PageableModel = D.PageableModel = function() {
-    var defaults;
-    parent(PageableModel).apply(this, arguments);
-    defaults = this.app.options.pagination;
-
-    this.pagination = {
-        page: this.options.page || 1,
-        pageCount: 0,
-        pageSize: this.options.pageSize || defaults.pageSize,
-        pageKey: this.options.pageKey || defaults.pageKey,
-        pageSizeKey: this.options.pageSizeKey || defaults.pageSizeKey,
-        recordCountKey: this.options.recordCountKey || defaults.recordCountKey
-    };
+const PAGE_DEFAULT_OPTIONS = {
+    pageSize: 10,
+    pageKey: '_page',
+    pageSizeKey: 'pageSize',
+    recordCountKey: 'recordCount',
+    params: (item) => item
 };
 
-extend(PageableModel, Model, {
-    initialize: function() {
-        this.data = this.options.data || [];
-    },
-
-    set: function(data, trigger) {
-        var p = this.pagination;
-        data || (data = {});
-        p.recordCount = data[p.recordCountKey] || 0;
-        p.pageCount = Math.ceil(p.recordCount / p.pageSize);
-        PageableModel.__super__.set.call(this, data, trigger);
-    },
-
-    getParams: function() {
-        var params = PageableModel.__super__.getParams.call(this) || {},
-            p = this.pagination;
-        params[p.pageKey] = p.page;
-        params[p.pageSizeKey] = p.pageSize;
-        if (this.app.options.pagination.params) {
-            params = this.app.options.pagination.params(params);
-        }
-        return params;
-    },
-
-    clear: function() {
-        this.pagination.page = 1;
-        this.pagination.recordCount = 0;
-        this.pagination.pageCount = 0;
-        PageableModel.__super__.clear.call(this);
-    },
-
-    turnToPage: function(page) {
-        if (page <= this.pagination.pageCount && page >= 1) this.pagination.page = page;
-        return this;
-    },
-
-    firstPage: function() { return this.turnToPage(1); },
-    lastPage: function() { this.turnToPage(this.pagination.pageCount); },
-    nextPage: function() { this.turnToPage(this.pagination.page + 1); },
-    prevPage: function() { this.turnToPage(this.pagination.page - 1); },
-
-    getPageInfo: function() {
-        var p = this.pagination, d;
-        if (this.data.length > 0) {
-            d = {
-                page: p.page, start: (p.page - 1) * p.pageSize + 1,
-                end: p.page * p.pageSize, total: p.recordCount
-            };
-        } else {
-            d = { page: p.page, start: 0, end: 0, total: 0 };
-        }
-
-        if (d.end > d.total) d.end = d.total;
-        return d;
+D.PageableModel = class PageableModel extends D.Model {
+    static setDefault (defaults) {
+        Object.assign(PAGE_DEFAULT_OPTIONS, defaults);
     }
-});
 
-Model.register('pageable', PageableModel);
+    constructor (store, options) {
+        super(store, options);
+
+        this._data = this._option('data') || [];
+        this._p = {
+            page: this._option('page') || 1,
+            pageCount: 0,
+            pageSize: this._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
+            pageKey: this._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
+            pageSizeKey: this._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
+            recordCountKey: this._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
+        };
+    }
+
+    set (data = {}, trigger) {
+        this._p.recordCount = data[this._p.recordCountKey] || 0;
+        this._p.pageCount = Math.ceil(this._p.recordCount / this._p.pageSize);
+        super.set(data, trigger);
+    }
+
+    get params () {
+        const { page, pageKey, pageSizeKey, pageSize } = this._p;
+        const params = super.params;
+        params[pageKey] = page;
+        params[pageSizeKey] = pageSize;
+        return PAGE_DEFAULT_OPTIONS.params(params);
+    }
+
+    clear (trigger) {
+        this._p.page = 1;
+        this._p.recordCount = 0;
+        this._p.pageCount = 0;
+        super.clear(trigger);
+    }
+
+    turnToPage (page) {
+        if (page <= this._p.pageCount && page >= 1) this._p.page = page;
+        return this;
+    }
+
+    firstPage () { return this.turnToPage(1); }
+
+    lastPage () { return this.turnToPage(this._p.pageCount); }
+
+    nextPage () { return this.turnToPage(this._p.page + 1); }
+
+    prevPage () { return this.turnToPage(this._p.page - 1); }
+
+    get pageInfo () {
+        const { page, pageSize, recordCount } = this._p;
+        let result;
+        if (this.data && this.data.length > 0) {
+            result = { page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
+        } else {
+            result = { page, start: 0, end: 0, total: 0 };
+        }
+
+        if (result.end > result.total) result.end = result.total;
+        return result;
+    }
+};
+
+D.registerModel('pageable', D.PageableModel);

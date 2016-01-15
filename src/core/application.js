@@ -1,120 +1,107 @@
-(function() {
-    var defaultOptions = {
-        scriptRoot: 'app',
-        urlRoot: '',
-        urlSuffix: '',
-        caseSensitiveHash: false,
-        defaultRegion: root.document.body,
-        disabledClass: 'disabled',
-        attributesReferToId: ['for', 'data-target', 'data-parent'],
-        getResource: null,
-        idKey: 'id',
+D.Application = class Application extends D.Base {
+    constructor (options) {
+        super(options && options.name || 'Application', Object.assign({
+            scriptRoot: 'app',
+            urlRoot: '',
+            urlSuffix: '',
+            caseSensitiveHash: false,
+            container: root && root.document.body,
+            disabledClass: 'disabled',
+            getResource: null,
+            idKey: 'id',
+            viewport: 'viewport',
 
-        fileNames: {
-            module: 'index',
-            templates: 'templates',
-            view: 'view-',
-            template: 'template-',
-            router: 'router'
-        },
-
-        pagination: {
-            pageSize: 10,
-            pageKey: '_page',
-            pageSizeKey: '_pageSize',
-            recordCountKey: 'recordCount'
-        }
-    };
-
-    Application = Drizzle.Application = function(options) {
-        var opt = assign({}, defaultOptions, options);
-        this.modules = {};
-        this.global = {};
-        this.loaders = {};
-        this.regions = [];
-
-        parent(Application).call(this, 'A', opt);
-    };
-
-    extend(Application, Base, {
-        initialize: function() {
-            this.registerLoader(new SimpleLoader(this));
-            this.registerLoader(new Loader(this), true);
-            this.setRegion(new Region(this, null, this.options.defaultRegion));
-            mapObj(Helpers, function(value, key) {
-                this.registerHelper(key, value);
-            }, this);
-        },
-
-        registerLoader: function(loader, isDefault) {
-            this.loaders[loader.name] = loader;
-            if (isDefault) this.defaultLoader = loader;
-        },
-
-        registerHelper: function(name, fn) {
-            var me = this;
-            handlebars.registerHelper(name, function() {
-                var args = slice.call(arguments);
-                return fn.apply(this, [me, handlebars].concat(args));
-            });
-        },
-
-        getLoader: function(name) {
-            var loader = Loader.analyse(name).loader;
-            return loader && this.loaders[loader] ? this.loaders[loader] : this.defaultLoader;
-        },
-
-        setRegion: function(region) {
-            this.region = region;
-            this.regions.unshift(region);
-        },
-
-        load: function() {
-            return chain(this, map(arguments, function(name) {
-                return this.getLoader(name).loadModule(name);
-            }, this));
-        },
-
-        show: function(name, options) {
-            return this.region.show(name, options);
-        },
-
-        destory: function() {
-            this.off();
-            return chain(this, map(this.regions, function(region) {
-                return region.close();
-            }));
-        },
-
-        startRoute: function(defaultRoute) {
-            var paths = slice.call(arguments, 1), router = this.router;
-            if (!this.router) {
-                router = this.router = new Router(this);
+            fileNames: {
+                module: 'index',
+                view: 'view-',
+                router: 'router'
             }
-            return chain(this, router.mountRoutes.apply(router, paths), function() {
-                return router.start(defaultRoute);
-            });
-        },
+        }, options), {
+            global: {},
+            _modules: {},
+            _loaders: {}
+        });
+    }
 
-        navigate: function(path, trigger) {
-            if (!this.router || !this.router.started) return;
-            this.router.navigate(path, trigger);
-        },
+    _initialize () {
+        this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
+        this.registerLoader('default', new D.Loader(this), true);
+        this._region = this._createRegion(this._option('container'), 'Region');
+    }
 
-        dispatch: function(name, payload) {
-            if (!payload) {
-                payload = name.payload;
-                name = name.name;
-            }
-            this.trigger('app.' + name, payload);
-        },
+    registerLoader (name, loader, isDefault) {
+        this._loaders[name] = loader;
+        if (isDefault) this._defaultLoader = loader;
+        return this;
+    }
 
-        message: {
-            success: FN,
-            info: FN,
-            error: FN
-        }
-    });
+    start (defaultHash) {
+        if (defaultHash) this._router = new D.Router(this);
 
-    assign(Application.prototype, Event);
-})();
+        return this.chain(
+            defaultHash ? this._router._mountRoutes(...this._option('routers')) : false,
+            this._region.show(this._option('viewport')),
+            (viewport) => this.viewport = viewport,
+            () => defaultHash && this._router._start(defaultHash),
+            this
+        );
+    }
+
+    stop () {
+        this.off();
+        this._region.close();
+        if (this._router) this._router._stop();
+    }
+
+    navigate (hash, trigger) {
+        if (!this._router) return;
+        this._router.navigate(hash, trigger);
+    }
+
+    dispatch (name, payload) {
+        const n = D.isObject(name) ? name.name : name,
+            p = D.isObject(name) ? name.payload : payload;
+        this.trigger(`app.${n}`, p);
+    }
+
+    show (region, moduleName, options) {
+        return this.viewport.regions[region].show(moduleName, options);
+    }
+
+    _getLoader (name, mod) {
+        return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
+    }
+
+    _createModule (name, parentModule) {
+        const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
+            loader = this._getLoader(loaderName, parent);
+
+        return this.chain(loader.loadModule(moduleName), (options = {}) => {
+            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options);
+        });
+    }
+
+    _createView (name, mod) {
+        const { name: viewName, loader: loaderName } = D.Loader._analyse(name),
+            loader = this._getLoader(loaderName, mod);
+
+        return this.chain(loader.loadView(viewName, mod), (options = {}) => {
+            return typeCache.createView(options.type, viewName, this, mod, loader, options);
+        });
+    }
+
+    _createRegion (el, name, mod) {
+        const { name: regionName, loader: type } = D.Loader._analyse(name);
+        return typeCache.createRegion(type, this, mod, el, regionName);
+    }
+
+    _createStore (mod, options = {}) {
+        return typeCache.createStore(options.type, mod, options);
+    }
+
+    _createModel (store, options = {}) {
+        return typeCache.createModel(options.type, store, options);
+    }
+};
+
+Object.assign(D.Application.prototype, D.Event);

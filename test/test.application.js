@@ -1,77 +1,78 @@
-(function() {
-    /*
-        compiled by Handlebars:
-        {{#layout}}<div id="layout"></div>{{/layout}}
-    */
-  var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-  templates['app/demo/templates'] = template({"1":function(depth0,helpers,partials,data) {
-      return "<div id=\"layout\"></div>";
-  },"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-      var stack1, helper, options;
-
-    stack1 = ((helper = (helper = helpers.layout || (depth0 != null ? depth0.layout : depth0)) != null ? helper : helpers.helperMissing),(options={"name":"layout","hash":{},"fn":this.program(1, data, 0),"inverse":this.noop,"data":data}),(typeof helper === "function" ? helper.call(depth0,options) : helper));
-    if (!helpers.layout) { stack1 = helpers.blockHelperMissing.call(depth0,stack1,options)}
-    if (stack1 != null) { return stack1; }
-    else { return ''; }
-  },"useData":true});
-})()
-
 describe('Application', function() {
-    var modules = {
+    var template = Handlebars.compile('{{#module}}<div id="layout"></div>{{/module}}'),
+        modules = {
         'app/router': {},
         'app/demo/index': {
-            actions: {
-                'app.action': function(payload) {
-                    expect(payload).to.deep.equal({a: 1});
-                    payload.a ++;
+            store: {
+                callbacks: {
+                    'app.action': function(payload) {
+                        expect(payload).to.deep.equal({a: 1});
+                        payload.a ++;
+                    }
                 }
             }
         },
-        'app/demo/templates': Handlebars.templates['app/demo/templates']
-    }, app, getResource;
+        'app/demo/templates': function() { return template; },
+        'app/router': {}
+    }, app, getResource = function(path) {
+        return modules[path];
+    };
 
-    before(function() {
-        getResource = function(path) {
-            return modules[path];
-        };
+    beforeEach(function() {
         app = new Drizzle.Application({
             getResource: getResource,
-            defaultRegion: document.getElementById('content')
+            viewport: 'demo',
+            routers: ['']
         });
     });
 
-    it('#constructor', function() {
-        expect(app).to.include.keys(
-            'id', 'options', 'modules', 'global',
-            'regions', 'region', 'loaders'
-        );
+    afterEach(function() {
+        app.stop();
+    });
 
+    it('#before start', function() {
+        expect(app).to.include.keys('id', 'name', 'options', 'Promise', 'global');
+        expect(app).to.include.keys('_loaders', '_modules', '_templateEngine', '_defaultLoader', '_region');
+
+        expect(app.name).to.equal('Application');
         expect(app.options.getResource).to.equal(getResource);
         expect(app.options.scriptRoot).to.equal('app');
-
-        expect(app.modules).to.be.empty;
+        expect(app.options.container).to.equal(document.body);
+        expect(app.Promise).to.be.an.instanceof(Drizzle.Promise);
         expect(app.global).to.be.empty;
 
-        expect(app.regions).to.have.length(1);
-        expect(app.regions[0]).to.be.an.instanceof(Drizzle.Region);
-        expect(app.regions[0].el).to.equal(document.getElementById('content'));
-        expect(app.region).to.equal(app.regions[0]);
-
-        expect(app.loaders).to.have.all.keys('loader', 'simple');
-
-        expect(app.message).to.have.all.keys('success', 'info', 'error');
+        expect(app._loaders).to.have.keys('default');
+        expect(app._loaders['default']).to.be.an.instanceof(Drizzle.Loader);
+        expect(app._loaders['default']).to.equal(app._defaultLoader);
+        expect(app._modules).to.be.empty;
+        expect(app._templateEngine).to.be.an.instanceof(Drizzle.TemplateEngine);
+        expect(app._region).to.be.an.instanceof(Drizzle.Region);
     });
 
-    it('#getLoader', function() {
-        var defaults = app.loaders.loader, simple = app.loaders.simple;
-
-        expect(app.getLoader('name')).to.equal(defaults);
-        expect(app.getLoader('simple:name')).to.equal(simple);
+    it('#start without default route', function(done) {
+        app.start().then(function(arg) {
+            expect(arg).to.equal(app);
+            expect(app).to.include.keys('viewport');
+            expect(app.viewport).to.be.an.instanceof(Drizzle.Module);
+            expect(app.viewport.name).to.equal('demo');
+            expect(app).to.not.include.keys('_router');
+            done();
+        });
     });
 
+    it('#start with default route', function(done) {
+        app.start('hello').then(function(arg) {
+            expect(arg).to.equal(app);
+            expect(app).to.include.keys('_router');
+            expect(app._router).to.be.an.instanceof(Drizzle.Router);
+            expect(window.location.hash).to.equal('#hello');
+            done();
+        });
+    });
+/*
     it('#load', function(done) {
         app.load('demo').then(function(mod) {
-            expect(mod[0].name).to.equal('demo')
+            expect(mod[0].name).to.equal('demo');
             done();
         });
     });
@@ -93,9 +94,9 @@ describe('Application', function() {
             done();
         });
     });
-
+*/
     it('#dispatch', function(done) {
-        app.show('demo').then(function() {
+        app.start().then(function() {
             var payload = {a: 1};
             app.dispatch('action', payload);
             expect(payload.a).to.equal(2);
@@ -107,12 +108,12 @@ describe('Application', function() {
         });
     });
 
-    it('#startRoute && #navigate', function(done) {
+    it('#navigate', function(done) {
         location.hash = '';
         app.navigate('index');
         expect(location.hash).to.equal('');
 
-        app.startRoute('index', '/').then(function() {
+        app.start('index').then(function() {
             expect(location.hash).to.equal('#index');
 
             app.navigate('demo')
@@ -121,10 +122,17 @@ describe('Application', function() {
             location.hash = ''
             done();
         })
-    })
+    });
 
-    after(function() {
-        app.destory()
+    it('#register loader', function() {
+        var loader = new Drizzle.Loader(app);
+        app.registerLoader('demo', loader);
+        expect(app._loaders).to.include.keys('demo');
+        expect(app._loaders.demo).to.equal(loader);
+
+        expect(app._defaultLoader).to.equal(app._loaders['default']);
+        app.registerLoader('demo', loader, true);
+        expect(app._defaultLoader).to.equal(loader);
     });
 
 });

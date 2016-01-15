@@ -1,116 +1,151 @@
-(function() {
-    /*
-        compiled by Handlebars:
-        {{#layout}}<div id="layout"></div><div class="a"><p>hello</p></div>{{/layout}}
-    */
-  var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-  templates['app/demo/templates'] = template({"1":function(depth0,helpers,partials,data) {
-      return "<div id=\"layout\"></div><div class=\"a\"><p>hello</p></div>";
-  },"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-      var stack1, helper, options;
-
-    stack1 = ((helper = (helper = helpers.layout || (depth0 != null ? depth0.layout : depth0)) != null ? helper : helpers.helperMissing),(options={"name":"layout","hash":{},"fn":this.program(1, data, 0),"inverse":this.noop,"data":data}),(typeof helper === "function" ? helper.call(depth0,options) : helper));
-    if (!helpers.layout) { stack1 = helpers.blockHelperMissing.call(depth0,stack1,options)}
-    if (stack1 != null) { return stack1; }
-    else { return ''; }
-  },"useData":true});
-})();
-
 describe('Region', function() {
-    var modules = {
-        'app/demo/index': {},
-        'app/demo/templates': Handlebars.templates['app/demo/templates']
-    }, app, getResource;
-
-    before(function() {
-        getResource = function(path) {
+    var template = Handlebars.compile('{{#module}}<div id="layout">Layout</div><div class="a" data-region="content"><p>hello</p></div>{{/module}}'),
+        modules = {
+            'app/demo/index': {},
+            'app/demo/templates': template,
+        }, app, getResource = function(path) {
             return modules[path];
         };
+
+
+    beforeEach(function() {
         app = new Drizzle.Application({
             getResource: getResource,
-            defaultRegion: document.getElementById('content')
+            viewport: 'demo'
         });
     });
 
-    it('#show string(module name) & #isCurrent', function(done) {
-        var region = app.region,
-            el = document.getElementById('content');
+    it('#public properties', function() {
+        var region = app._region;
+        expect(region).to.be.an.instanceof(Drizzle.Region);
+        expect(region).to.include.keys('id', 'name', 'Promise', 'app', 'module');
+        expect(region._getElement()).to.equal(document.body);
+        expect(region.app).to.equal(app);
+        expect(region.module).to.be.undefined;
+    });
 
-        region.show('demo').then(function(mod) {
-            var id = mod.layout.id, els;
-            expect(el.getAttribute('data-current')).to.equal('demo');
-            expect(region.current).to.equal(mod);
-            expect(mod.region).to.equal(region);
+    it('#show string(module name) & #_isCurrent', function(done) {
+        app.start().then(function() {
+            var a = {a: 1};
+            app.show('content', 'demo', a).then(function(mod) {
+                var region = app.viewport.regions.content,
+                    el = region._getElement();
 
-            expect(region.isCurrent(mod)).to.be.true;
-            expect(region.isCurrent('demo')).to.be.true;
+                expect(mod.renderOptions).to.equal(a);
+                expect(region.name).to.equal('content');
+                expect(region.module).to.equal(app.viewport);
 
-            expect(el.innerHTML).to.be.equal('<div id="' + id + 'layout"></div><div class="a"><p>hello</p></div>');
+                expect(mod).to.be.an.instanceof(Drizzle.Module);
+                expect(mod._element).to.equal(el);
+                expect(mod._element.getAttribute('data-current')).to.equal('demo');
 
-            els = region.$$('.a p');
-            expect(els).to.have.length(1);
-            expect(els[0].innerHTML).to.equal('hello');
-            done();
+                expect(mod._region).to.equal(region);
+                expect(region._isCurrent(mod)).to.be.true;
+                expect(region._isCurrent('demo')).to.be.true;
+                expect(region._isCurrent(app.viewport)).to.be.false;
+                expect(region._isCurrent('hello')).to.be.false;
+
+                expect(el.innerHTML).to.be.equal('<div id="' + mod.id + 'layout">Layout</div><div class="a" data-region="content"><p>hello</p></div>');
+
+                var els = region.$$('.a p');
+                expect(els).to.have.length(1);
+                expect(els[0].innerHTML).to.equal('hello');
+                done();
+            });
         });
     });
 
     it('#show object(module or view)', function(done) {
-        var region = app.region,
-            mod = new Drizzle.Module('demo', app, app.getLoader('demo'), {}),
-            el = document.getElementById('content'),
-            id = mod.layout.id;
+        app.start().then(function() {
+            var region = app.viewport.regions.content,
+                demo = app._createModule('demo'), a = {a: 1};
 
-        region.show(mod).then(function(m) {
-            expect(m).to.equal(mod);
-            expect(el.innerHTML).to.be.equal('<div id="' + id + 'layout"></div><div class="a"><p>hello</p></div>');
-            done();
-        })
-    });
+            app.chain(demo, function(dd) {
+                return region.show(dd, a).then(function(d) {
+                    expect(d).to.equal(dd);
+                    expect(d.renderOptions).to.equal(a)
+                    return d;
+                });
+            }, function(dd) {
+                var i = sinon.spy(), m = sinon.spy();
+                dd.options.afterRender = i;
+                dd.options.afterClose = m;
 
-    it('#close', function(done) {
-        var region = app.region,
-            mod = new Drizzle.Module('demo', app, app.getLoader('demo'), {}),
-            el = document.getElementById('content');
+                expect(region._isCurrent(dd)).to.be.ture;
 
-        region.Promise.chain(region.show(mod), region.close, function() {
-            expect(el.innerHTML).to.equal('');
-            expect(region.current).to.be.undefined;
-            expect(region.isCurrent(mod)).to.be.false;
-            done();
+                return region.show(dd).then(function(d) {
+                    expect(region._isCurrent(d)).to.be.ture;
+                    expect(d).to.equal(dd);
+                    i.should.have.been.calledOnce;
+                    expect(m).to.have.not.been.called;
+
+                    return region.show(dd, {forceRender: false}).then(function(ddd) {
+                        expect(region._isCurrent(ddd)).to.be.ture;
+                        expect(ddd).to.equal(dd);
+                        expect(i).to.have.been.calledOnce;
+                        expect(m).to.have.not.been.called;
+                    });
+                });
+            }, function() {
+                region.show({}).then(function() {}, function(error) {
+                    expect(error.message).to.equal('[demo:content] The item is expected to be an instance of Renderable ');
+                });
+            }, done);
         });
     });
 
-    it('#delegate dom event', function() {
-        var region = app.region,
-            obj = { id: 'V1' },
-            i = 0,
-            el = document.getElementById('content'),
-            o1 = Drizzle.Adapter.delegateDomEvent,
-            o2 = Drizzle.Adapter.undelegateDomEvents;
-
-        Drizzle.Adapter.delegateDomEvent = function(e, name, selector, fn) {
-            expect(e).to.equal(el);
-            expect(name).to.equal('click.events' + region.id + obj.id);
-            i ++;
-        }
-
-        Drizzle.Adapter.undelegateDomEvents = function(e, namespace) {
-            expect(e).to.equal(el);
-            expect(namespace).to.equal('.events' + region.id + obj.id);
-            i ++;
-        }
-
-        region.delegateDomEvent(obj, 'click', '.a', null);
-        region.undelegateDomEvents(obj);
-
-        expect(i).to.equal(2);
-
-        Drizzle.Adapter.delegateDomEvent = o1;
-        Drizzle.Adapter.undelegateDomEvents = o2;
+    it('#close', function(done) {
+        var region = app._region, i = 0;
+        app.chain(app.start(), function() {
+            expect(app.viewport._region).to.equal(region);
+            app.viewport.options.afterClose = function() { i ++; };
+        }, function() {
+            return region.close();
+        }, function() {
+            expect(i).to.equal(1);
+            expect(region._getElement().innerHTML).to.equal('');
+        }, done);
     });
 
-    after(function() {
-        app.destory()
+    it('#delegate dom event', function(done) {
+        var i = 0, h = function() { i ++; };
+        app.chain(app.start(), function() {
+            return app.show('content', 'demo');
+        }, function(demo) {
+            var region = app.viewport.regions.content, id = '#' + demo.id + 'layout';
+            expect(region._isCurrent(demo)).to.be.true;
+            region._delegateDomEvent(demo, 'click', id, h);
+
+            expect(region._delegated).to.have.all.keys('click');
+            expect(region._delegated.click.listener).to.be.a.function;
+            expect(region._delegated.click.items).to.have.length(1);
+            var item = region._delegated.click.items[0];
+            expect(item.fn).to.equal(h);
+            expect(item.selector).to.equal(id);
+
+            demo.$('layout').click();
+            demo.$('layout').click();
+            expect(i).to.equal(2);
+        }, done);
+    });
+
+    it('#undelegate dom event', function(done) {
+        var i = 0, h = function() { i ++; };
+        app.chain(app.start(), function() {
+            return app.show('content', 'demo');
+        }, function(demo) {
+            var region = app.viewport.regions.content, id = '#' + demo.id + 'layout';
+            region._delegateDomEvent(demo, 'click', id, h);
+            demo.$('layout').click();
+            expect(i).to.equal(1);
+            region._undelegateDomEvents(demo);
+            demo.$('layout').click();
+            expect(i).to.equal(1);
+        }, done);
+    });
+
+    afterEach(function() {
+        app.stop()
     });
 
 });
