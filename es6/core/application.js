@@ -31,7 +31,7 @@ D.Application = class Application extends D.Base {
     }
 
     _initialize () {
-        this._templateEngine = this._option('templateEngine');
+        this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
         this.registerLoader('default', new D.Loader(this), true);
         this._region = this._createRegion(this._option('defaultRegion'), 'Region');
     }

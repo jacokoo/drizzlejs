@@ -32,8 +32,7 @@ D.Base = class Base {
             }
 
             if (D.isFunction(old)) {
-                this[key] = () => {
-                    const args = slice.call(arguments);
+                this[key] = (...args) => {
                     args.unshift(old);
                     return value.apply(this, args);
                 };

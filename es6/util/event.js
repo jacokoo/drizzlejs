@@ -32,33 +32,35 @@ D.Event = {
         Object.assign(target, {
             _listeners: {},
 
-            listenTo (obj, name, fn) {
+            listenTo (obj, name, fn, ctx) {
                 (target._listeners[name] || (target._listeners[name] = [])).push({ fn, obj });
-                obj.on(name, fn, target);
+                obj.on(name, fn, ctx || target);
             },
 
             stopListening (obj, name, fn) {
-                if (!obj) {
-                    mapObj(target._listeners, (value, key) => map(value, (item) => item.obj.off(key, item.fn)));
-                    target._listeners = {};
-                    return;
-                }
+                mapObj(target._listeners, (value, key) => {
+                    const result = [];
+                    map(value, (item) => {
+                        let offIt = fn && (item.fn === fn && name === key && obj === item.obj);
+                        offIt = offIt || (!fn && name && (name === key && obj === item.obj));
+                        offIt = offIt || (!fn && !name && obj && obj === item.obj);
+                        offIt = offIt || (!fn && !name && !obj);
+                        if (offIt) {
+                            item.obj.off(key, item.fn);
+                            return;
+                        }
+                        result.push(item);
+                    });
 
-                if (!name) {
-                    mapObj(target._listeners, (value, key) => map(value, (item) => me.off(key, item)));
-                    target._listeners = {};
-                    return;
-                }
-
-                const result = [];
-                map(target._listeners[name], (item) => fn && fn !== item ? result.push(item) : me.off(name, item));
-                target._listeners[name] = result;
-
-                if (result.length === 0) delete target._listeners[name];
+                    target._listeners[key] = result;
+                    if (result.length === 0) {
+                        delete target._listeners[key];
+                    }
+                });
             },
 
-            on (name, fn) {
-                target.listenTo(me, name + id, fn);
+            on (name, fn, ctx) {
+                target.listenTo(me, name + id, fn, ctx);
             },
 
             off (name, fn) {

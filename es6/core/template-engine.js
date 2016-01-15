@@ -29,12 +29,17 @@ D.TemplateEngine = class TemplateEngine extends D.Base {
     }
 
     _loadIt (renderable) {
-        return this._option((renderable instanceof D.Module) ? 'loadModule' : 'loadView', renderable);
+        if (renderable instanceof Drizzle.View) {
+            return () => renderable.module._template;
+        }
+
+        return renderable._loader.loadModuleResource(renderable, 'templates');
     }
 
-    _execute (renderable, data, template, update) {
-        const key = (renderable instanceof D.Module) ? 'executeModule' : 'executeView';
-        return this._option(key, renderable, data, renderable._element, template, update);
+    _execute (renderable, data, template /* , update */) {
+        const el = renderable._element;
+        el.innerHTML = template(data);
+        this.executeIdReplacement(el, renderable);
     }
 
 };

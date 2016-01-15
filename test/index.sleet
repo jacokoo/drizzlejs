@@ -6,10 +6,8 @@ html
 
     body
         #content(style='display:none;') + #mocha
-        script(src='../node_modules/jquery/dist/jquery.js')
-        script(src='../node_modules/handlebars/dist/handlebars.runtime.js')
+        script(src='../node_modules/handlebars/dist/handlebars.js')
         script(src='../dist/drizzle.js' data-cover)
-        script(src='../dist/jquery-adapter.js')
         script(src='../node_modules/chai/chai.js')
         script(src='../node_modules/mocha/mocha.js')
         script(src='../node_modules/blanket/dist/mocha/blanket_mocha.js')
@@ -19,7 +17,6 @@ html
         script(src='test.drizzle.js')
         script(src='test.promise.js')
         script(src='test.event.js')
-        script(src='test.factory.js')
         script(src='test.base.js')
         script(src='test.application.js')
         script(src='test.model.js')

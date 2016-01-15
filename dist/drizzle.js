@@ -319,41 +319,33 @@ D.Event = {
         Object.assign(target, {
             _listeners: {},
 
-            listenTo: function listenTo(obj, name, fn) {
+            listenTo: function listenTo(obj, name, fn, ctx) {
                 (target._listeners[name] || (target._listeners[name] = [])).push({ fn: fn, obj: obj });
-                obj.on(name, fn, target);
+                obj.on(name, fn, ctx || target);
             },
             stopListening: function stopListening(obj, name, fn) {
-                if (!obj) {
-                    mapObj(target._listeners, function (value, key) {
-                        return map(value, function (item) {
-                            return item.obj.off(key, item.fn);
-                        });
+                mapObj(target._listeners, function (value, key) {
+                    var result = [];
+                    map(value, function (item) {
+                        var offIt = fn && item.fn === fn && name === key && obj === item.obj;
+                        offIt = offIt || !fn && name && name === key && obj === item.obj;
+                        offIt = offIt || !fn && !name && obj && obj === item.obj;
+                        offIt = offIt || !fn && !name && !obj;
+                        if (offIt) {
+                            item.obj.off(key, item.fn);
+                            return;
+                        }
+                        result.push(item);
                     });
-                    target._listeners = {};
-                    return;
-                }
 
-                if (!name) {
-                    mapObj(target._listeners, function (value, key) {
-                        return map(value, function (item) {
-                            return me.off(key, item);
-                        });
-                    });
-                    target._listeners = {};
-                    return;
-                }
-
-                var result = [];
-                map(target._listeners[name], function (item) {
-                    return fn && fn !== item ? result.push(item) : me.off(name, item);
+                    target._listeners[key] = result;
+                    if (result.length === 0) {
+                        delete target._listeners[key];
+                    }
                 });
-                target._listeners[name] = result;
-
-                if (result.length === 0) delete target._listeners[name];
             },
-            on: function on(name, fn) {
-                target.listenTo(me, name + id, fn);
+            on: function on(name, fn, ctx) {
+                target.listenTo(me, name + id, fn, ctx);
             },
             off: function off(name, fn) {
                 target.stopListening(me, name && name + id, fn);
@@ -538,8 +530,7 @@ D.Base = function () {
     }, {
         key: '_mixin',
         value: function _mixin(obj) {
-            var _this6 = this,
-                _arguments = arguments;
+            var _this6 = this;
 
             mapObj(obj, function (value, key) {
                 var old = _this6[key];
@@ -550,7 +541,10 @@ D.Base = function () {
 
                 if (D.isFunction(old)) {
                     _this6[key] = function () {
-                        var args = slice.call(_arguments);
+                        for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
+                            args[_key11] = arguments[_key11];
+                        }
+
                         args.unshift(old);
                         return value.apply(_this6, args);
                     };
@@ -1030,8 +1024,8 @@ D.View = function (_D$ActionCreator) {
         value: function _setRegion() {
             var _get2;
 
-            for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
-                args[_key11] = arguments[_key11];
+            for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
+                args[_key12] = arguments[_key12];
             }
 
             (_get2 = _get(Object.getPrototypeOf(View.prototype), '_setRegion', this)).call.apply(_get2, [this].concat(args));
@@ -1042,8 +1036,8 @@ D.View = function (_D$ActionCreator) {
         value: function _close() {
             var _get3;
 
-            for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
-                args[_key12] = arguments[_key12];
+            for (var _len13 = arguments.length, args = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
+                args[_key13] = arguments[_key13];
             }
 
             this.chain((_get3 = _get(Object.getPrototypeOf(View.prototype), '_close', this)).call.apply(_get3, [this].concat(args)), this._unbindData, this);
@@ -1314,13 +1308,20 @@ D.TemplateEngine = function (_D$Base3) {
     }, {
         key: '_loadIt',
         value: function _loadIt(renderable) {
-            return this._option(renderable instanceof D.Module ? 'loadModule' : 'loadView', renderable);
+            if (renderable instanceof Drizzle.View) {
+                return function () {
+                    return renderable.module._template;
+                };
+            }
+
+            return renderable._loader.loadModuleResource(renderable, 'templates');
         }
     }, {
         key: '_execute',
-        value: function _execute(renderable, data, template, update) {
-            var key = renderable instanceof D.Module ? 'executeModule' : 'executeView';
-            return this._option(key, renderable, data, renderable._element, template, update);
+        value: function _execute(renderable, data, template /* , update */) {
+            var el = renderable._element;
+            el.innerHTML = template(data);
+            this.executeIdReplacement(el, renderable);
         }
     }]);
 
@@ -1599,7 +1600,7 @@ D.Application = function (_D$Base7) {
     _createClass(Application, [{
         key: '_initialize',
         value: function _initialize() {
-            this._templateEngine = this._option('templateEngine');
+            this._templateEngine = this._option('templateEngine') || new D.templateEngine();
             this.registerLoader('default', new D.Loader(this), true);
             this._region = this._createRegion(this._option('defaultRegion'), 'Region');
         }
