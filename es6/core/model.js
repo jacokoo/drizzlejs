@@ -19,7 +19,7 @@ D.Model = class Model extends D.Base {
     get data () { return this._data; }
 
     set (data, trigger) {
-        const d = this._option('parse', data);
+        const d = this.options.parse ? this._option('parse', data) : data;
         this._data = this.options.root ? d[this.options.root] : d;
         if (trigger) this.changed();
     }

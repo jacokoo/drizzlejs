@@ -1,46 +1,31 @@
-const __events = {};
-const __createHandler = function(region, name, selector) {
-    return (e) => {
-        const target = e.target;
-        let matched = false;
-        map(region.getElement().querySelectorAll(selector), (el) => {
-            if (el === target || el.contains(target)) {
-                matched = el;
-            }
-        });
-
-        matched && region.trigger(name, e);
-    };
-};
-const __captures = ['blur', 'focus', 'scroll', 'resize'];
-
 D.Adapter = {
     Promise,
 
-    ajax (params) { throw new Error('Ajax is not implemented', params); },
+    ajax (params) {
+        const xhr = new XMLHttpRequest();
+        xhr.open(params.type, params.url, true);
+        const promise = new Promise((resolve, reject) => {
+            xhr.onload = function() {
+                if (this.status >= 200 && this.status < 4000) {
+                    resolve(JSON.parse(this.response));
+                    return;
+                }
+                reject(xhr);
+            };
+
+            xhr.onerror = function() {
+                reject(xhr);
+            };
+        });
+        xhr.send(params.data);
+        return promise;
+    },
 
     ajaxResult (args) { return args[0]; },
 
-    getEventTarget (e) { return e.currentTarget || e.target; },
+    getEventTarget (e) { return e.target; },
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
-
-    delegateDomEvent (region, renderable, name, selector, fn) {
-        const event = `${name}-${region.id}`, id = `${region.id}-${renderable.id}`;
-        renderable.listenTo(region, event, fn);
-        (__events[id] || (__events[id] = {}));
-        const handler = __events[id][name] = __createHandler(region, event, selector);
-        this.addEventListener(region.getElement(), name, handler, __captures.indexOf(name) !== -1);
-    },
-
-    undelegateDomEvents (region, renderable) {
-        const id = `${region.id}-${renderable.id}`;
-        renderable.stopListening(region);
-        mapObj(__events[id], (handler, name) => {
-            this.removeEventListener(region.getElement(), name, handler);
-        });
-        delete __events[id];
-    },
 
     addEventListener (el, name, handler, useCapture) {
         el.addEventListener(name, handler, useCapture);

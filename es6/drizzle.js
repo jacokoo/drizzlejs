@@ -45,7 +45,7 @@ const Drizzle = {},
     },
 
     typeCache = {
-        View: {}, Region: {}, Module: {}, Model: {},
+        View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
         register (type, name, clazz) {
             this[type][name] = clazz;
@@ -57,7 +57,11 @@ const Drizzle = {},
         }
     };
 
-let counter = 0;
+let counter = 0, root = null;
+
+if (typeof window !== 'undefined') {
+    root = window;
+}
 
 map(['Function', 'Array', 'String', 'Object'], (item) => {
     D[`is${item}`] = function(obj) {

@@ -19,7 +19,7 @@ D.Store = class Store extends D.Base {
         }
 
         callback = this._callbacks[n];
-        if (!callback) this.error(`No action callback for name: ${name}`);
+        if (!callback) this._error(`No action callback for name: ${name}`);
         return this.chain(callback.call(this._callbackContext, p));
     }
 
@@ -39,7 +39,7 @@ D.Store = class Store extends D.Base {
 
     _initializeModels () {
         mapObj(this._option('models'), (value, key) => {
-            const v = (D.isFunction(value) ? value.call(this) : v) || {};
+            const v = (D.isFunction(value) ? value.call(this) : value) || {};
             if (v.shared === true) {
                 this._models[key] = this.app.viewport.store[key];
                 return;

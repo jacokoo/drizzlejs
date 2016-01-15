@@ -1,7 +1,7 @@
 D.ActionCreator = class ActionCreator extends D.Renderable {
     _initializeEvents () {
         super._initializeEvents();
-        super._initializeEvents(this._actions);
+        super._initializeEvents(this._option('actions'));
     }
 
     _createEventHandler (name, obj) {

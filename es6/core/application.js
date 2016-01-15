@@ -5,9 +5,8 @@ D.Application = class Application extends D.Base {
             urlRoot: '',
             urlSuffix: '',
             caseSensitiveHash: false,
-            defaultRegion: root.document.body,
+            defaultRegion: root && root.document.body,
             disabledClass: 'disabled',
-            attributesReferToId: ['for', 'data-target', 'data-parent'],
             getResource: null,
             idKey: 'id',
             viewport: 'viewport',
@@ -33,12 +32,12 @@ D.Application = class Application extends D.Base {
 
     _initialize () {
         this._templateEngine = this._option('templateEngine');
-        this.registerLoader('default', new D.Loader(), true);
+        this.registerLoader('default', new D.Loader(this), true);
         this._region = this._createRegion(this._option('defaultRegion'), 'Region');
     }
 
     registerLoader (name, loader, isDefault) {
-        this.loaders[name] = loader;
+        this._loaders[name] = loader;
         if (isDefault) this._defaultLoader = loader;
         return this;
     }
@@ -47,7 +46,7 @@ D.Application = class Application extends D.Base {
         if (defaultHash) this._router = new D.Router(this);
 
         return this.chain(
-            defaultHash ? this._router._mountRoutes(this._option('routers')) : false,
+            defaultHash ? this._router._mountRoutes(...this._option('routers')) : false,
             this._region.show(this._option('viewport')),
             (viewport) => this.viewport = viewport,
             () => defaultHash && this._router._start(defaultHash),
@@ -72,19 +71,19 @@ D.Application = class Application extends D.Base {
     }
 
     show (region, moduleName, options) {
-        this.viewport.regions[region].show(moduleName, options);
+        return this.viewport.regions[region].show(moduleName, options);
     }
 
     _getLoader (name, mod) {
         return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
     }
 
-    _createModule (name, parent) {
+    _createModule (name, parentModule) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
-            return typeCache.createModule(options.type, moduleName, this, parent, loader, options);
+            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options);
         });
     }
 
@@ -99,7 +98,7 @@ D.Application = class Application extends D.Base {
 
     _createRegion (el, name, mod) {
         const { name: regionName, loader: type } = D.Loader._analyse(name);
-        return typeCache.createRegion(type, mod, el, regionName);
+        return typeCache.createRegion(type, this, mod, el, regionName);
     }
 
     _createStore (mod, options = {}) {

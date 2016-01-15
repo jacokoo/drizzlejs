@@ -1,38 +1,33 @@
 var D = require('drizzlejs'),
     _ = require('lodash/collection');
 
-
-module.exports = {
-    store: {
-        todos: {autoLoad: 'after'}
-    },
-
-    actions: {
+exports.store = {
+    callbacks: {
         createTodo: function(payload) {
-            var todos = this.store.todos;
-            todos.data.unshift({id: D.uniqueId('todo'), text: payload.text, completed: false});
+            var todos = this.models.todos;
+            todos.data.unshift({ id: D.uniqueId('todo'), text: payload.text, completed: false });
             todos.changed();
         },
 
         updateTodo: function(payload) {
-            var todos = this.store.todos;
+            var todos = this.models.todos;
             _.find(todos.data, 'id', payload.id).text = payload.text;
             todos.changed();
         },
 
         removeTodo: function(payload) {
-            var todos = this.store.todos;
-            todos.set(_.reject(todos.data, {id: payload.id}), true);
+            var todos = this.models.todos;
+            todos.set(_.reject(todos.data, { id: payload.id }), true);
         },
 
         completeTodo: function(payload) {
-            var todos = this.store.todos;
-            _.find(todos.data, {id: payload.id}).completed = payload.completed;
+            var todos = this.models.todos;
+            _.find(todos.data, { id: payload.id }).completed = payload.completed;
             todos.changed();
         },
 
         toggleAllTodos: function(payload) {
-            var todos = this.store.todos;
+            var todos = this.models.todos;
             _.map(todos.data, function(item) {
                 item.completed = payload.completed;
             });
@@ -40,22 +35,26 @@ module.exports = {
         },
 
         clearCompleted: function() {
-            var todos = this.store.todos;
-            todos.set(_.reject(todos.data, {completed: true}), true);
+            var todos = this.models.todos;
+            todos.set(_.reject(todos.data, { completed: true }), true);
         }
     },
 
-    items: {
-        header: 'header',
-        main: 'main',
-        footer: 'footer'
-    },
+    models: {
+        todos: { autoLoad: 'after' }
+    }
+};
 
-    mixin: {
-        filter: function(id) {
-            this.filterKey = id;
-            this.items.main.render();
-            this.items.footer.render();
-        }
+exports.items = {
+    header: 'header',
+    main: 'main',
+    footer: 'footer'
+};
+
+exports.mixin = {
+    filter: function(id) {
+        this.filterKey = id;
+        this.items.main.render();
+        this.items.footer.render();
     }
 };

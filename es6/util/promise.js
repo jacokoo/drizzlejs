@@ -61,7 +61,7 @@ D.Promise = class Promiser {
         if (args.length === 0) return this.resolve();
 
         return this.create((resolve, reject) => {
-            doRing(args, resolve, reject, args.shift(), 0);
+            doRing(args, args.shift(), resolve, reject);
         });
     }
 };

@@ -57,8 +57,8 @@ D.Event = {
                 if (result.length === 0) delete target._listeners[name];
             },
 
-            on (name, fn, context) {
-                target.listenTo(me, name + id, context);
+            on (name, fn) {
+                target.listenTo(me, name + id, fn);
             },
 
             off (name, fn) {

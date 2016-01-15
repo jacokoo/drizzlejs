@@ -1,6 +1,7 @@
 D.Module = class Module extends D.RenderableContainer {
     _initialize () {
         this.app._modules[`${this.name}--${this.id}`] = this;
+        this._initializeStore();
         return super._initialize();
     }
 

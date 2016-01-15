@@ -28,9 +28,9 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             let opt = D.isFunction(options) ? options.call(this) : options;
             if (D.isString(opt)) opt = { region: opt };
 
-            return this.app[options.isModule ? '_createModule' : '_createView'](name, parent).then((item) => {
+            return this.app[options.isModule ? '_createModule' : '_createView'](name, this).then((item) => {
                 const i = item;
-                i.moduleOptions = options;
+                i.moduleOptions = opt;
                 this._items[name] = item;
                 return item;
             });
@@ -49,7 +49,7 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
         return this.chain(mapObj(this.items, (item) => {
             const { region } = item.moduleOptions;
             if (!region) return;
-            if (!this.regions[region]) this.error(`Region: ${region} is not defined`);
+            if (!this.regions[region]) this._error(`Region: ${region} is not defined`);
             this.regions[region].show(item);
         }), this);
     }

@@ -1,6 +1,6 @@
 #!handlebars html
 
-layout
+module
     div.todoapp
         div(data-region='header')
         div(data-region='main')

@@ -20,7 +20,7 @@ D.Loader = class Loader extends D.Base {
 
         return this.Promise.create((resolve, reject) => {
             if (amd) {
-                require([fullPath], (obj) => resolve(obj), (e) => reject(e));
+                require([fullPath], resolve, reject);
             } else if (getResource) {
                 resolve(getResource.call(this.app, fullPath));
             } else {
@@ -42,6 +42,7 @@ D.Loader = class Loader extends D.Base {
     }
 
     loadRouter (path) {
-        return this.loadResource(`${path}/${this.app.options.fileNames.router}`);
+        const name = this.app.options.fileNames.router;
+        return this.loadResource(path ? `${path}/${name}` : name);
     }
 };

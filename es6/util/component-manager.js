@@ -12,10 +12,10 @@ D.ComponentManager = {
 
     _create (renderable, options) {
         const { name, id, selector, options: opt } = options;
-        if (!name) renderable.error('Component name can not be null');
+        if (!name) renderable._error('Component name can not be null');
 
         const handler = this._handlers[name] || this._defaultHandler;
-        if (!handler) renderable.error('No handler for component:', name);
+        if (!handler) renderable._error('No handler for component:', name);
 
         const dom = selector ? renderable.$$(selector) : renderable.$(id);
         const uid = id ? id : D.uniqueId('comp');

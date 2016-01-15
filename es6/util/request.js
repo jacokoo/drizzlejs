@@ -48,7 +48,7 @@ D.Request = {
         params.data = Object.assign({}, data, params.data);
         params.url = this._url(model);
 
-        return D.Promise.create((resolve, reject) => {
+        return model.Promise.create((resolve, reject) => {
             D.Adapter.ajax(params).then((...args) => {
                 model.set(D.Adapter.ajaxResult(args), !params.slient);
                 resolve(args);

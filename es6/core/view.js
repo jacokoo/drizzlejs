@@ -7,7 +7,7 @@ D.View = class View extends D.ActionCreator {
     _initializeDataBinding () {
         this._dataBinding = {};
         mapObj(this._option('bindings'), (value, key) => {
-            const model = this.bindings[key] = this.module.store[key];
+            const model = this.bindings[key] = this.module.store.models[key];
             if (!model) this._error('No model:', key);
 
             if (!value) return;
@@ -19,7 +19,7 @@ D.View = class View extends D.ActionCreator {
     }
 
     _bindData () {
-        mapObj(this._dataBinding, (value) => this.listenTo(value.model, 'change', value.fn));
+        mapObj(this._dataBinding, (value) => this.listenTo(value.model, 'changed', value.fn));
     }
 
     _unbindData () {

@@ -1,0 +1,28 @@
+root: true
+extends: airbnb/legacy
+
+env:
+    browser: true
+rules:
+    indent:
+        - 2
+        - 4
+    space-before-function-paren:
+        - 2
+        - anonymous: never
+          named: always
+    comma-dangle: 0
+    one-var: 0
+    func-names: 0
+    no-unused-expressions: 0
+    max-len:
+        - 2
+        - 120
+        - 4
+    no-return-assign: 0
+    no-param-reassign:
+        - 0
+        - props: false
+    eqeqeq:
+        - 2
+        - allow-null

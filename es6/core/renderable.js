@@ -9,11 +9,12 @@ D.Renderable = class Renderable extends D.Base {
             _events: {}
         });
         this._eventHandlers = this._option('handlers');
-        this._templateEngine = this._option('templateEngine') || mod && mod._templateEngine || app._templateEngine;
         app.delegateEvent(this);
     }
 
     _initialize () {
+        this._templateEngine = this._option('templateEngine')
+            || this.module && this.module._templateEngine || this.app._templateEngine;
         return this.chain(
             [this._templateEngine._load(this), this._initializeEvents()],
             ([template]) => this._template = template
@@ -33,7 +34,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _render (options = {}, update) {
-        if (!this.region) this.error('Region is null');
+        if (!this._region) this._error('Region is null');
 
         this.renderOptions = options;
         return this.chain(
@@ -74,7 +75,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     get _element () {
-        return this._region ? this._region.getElement(this) : null;
+        return this._region ? this._region._getElement(this) : null;
     }
 
     _serializeData () {

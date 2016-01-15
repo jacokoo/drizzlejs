@@ -1,4 +1,4 @@
-const PUSH_STATE_SUPPORTED = root.history && ('pushState' in root.history);
+const PUSH_STATE_SUPPORTED = root && root.history && ('pushState' in root.history);
 const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
 class Route {
@@ -45,6 +45,7 @@ D.Router = class Router extends D.Base {
     }
 
     navigate (path, trigger) {
+        if (!this._started) return;
         if (PUSH_STATE_SUPPORTED) {
             root.history.pushState({}, root.document.title, '#' + path);
         } else {
@@ -55,15 +56,16 @@ D.Router = class Router extends D.Base {
     }
 
     _start (defaultPath) {
-        if (this._started) return;
+        if (this._started || !root) return;
         D.Adapter.addEventListener(root, 'hashchange', this._EVENT_HANDLER, false);
 
         const hash = this._getHash() || defaultPath;
-        if (hash) this.navigate(hash);
         this._started = true;
+        if (hash) this.navigate(hash);
     }
 
     _stop () {
+        if (!this._started) return;
         D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
         this._started = false;
     }
@@ -72,8 +74,8 @@ D.Router = class Router extends D.Base {
         if (path === this._previousHash) return;
         this._previousHash = path;
 
-        for (let i = 0; i < this.routes.length; i++) {
-            const route = this.routes[i];
+        for (let i = 0; i < this._routes.length; i++) {
+            const route = this._routes[i];
             if (route.match(path)) {
                 route.handle(path);
                 return;
@@ -113,7 +115,7 @@ D.Router = class Router extends D.Base {
             items.pop();
         }
 
-        if (this.interceptors['']) result.unshift(this.interceptors['']);
+        if (this._interceptors['']) result.unshift(this._interceptors['']);
         return result;
     }
 
