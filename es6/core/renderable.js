@@ -22,7 +22,7 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     render (options) {
-        return this._render(options, true);
+        return this._render(options == null ? this.renderOptions : options, true);
     }
 
     $ (id) {
@@ -65,7 +65,7 @@ D.Renderable = class Renderable extends D.Base {
             () => this.trigger('beforeClose'),
             () => this._option('beforeClose'),
             this._beforeClose,
-            [this._unbindEvents, this.destroyComponents, () => this._region._empty(this)],
+            [this._unbindEvents, this._destroyComponents, () => this._region._empty(this)],
             this._afterClose,
             () => this._option('afterClose'),
             () => this.trigger('afterClose'),
@@ -131,20 +131,21 @@ D.Renderable = class Renderable extends D.Base {
     }
 
     _renderComponents () {
-        this.chain(map(this._option('components'), (item) => {
+        return this.chain(map(this._option('components'), (item) => {
             const i = D.isFunction(item) ? item.call(this) : item;
-            return i ? D.ComponentManager.create(this, i) : null;
+            return i ? D.ComponentManager._create(this, i) : null;
         }), (components) => map(components, (item) => {
             if (!item) return;
             const { id, component, index } = item, value = this.components[id];
-            D.isArray(value) ? value.push(component) : (this.components[id] = value ? [value, component] : component);
+            D.isArray(value) ? value.push(component) : (this.components[id] = (value ? [value, component] : component));
             this._componentMap[index] = item;
         }));
     }
 
     _destroyComponents () {
         this.components = {};
-        mapObj(this._componentMap, (value) => D.ComponentManager.destroy(this, value));
+        mapObj(this._componentMap, (value) => D.ComponentManager._destroy(this, value));
+        this._componentMap = {};
     }
 
     _wrapDomId (id) {

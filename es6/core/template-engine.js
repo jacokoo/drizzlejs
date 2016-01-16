@@ -29,11 +29,11 @@ D.TemplateEngine = class TemplateEngine extends D.Base {
     }
 
     _loadIt (renderable) {
-        if (renderable instanceof Drizzle.View) {
-            return () => renderable.module._template;
+        if (renderable instanceof Drizzle.Module) {
+            return renderable._loader.loadModuleResource(renderable, 'templates');
         }
 
-        return renderable._loader.loadModuleResource(renderable, 'templates');
+        return () => renderable.module._template;
     }
 
     _execute (renderable, data, template /* , update */) {

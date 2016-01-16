@@ -1,30 +1,13 @@
-(function() {
-    /*
-        compiled by Handlebars:
-        {{#layout}}<div id="layout"></div>{{/layout}}
-    */
-  var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-  templates['app/demo/templates'] = template({"1":function(depth0,helpers,partials,data) {
-      return "<div id=\"layout\"></div>";
-  },"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-      var stack1, helper, options;
-
-    stack1 = ((helper = (helper = helpers.layout || (depth0 != null ? depth0.layout : depth0)) != null ? helper : helpers.helperMissing),(options={"name":"layout","hash":{},"fn":this.program(1, data, 0),"inverse":this.noop,"data":data}),(typeof helper === "function" ? helper.call(depth0,options) : helper));
-    if (!helpers.layout) { stack1 = helpers.blockHelperMissing.call(depth0,stack1,options)}
-    if (stack1 != null) { return stack1; }
-    else { return ''; }
-  },"useData":true});
-})()
-
-describe('Model & Request', function() {
-    var modules = {
-        'app/demo/index': {},
-        'app/demo/templates': Handlebars.templates['app/demo/templates'],
-        'app/foo/index': {
-            urlPrefix: 'prefix'
-        },
-        'app/foo/templates': Handlebars.templates['app/demo/templates']
-    }, app, getResource;
+describe('Store & Model & Request', function() {
+    var template = Handlebars.compile('{{#module}}<div id="layout"></div>{{/module}}'),
+        modules = {
+            'app/demo/index': {},
+            'app/demo/templates': template,
+            'app/foo/index': {
+                urlPrefix: 'prefix'
+            },
+            'app/foo/templates': template
+        }, app, getResource;
 
     before(function() {
         getResource = function(path) {
@@ -32,14 +15,19 @@ describe('Model & Request', function() {
         };
         app = new Drizzle.Application({
             getResource: getResource,
-            defaultRegion: document.getElementById('content'),
+            defaultRegion: document.body,
+            viewport: 'demo',
             urlRoot: 'api',
             urlSuffix: '.json'
         });
     });
 
-    it('#constructor', function(done) {
-        app.show('demo').then(function(mod) {
+    it('#store', function() {
+
+    });
+
+    it('#create model', function(done) {
+        app.start().then(function(mod) {
             var demo = new Drizzle.Model(app, mod, {
                 url: 'foo', data: {name: 'foo'}
             }), demos = new Drizzle.Model(app, mod, {
@@ -361,6 +349,6 @@ describe('Model & Request', function() {
     })
 
     after(function() {
-        app.destory();
+        app.stop();
     });
 });

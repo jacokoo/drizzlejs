@@ -40,4 +40,9 @@ describe('Drizzle', function() {
         expect(d.uniqueId('hello')).to.equal('hello' + (Number(id) + 2));
     });
 
+    it('#adapter', function() {
+        var h = function() {};
+        Drizzle.adapt({ h: h});
+        expect(Drizzle.Adapter.h).to.equal(h);
+    });
 });

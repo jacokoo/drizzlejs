@@ -7,7 +7,7 @@ D.ComponentManager = {
     },
 
     register (name, creator, destructor) {
-        this.handlers[name] = { creator, destructor: destructor || EMPTY };
+        this._handlers[name] = { creator, destructor: destructor || EMPTY };
     },
 
     _create (renderable, options) {

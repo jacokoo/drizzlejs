@@ -23,14 +23,3 @@ window.app = app = new D.Application({
 });
 
 app.start('todos');
-
-/*
-
-virtual dom support via diff-dom
-
-var diffDom = require('diff-dom');
-var dd = new diffDom();
-D.View.prototype.updateDom = function() {
-    dd.apply(this.getEl(), dd.diff(this.getEl(), this.virtualEl));
-}
-*/

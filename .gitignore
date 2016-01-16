@@ -4,3 +4,4 @@ demo/build
 node_modules
 starter-kit/**/dist
 bundle
+coverage

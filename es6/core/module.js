@@ -10,7 +10,7 @@ D.Module = class Module extends D.RenderableContainer {
     }
 
     dispatch (name, payload) {
-        this._store.dispatch(name, payload);
+        return this._store.dispatch(name, payload);
     }
 
     _initializeStore () {

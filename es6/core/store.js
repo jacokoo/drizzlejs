@@ -5,8 +5,14 @@ D.Store = class Store extends D.Base {
             module: mod,
             _models: {}
         });
-        this._callbacks = this._option('callbacks');
+        
         this.app.delegateEvent(this);
+
+        this._callbacks = this._option('callbacks');
+        mapObj(this._callbacks, (value, key) => {
+            if (key.slice(0, 4) !== 'app.') return;
+            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+        });
     }
 
     get models () {return this._models;}
@@ -30,11 +36,6 @@ D.Store = class Store extends D.Base {
             module: this.module,
             app: this.app
         }, D.Request);
-
-        mapObj(this._callbacks, (value, key) => {
-            if (key.slice(0, 4) !== 'app.') return;
-            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
-        });
     }
 
     _initializeModels () {

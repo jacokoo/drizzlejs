@@ -67,6 +67,24 @@ describe('Promise', function() {
                 done();
             });
         });
+
+        it('should be resolved after all the items are resovled', function(done) {
+            var a = delay(200, 1), b = delay(400, 2);
+            promise.parallel([a, b]).then(function(args) {
+                expect(args).to.have.length(2);
+                expect(args[0]).to.equal(1);
+                expect(args[1]).to.equal(2);
+
+                done();
+            });
+        });
+
+        it('should be interupted', function(done) {
+            promise.parallel([delay(200, 1), promise.reject(2)]).then(null, function(args) {
+                expect(args).to.equal(2);
+                done();
+            });
+        });
     });
 
     describe('#chain', function() {

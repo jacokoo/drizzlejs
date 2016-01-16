@@ -21,7 +21,12 @@ D.Promise = class Promiser {
         return this.create((resolve, reject) => {
             const result = [], thenables = [], indexMap = {};
             map(items, (item, i) => {
-                const value = D.isFunction(item) ? item.apply(this.context, args) : item;
+                let value;
+                try {
+                    value = D.isFunction(item) ? item.apply(this.context, args) : item;
+                } catch (e) {
+                    reject(e);
+                }
                 if (value && value.then) {
                     indexMap[thenables.length] = i;
                     thenables.push(value);
@@ -53,7 +58,13 @@ D.Promise = class Promiser {
                 ring.length === 0 ? nextRing([]) :
                     this.parallel(ring, ...(prev != null ? [prev] : [])).then(nextRing, reject);
             } else {
-                const value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
+                let value;
+                try {
+                    value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
+                } catch (e) {
+                    reject(e);
+                }
+
                 value && value.then ? value.then(nextRing, reject) : nextRing(value);
             }
         };
