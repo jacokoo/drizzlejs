@@ -37,7 +37,7 @@ D.Request = {
 
         base && parts.push(base);
         model.data && model.data[model._idKey] && parts.push(model.data[model._idKey]);
-        urlSuffix && parts.push(urlSuffix);
+        urlSuffix && parts.push(parts.pop() + urlSuffix);
 
         return parts.join('/');
     },

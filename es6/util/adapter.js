@@ -3,10 +3,12 @@ D.Adapter = {
 
     ajax (params) {
         const xhr = new XMLHttpRequest();
-        xhr.open(params.type, params.url, true);
+        let url = params.url;
+        if (params.type === 'GET' && params.data) url += '?' + (mapObj(params.data, (v, k) => `${k}=${v}`)).join('&');
+        xhr.open(params.type, url, true);
         const promise = new Promise((resolve, reject) => {
             xhr.onload = function() {
-                if (this.status >= 200 && this.status < 4000) {
+                if (this.status >= 200 && this.status < 400) {
                     resolve(JSON.parse(this.response));
                     return;
                 }

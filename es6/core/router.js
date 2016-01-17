@@ -95,12 +95,12 @@ D.Router = class Router extends D.Base {
         const { routes, interceptors } = options;
 
         mapObj(D.isFunction(routes) ? routes.apply(this) : routes, (value, key) => {
-            const p = (path + key).replace(/^\/|\/$/g, '');
+            const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
             this._routes.unshift(new Route(this.app, this, p, options[value]));
         });
 
         mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, (value, key) => {
-            const p = (path + key).replace(/^\/|\/$/g, '');
+            const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
             this._interceptors[p] = options[value];
         });
     }

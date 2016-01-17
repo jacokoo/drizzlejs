@@ -5,7 +5,7 @@ D.Store = class Store extends D.Base {
             module: mod,
             _models: {}
         });
-        
+
         this.app.delegateEvent(this);
 
         this._callbacks = this._option('callbacks');
@@ -42,7 +42,7 @@ D.Store = class Store extends D.Base {
         mapObj(this._option('models'), (value, key) => {
             const v = (D.isFunction(value) ? value.call(this) : value) || {};
             if (v.shared === true) {
-                this._models[key] = this.app.viewport.store[key];
+                this._models[key] = this.app.viewport.store.models[key];
                 return;
             }
             this._models[key] = this.app._createModel(this, v);

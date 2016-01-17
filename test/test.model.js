@@ -1,354 +1,195 @@
-describe('Store & Model & Request', function() {
-    var template = Handlebars.compile('{{#module}}<div id="layout"></div>{{/module}}'),
+describe('Store & Model', function() {
+    var returnValue = {a: 1}, spy1 = sinon.stub().returns(returnValue), template = Handlebars.compile([
+            '{{#module}}<div id="layout" data-region="content"></div><div data-region="foo"></foo>{{/module}}',
+            '{{#view "hello"}}hello{{/view}}'
+        ].join('')),
         modules = {
-            'app/demo/index': {},
+            'app/demo/index': {
+                store: {
+                    models: {
+                        qux: function() { return {data: [1, 2, 3]}; }
+                    }
+                }
+            },
             'app/demo/templates': template,
             'app/foo/index': {
-                urlPrefix: 'prefix'
+                urlPrefix: 'prefix',
+                items: {
+                    hello: 'content',
+                    demo: {region: 'foo', isModule: true}
+                },
+
+                store: {
+                    models: {
+                        foo: {url: 'foo', data: [1, 2], params: returnValue},
+                        bar: {url: '../bar', autoLoad: 'after', root: 'a'},
+                        baz: {url: '../../baz', autoLoad: true, parse: function(data) {
+                            data.b = 2
+                            return data;
+                        }},
+                        qux: {shared: true}
+                    },
+                    callbacks: {
+                        foo: spy1
+                    }
+                }
             },
-            'app/foo/templates': template
-        }, app, getResource;
+            'app/foo/templates': template,
+            'app/foo/view-hello': {}
+        }, app, getResource = function(path) {
+            return modules[path];
+        }, xhr, requests = [], handled = [];
 
     before(function() {
-        getResource = function(path) {
-            return modules[path];
+        xhr = sinon.useFakeXMLHttpRequest();
+        xhr.onCreate = function(options) {
+            requests.push(options);
+            setTimeout(function() {
+                if (handled.length === 8) {
+                    options.respond(500, {'Content-Type': 'application/json'}, '{"a": 1}');
+                    return;
+                }
+                options.respond(200, {'Content-Type': 'application/json'}, '{"a": 1}');
+                handled.push(options);
+            }, 100);
         };
+    });
+
+    beforeEach(function() {
+        requests = [];
+        handled = [];
         app = new Drizzle.Application({
             getResource: getResource,
-            defaultRegion: document.body,
             viewport: 'demo',
+            defaultRegion: document.body,
             urlRoot: 'api',
             urlSuffix: '.json'
         });
     });
 
-    it('#store', function() {
+    it('#store', function(done) {
+        app.chain(app.start(), function() {
+            return app.show('content', 'foo');
+        }, function(foo) {
+            expect(foo.store).to.be.an.instanceof(Drizzle.Store);
+            expect(foo.store).to.include.keys('app', 'module');
+            expect(foo.store.app).to.equal(app);
+            expect(foo.store.module).to.equal(foo);
 
+            expect(foo.store.models).to.have.keys('foo', 'bar', 'baz', 'qux');
+            expect(foo.store.models.foo).to.be.an.instanceof(Drizzle.Model);
+            expect(foo.store.models.bar).to.be.an.instanceof(Drizzle.Model);
+            expect(foo.store.models.baz).to.be.an.instanceof(Drizzle.Model);
+
+            var obj = {a: 1};
+            foo.store.dispatch({name: 'foo', payload: obj});
+            expect(spy1).to.be.calledWith(obj);
+        }, done);
     });
 
-    it('#create model', function(done) {
-        app.start().then(function(mod) {
-            var demo = new Drizzle.Model(app, mod, {
-                url: 'foo', data: {name: 'foo'}
-            }), demos = new Drizzle.Model(app, mod, {
-                url: 'bar', data: [{id: 1, name: 'bar'}], params: {name: 'bar'}
-            });
+    it('#model', function(done) {
+        app.chain(app.start(), function() {
+            return app.show('content', 'foo');
+        }, function(foo) {
+            var models = foo.store.models;
+            expect(models.foo).to.include.keys('app', 'module', 'store');
+            expect(models.foo.app).to.equal(app);
+            expect(models.foo.module).to.equal(foo);
+            expect(models.foo.store).to.equal(foo.store);
+            expect(models.qux.module).to.equal(app.viewport);
 
-            expect(demo).is.an.instanceof(Drizzle.Model);
-            expect(demos).is.an.instanceof(Drizzle.Model);
+            expect(models.foo.data).to.deep.equal([1, 2]);
+            expect(models.foo.params).to.deep.equal({a: 1});
 
-            expect(demo.data).to.have.keys('name').and.is.an.object;
-            expect(demo.data.name).to.equal('foo');
+            expect(models.bar.data).to.equal(1);
+            expect(models.baz.data).to.deep.equal({a: 1, b: 2});
 
-            expect(demos.data).to.have.length(1).and.is.an.array;
-            expect(demos.data[0]).to.deep.equal({id: 1, name: 'bar'});
+            models.foo.clear();
+            models.baz.clear();
+            models.bar.clear();
+            expect(models.foo.data).to.eql([]);
+            expect(models.baz.data).to.eql({});
+            expect(models.bar.data).to.eql({});
 
-            expect(demos.params).to.deep.equal({name: 'bar'});
-            expect(demos.getParams()).to.not.equal(demos.params);
-            expect(demos.getParams()).to.deep.equal(demos.params);
+            var data = {a: 1, b: [1, 2, 3], c: null};
+            models.foo.set(data);
+            expect(models.foo.data).to.equal(data);
+            expect(models.foo.get()).to.equal(data);
+            expect(models.foo.get(true)).to.not.equal(data)
+            expect(models.foo.get(true)).to.eql(data);
 
-            done();
-        });
+            expect(models.foo.fullUrl).to.equal('api/prefix/foo/foo.json');
+            expect(models.bar.fullUrl).to.equal('api/prefix/bar.json');
+            expect(models.baz.fullUrl).to.equal('api/baz.json');
+            expect(models.qux.fullUrl).to.equal('api/demo.json');
+
+            var spy = sinon.spy();
+            models.foo.on('changed', spy);
+            models.foo.set(data, true)
+            expect(spy).to.be.calledOnce;
+            models.foo.changed();
+            expect(spy).to.be.calledTwice;
+            models.foo.clear(true);
+            expect(spy).to.have.callCount(3);
+        }, done);
     });
 
-    it('#url', function(done) {
-        app.show('demo').then(function(mod) {
-            var demo = new Drizzle.Model(app, mod, { url: 'foo' }),
-                demo2 = new Drizzle.Model(app, mod),
-                demo3 = new Drizzle.Model(app, mod, { data: {id: 1} }),
-                demo4 = new Drizzle.Model(app, mod, { data: {name: 1}, idKey: 'name' });
+    it('#request', function(done) {
+        app.chain(app.start(), function() {
+            return app.show('content', 'foo');
+        }, function(foo) {
+            var index = requests.length,
+                model = foo.store.models.foo, request;
+            Drizzle.Request.get(model);
+            request = requests[index ++];
 
-            expect(demo.url()).to.equal('foo');
-            expect(demo.getFullUrl()).to.equal('api/demo/foo.json');
+            expect(request.method).to.equal('GET');
+            expect(request.url).to.equal('api/prefix/foo/foo.json?a=1');
 
-            expect(demo2.url()).to.equal('');
-            expect(demo2.getFullUrl()).to.equal('api/demo.json');
+            model.set({name: '2'});
+            Drizzle.Request.post(model);
+            request = requests[index ++];
+            expect(request.method).to.equal('POST');
+            expect(request.url).to.equal('api/prefix/foo/foo.json');
+            expect(request.requestBody).to.eql({name: '2'});
 
-            expect(demo3.getFullUrl()).to.equal('api/demo/1.json');
-            expect(demo4.getFullUrl()).to.equal('api/demo/1.json');
-            done();
-        });
+            model.set({id: 1, name: '2'});
+            Drizzle.Request.put(model);
+            request = requests[index ++];
+            expect(request.method).to.equal('PUT');
+            expect(request.url).to.equal('api/prefix/foo/foo/1.json');
+            expect(request.requestBody).to.eql({id: 1, name: '2'});
+
+            model.set({id: 1, name: '2'});
+            Drizzle.Request.del(model);
+            request = requests[index ++];
+            expect(request.method).to.equal('DELETE');
+            expect(request.url).to.equal('api/prefix/foo/foo/1.json');
+            expect(request.requestBody).to.eql({id: 1, name: '2'});
+
+            model.set({name: '2'});
+            Drizzle.Request.save(model);
+            request = requests[index ++];
+            expect(request.method).to.equal('POST');
+            expect(request.url).to.equal('api/prefix/foo/foo.json');
+            expect(request.requestBody).to.eql({name: '2'});
+
+            model.set({name: '2', id: 1});
+            Drizzle.Request.save(model);
+            request = requests[index ++];
+            expect(request.method).to.equal('PUT');
+            expect(request.url).to.equal('api/prefix/foo/foo/1.json');
+            expect(request.requestBody).to.eql({name: '2', id: 1});
+
+            return Drizzle.Request.save(model);
+        }).then(null, function() { done(); });
     });
 
-    it('#url with url-prefix', function(done) {
-        app.show('foo').then(function(mod) {
-            var demo = new Drizzle.Model(app, mod),
-                demo2 = new Drizzle.Model(app, mod, {url: '../hello'}),
-                demo3 = new Drizzle.Model(app, mod, {url: '../../hello'});
-                demo4 = new Drizzle.Model(app, mod, {url: '../../../hello'});
-                demo5 = new Drizzle.Model(app, mod, {url: '../../../../../hello'});
-
-            expect(demo.getFullUrl()).to.equal('api/prefix/foo.json');
-            expect(demo2.getFullUrl()).to.equal('api/prefix/hello.json');
-            expect(demo3.getFullUrl()).to.equal('api/hello.json');
-            expect(demo4.getFullUrl()).to.equal('hello.json');
-            expect(demo5.getFullUrl()).to.equal('hello.json');
-            done();
-        })
+    afterEach(function() {
+        app.stop();
     });
-
-    it('#set', function(done) {
-        app.show('foo').then(function(mod) {
-            var data = {name: 'foo'},
-                demo = new Drizzle.Model(app, mod),
-                demo2 = new Drizzle.Model(app, mod, {
-                    parse: function(data) {
-                        expect(this).to.equal(demo2);
-                        data.name = 'parse'
-                        return data;
-                    }
-                }),
-                demo3 = new Drizzle.Model(app, mod, {
-                    root: 'item'
-                });
-
-            demo.set(data);
-            expect(demo.data).to.equal(data);
-
-            demo2.set(data);
-            expect(demo2.data).to.deep.equal({name: 'parse'});
-
-            demo3.set({ name: 'foo', item: {name: 'bar'}});
-            expect(demo3.data).to.deep.equal({name: 'bar'});
-
-            demo.set([{name: 'foo'}, {name: 'bar'}]);
-            expect(demo.data).to.have.length(2).and.is.an.array;
-
-            done();
-        });
-    });
-
-    it('#clear', function(done) {
-        app.show('foo').then(function(mod) {
-            var demo = new Drizzle.Model(app, mod, {
-                data: {name: 'foo'}
-            });
-
-            demo.clear();
-            expect(demo.data).to.be.empty.and.is.an.object;
-
-            demo.set([{name: 'foo'}, {name: 'bar'}]);
-            demo.clear();
-            expect(demo.data).to.be.empty.and.is.an.array;
-
-            done();
-        });
-    });
-
-    it('#change', function(done) {
-        app.show('foo').then(function(mod) {
-            var i = 0, demo = new Drizzle.Model(app, mod);
-                demo.on('change', function() {
-                    i ++;
-                });
-
-            demo.set({a: 1}, true);
-            demo.clear(true);
-            demo.changed();
-
-            expect(i).to.equal(3);
-
-            done();
-        });
-    })
-
-
-    describe('Request', function() {
-        it('#get', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod);
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'GET', url: 'api/prefix/foo.json', data: {}});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.get(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#get with params and id', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {id: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'GET', url: 'api/prefix/foo/1.json', data: {
-                        name: 'foo'
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.get(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#put', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {id: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'PUT', url: 'api/prefix/foo/1.json', data: {
-                        id: 1
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.put(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#post', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {name: 'name', age: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'POST', url: 'api/prefix/foo.json', data: {
-                        name: 'name', age: 1
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.post(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#delete', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {name: 'name', age: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'DELETE', url: 'api/prefix/foo.json', data: {
-                        name: 'name', age: 1
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.del(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#save without id', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {name: 'name', age: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'POST', url: 'api/prefix/foo.json', data: {
-                        name: 'name', age: 1
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.save(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#save with id', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {id: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'PUT', url: 'api/prefix/foo/1.json', data: {
-                        id: 1
-                    }});
-                    return demo.Promise.resolve({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.save(demo).then(function() {
-                    expect(demo.data).to.deep.equal({name: 'foo', id: 1});
-                    expect(i).to.equal(1);
-                    done();
-                });
-            });
-        });
-
-        it('#fail', function(done) {
-            app.show('foo').then(function(mod) {
-                var i = 0, demo = new Drizzle.Model(app, mod, {
-                    data: {id: 1}, params: {name: 'foo'}
-                });
-                Drizzle.Adapter.ajax = function(options) {
-                    expect(options).to.deep.equal({type: 'PUT', url: 'api/prefix/foo/1.json', data: {
-                        id: 1
-                    }});
-                    return demo.Promise.reject({name: 'foo', id: 1});
-                };
-
-                demo.on('change', function() {
-                    i ++;
-                })
-
-                Drizzle.Request.save(demo).then(null, function(obj) {
-                    expect(obj).to.deep.equal([{name: 'foo', id: 1}]);
-                    expect(demo.data).to.deep.equal({id: 1});
-                    expect(i).to.equal(0);
-                    done();
-                });
-            });
-        });
-
-        afterEach(function() {
-            Drizzle.Adapter.ajax = null;
-        });
-    })
 
     after(function() {
-        app.stop();
+        xhr.restore();
     });
 });

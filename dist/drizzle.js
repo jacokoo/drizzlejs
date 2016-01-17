@@ -139,10 +139,14 @@ D.Adapter = {
 
     ajax: function ajax(params) {
         var xhr = new XMLHttpRequest();
-        xhr.open(params.type, params.url, true);
+        var url = params.url;
+        if (params.type === 'GET' && params.data) url += '?' + mapObj(params.data, function (v, k) {
+            return k + '=' + v;
+        }).join('&');
+        xhr.open(params.type, url, true);
         var promise = new Promise(function (resolve, reject) {
             xhr.onload = function () {
-                if (this.status >= 200 && this.status < 4000) {
+                if (this.status >= 200 && this.status < 400) {
                     resolve(JSON.parse(this.response));
                     return;
                 }
@@ -227,6 +231,7 @@ D.Promise = function () {
                         value = D.isFunction(item) ? item.apply(_this2.context, args) : item;
                     } catch (e) {
                         reject(e);
+                        return;
                     }
                     if (value && value.then) {
                         indexMap[thenables.length] = i;
@@ -272,6 +277,7 @@ D.Promise = function () {
                         value = D.isFunction(ring) ? ring.apply(_this3.context, prev != null ? [prev] : []) : ring;
                     } catch (e) {
                         reject(e);
+                        return;
                     }
 
                     value && value.then ? value.then(nextRing, reject) : nextRing(value);
@@ -409,7 +415,7 @@ D.Request = {
 
         base && parts.push(base);
         model.data && model.data[model._idKey] && parts.push(model.data[model._idKey]);
-        urlSuffix && parts.push(urlSuffix);
+        urlSuffix && parts.push(parts.pop() + urlSuffix);
 
         return parts.join('/');
     },
@@ -1397,7 +1403,7 @@ D.Store = function (_D$Base4) {
             mapObj(this._option('models'), function (value, key) {
                 var v = (D.isFunction(value) ? value.call(_this37) : value) || {};
                 if (v.shared === true) {
-                    _this37._models[key] = _this37.app.viewport.store[key];
+                    _this37._models[key] = _this37.app.viewport.store.models[key];
                     return;
                 }
                 _this37._models[key] = _this37.app._createModel(_this37, v);
@@ -1640,6 +1646,7 @@ D.Application = function (_D$Base7) {
         value: function stop() {
             this.off();
             this._region.close();
+            if (this._router) this._router._stop();
         }
     }, {
         key: 'navigate',
@@ -1859,12 +1866,12 @@ D.Router = function (_D$Base8) {
             var interceptors = options.interceptors;
 
             mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
-                var p = (path + key).replace(/^\/|\/$/g, '');
+                var p = (path + '/' + key).replace(/^\/|\/$/g, '');
                 _this48._routes.unshift(new Route(_this48.app, _this48, p, options[value]));
             });
 
             mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, function (value, key) {
-                var p = (path + key).replace(/^\/|\/$/g, '');
+                var p = (path + '/' + key).replace(/^\/|\/$/g, '');
                 _this48._interceptors[p] = options[value];
             });
         }

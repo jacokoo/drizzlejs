@@ -26,6 +26,7 @@ D.Promise = class Promiser {
                     value = D.isFunction(item) ? item.apply(this.context, args) : item;
                 } catch (e) {
                     reject(e);
+                    return;
                 }
                 if (value && value.then) {
                     indexMap[thenables.length] = i;
@@ -63,6 +64,7 @@ D.Promise = class Promiser {
                     value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
                 } catch (e) {
                     reject(e);
+                    return;
                 }
 
                 value && value.then ? value.then(nextRing, reject) : nextRing(value);

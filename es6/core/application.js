@@ -57,6 +57,7 @@ D.Application = class Application extends D.Base {
     stop () {
         this.off();
         this._region.close();
+        if (this._router) this._router._stop();
     }
 
     navigate (hash, trigger) {
