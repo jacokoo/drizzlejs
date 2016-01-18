@@ -15,13 +15,6 @@ D.Application = class Application extends D.Base {
                 module: 'index',
                 view: 'view-',
                 router: 'router'
-            },
-
-            pagination: {
-                pageSize: 10,
-                pageKey: '_page',
-                pageSizeKey: '_pageSize',
-                recordCountKey: 'recordCount'
             }
         }, options), {
             global: {},

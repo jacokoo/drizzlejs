@@ -62,7 +62,7 @@ var Drizzle = {},
         var _ret = function () {
             var result = {};
             mapObj(target, function (value, key) {
-                result[key] = clone(value);
+                return result[key] = clone(value);
             });
             return {
                 v: result
@@ -1598,13 +1598,6 @@ D.Application = function (_D$Base7) {
                 module: 'index',
                 view: 'view-',
                 router: 'router'
-            },
-
-            pagination: {
-                pageSize: 10,
-                pageKey: '_page',
-                pageSizeKey: '_pageSize',
-                recordCountKey: 'recordCount'
             }
         }, options), {
             global: {},
@@ -1900,5 +1893,237 @@ D.Router = function (_D$Base8) {
 
     return Router;
 }(D.Base);
+
+var PAGE_DEFAULT_OPTIONS = {
+    pageSize: 10,
+    pageKey: '_page',
+    pageSizeKey: 'pageSize',
+    recordCountKey: 'recordCount',
+    params: function params(item) {
+        return item;
+    }
+};
+
+D.PageableModel = function (_D$Model) {
+    _inherits(PageableModel, _D$Model);
+
+    _createClass(PageableModel, null, [{
+        key: 'setDefault',
+        value: function setDefault(defaults) {
+            Object.assign(PAGE_DEFAULT_OPTIONS, defaults);
+        }
+    }]);
+
+    function PageableModel(store, options) {
+        _classCallCheck(this, PageableModel);
+
+        var _this49 = _possibleConstructorReturn(this, Object.getPrototypeOf(PageableModel).call(this, store, options));
+
+        _this49._data = _this49._option('data') || [];
+        _this49._p = {
+            page: _this49._option('page') || 1,
+            pageCount: 0,
+            pageSize: _this49._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
+            pageKey: _this49._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
+            pageSizeKey: _this49._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
+            recordCountKey: _this49._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
+        };
+        return _this49;
+    }
+
+    _createClass(PageableModel, [{
+        key: 'set',
+        value: function set() {
+            var data = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+            var trigger = arguments[1];
+
+            this._p.recordCount = data[this._p.recordCountKey] || 0;
+            this._p.pageCount = Math.ceil(this._p.recordCount / this._p.pageSize);
+            _get(Object.getPrototypeOf(PageableModel.prototype), 'set', this).call(this, data, trigger);
+        }
+    }, {
+        key: 'clear',
+        value: function clear(trigger) {
+            this._p.page = 1;
+            this._p.recordCount = 0;
+            this._p.pageCount = 0;
+            _get(Object.getPrototypeOf(PageableModel.prototype), 'clear', this).call(this, trigger);
+        }
+    }, {
+        key: 'turnToPage',
+        value: function turnToPage(page) {
+            if (page <= this._p.pageCount && page >= 1) this._p.page = page;
+            return this;
+        }
+    }, {
+        key: 'firstPage',
+        value: function firstPage() {
+            return this.turnToPage(1);
+        }
+    }, {
+        key: 'lastPage',
+        value: function lastPage() {
+            return this.turnToPage(this._p.pageCount);
+        }
+    }, {
+        key: 'nextPage',
+        value: function nextPage() {
+            return this.turnToPage(this._p.page + 1);
+        }
+    }, {
+        key: 'prevPage',
+        value: function prevPage() {
+            return this.turnToPage(this._p.page - 1);
+        }
+    }, {
+        key: 'params',
+        get: function get() {
+            var _p = this._p;
+            var page = _p.page;
+            var pageKey = _p.pageKey;
+            var pageSizeKey = _p.pageSizeKey;
+            var pageSize = _p.pageSize;
+
+            var params = _get(Object.getPrototypeOf(PageableModel.prototype), 'params', this);
+            params[pageKey] = page;
+            params[pageSizeKey] = pageSize;
+            return PAGE_DEFAULT_OPTIONS.params(params);
+        }
+    }, {
+        key: 'pageInfo',
+        get: function get() {
+            var _p2 = this._p;
+            var page = _p2.page;
+            var pageSize = _p2.pageSize;
+            var recordCount = _p2.recordCount;
+
+            var result = undefined;
+            if (this.data && this.data.length > 0) {
+                result = { page: page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
+            } else {
+                result = { page: page, start: 0, end: 0, total: 0 };
+            }
+
+            if (result.end > result.total) result.end = result.total;
+            return result;
+        }
+    }]);
+
+    return PageableModel;
+}(D.Model);
+
+D.registerModel('pageable', D.PageableModel);
+
+D.MultiRegion = function (_D$Region) {
+    _inherits(MultiRegion, _D$Region);
+
+    function MultiRegion() {
+        _classCallCheck(this, MultiRegion);
+
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(MultiRegion).apply(this, arguments));
+    }
+
+    _createClass(MultiRegion, [{
+        key: '_initialize',
+        value: function _initialize() {
+            this._items = {};
+            this._elements = {};
+        }
+    }, {
+        key: 'activate',
+        value: function activate() {}
+    }, {
+        key: 'show',
+        value: function show(renderable) {
+            var _this51 = this;
+
+            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+            var opt = renderable.moduleOptions,
+                str = D.isString(renderable);
+            var key = options.key;
+            if (!str && !(renderable instanceof D.Renderable)) {
+                this._error('The item is expected to be an instance of Renderable');
+            }
+
+            if (!key && opt && opt.key) key = opt.key;
+            if (!key) this._error('Region key is required');
+            var item = this._items[key];
+
+            if (this._isCurrent(key, item, renderable)) {
+                if (options.forceRender === false) return this.Promise.resolve(item);
+                return item.render(options);
+            }
+
+            return this.chain(str ? this.app._createModule(renderable) : renderable, [function (obj) {
+                return _this51.chain(obj._region && obj._region.close(), obj);
+            }, function () {
+                return _this51.chain(item && item._close(), function () {
+                    delete _this51._items[key];
+                    delete _this51._elements[key];
+                });
+            }], function (_ref8) {
+                var _ref9 = _slicedToArray(_ref8, 1);
+
+                var obj = _ref9[0];
+
+                var attr = obj.module ? obj.module.name + ':' + obj.name : obj.name,
+                    el = _this51._getElement(obj, key);
+
+                _this51._items[key] = obj;
+                el.setAttribute('data-current', attr);
+                obj._setRegion(_this51);
+                return obj._render(options, false);
+            });
+        }
+    }, {
+        key: '_createElement',
+        value: function _createElement() {
+            var el = root.document.createElement('div');
+            this._el.appendChild(el);
+            return el;
+        }
+    }, {
+        key: '_getElement',
+        value: function _getElement(item, key) {
+            if (!item) return this._el;
+            var k = key || item.renderOptions.key || item.moduleOptions.key;
+            if (!this._elements[k]) this._elements[k] = this._createElement(k, item);
+            return this._elements[k];
+        }
+    }, {
+        key: '_isCurrent',
+        value: function _isCurrent(key, item, renderable) {
+            if (!item) return false;
+            return item.name === renderable || renderable && renderable.id === item.id;
+        }
+    }, {
+        key: '_empty',
+        value: function _empty(item) {
+            if (!item) {
+                _get(Object.getPrototypeOf(MultiRegion.prototype), '_empty', this).call(this);
+                return;
+            }
+
+            var el = this._getElement(item);
+            el.parentNode.removeChild(el);
+        }
+    }, {
+        key: 'close',
+        value: function close() {
+            var _this52 = this;
+
+            return this.chain(mapObj(this._items, function (item) {
+                return item._close();
+            }), function () {
+                _this52._elements = {};
+                _this52._items = {};
+                delete _this52._current;
+            }, this);
+        }
+    }]);
+
+    return MultiRegion;
+}(D.Region);
 return Drizzle;
 }));

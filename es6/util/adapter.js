@@ -15,7 +15,7 @@ D.Adapter = {
                 reject(xhr);
             };
 
-            xhr.onerror = function() {
+            xhr.onerror = () => {
                 reject(xhr);
             };
         });

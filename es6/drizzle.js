@@ -1,9 +1,9 @@
 const Drizzle = {},
     D = Drizzle,
     slice = [].slice,
-    EMPTY = function() {},
+    EMPTY = () => {},
 
-    map = function(arr, fn) {
+    map = (arr, fn) => {
         const result = [];
         if (!arr) return result;
         if (arr.map) return arr.map(fn);
@@ -14,7 +14,7 @@ const Drizzle = {},
         return result;
     },
 
-    mapObj = function(obj, fn) {
+    mapObj = (obj, fn) => {
         const result = [];
         let key;
         if (!obj) return result;
@@ -26,19 +26,15 @@ const Drizzle = {},
         return result;
     },
 
-    clone = function(target) {
+    clone = (target) => {
         if (D.isObject(target)) {
             const result = {};
-            mapObj(target, function(value, key) {
-                result[key] = clone(value);
-            });
+            mapObj(target, (value, key) => result[key] = clone(value));
             return result;
         }
 
         if (D.isArray(target)) {
-            return map(target, function(value) {
-                return clone(value);
-            });
+            return map(target, (value) => clone(value));
         }
 
         return target;
@@ -102,3 +98,5 @@ Object.assign(D, {
 // @include core/loader.js
 // @include core/application.js
 // @include core/router.js
+// @include core/pageable-model.js
+// @include core/multi-region.js
