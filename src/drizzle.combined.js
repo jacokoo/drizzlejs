@@ -1,10 +1,3 @@
-/*!
- * DrizzleJS v0.3.18
- * -------------------------------------
- * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
- * Distributed under MIT license
- */
-
 const Drizzle = {},
     D = Drizzle,
     slice = [].slice,

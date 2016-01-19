@@ -1,101 +1,77 @@
-Event = D.Event = {
-    on: function(name, callback, context) {
-        this.events || (this.events = {});
-        this.events[name] || (this.events[name] = []);
-        this.events[name].push({fn: callback, ctx: context});
-        return this;
+D.Event = {
+    on (name, fn, ctx) {
+        this._events || (this._events = {});
+        (this._events[name] || (this._events[name] = [])).push({ fn, ctx });
     },
 
-    off: function(name, callback, context) {
-        var me = this, result;
-        if (!me.events || !name || !me.events[name]) return me;
-        if (!callback) return (delete me.events[name]) && this;
+    off (name, fn) {
+        if (!this._events || !name || !this._events[name]) return;
+        if (!fn) {
+            delete this._events[name];
+            return;
+        }
 
-        result = [];
-        map(me.events[name], function(item) {
-            if (item.fn !== callback || (context && context !== item.ctx)) {
-                result.push(item);
-            }
-        });
+        const result = [];
+        map(this._events[name], (item) => {if (item.fn !== fn) result.push(item);});
 
-        me.events[name] = result;
-        if (!me.events[name].length) delete me.events[name];
-        return me;
+        if (result.length === 0) {
+            delete this._events[name];
+            return;
+        }
+        this._events[name] = result;
     },
 
-    trigger: function(name) {
-        var args;
-        if (!name || !this.events || !this.events[name]) return this;
-        args = slice.call(arguments, 1);
-
-        map(this.events[name], function(item) {
-            item.fn.apply(item.ctx, args);
-        });
-        return this;
+    trigger (name, ...args) {
+        if (!name || !this._events || !this._events[name]) return this;
+        map(this._events[name], (item) => item.fn.apply(item.ctx, args));
     },
 
-    delegateEvent: function(target) {
-        var me = this, id = '--' + target.id;
-        Drizzle.assign(target, {
-            on: function(name, callback, context) {
-                target.listenTo(me, name + id, callback, context);
-                return target;
+    delegateEvent (to) {
+        const me = this, id = '--' + to.id, target = to;
+
+        Object.assign(target, {
+            _listeners: {},
+
+            listenTo (obj, name, fn, ctx) {
+                (target._listeners[name] || (target._listeners[name] = [])).push({ fn, obj });
+                obj.on(name, fn, ctx || target);
             },
 
-            off: function(name, callback) {
-                target.stopListening(me, (name && name + id), callback);
-                return target;
-            },
-
-            trigger: function(name) {
-                var args;
-                if (!name) return target;
-
-                args = slice.call(arguments, 1);
-                args.unshift(name + id);
-                me.trigger.apply(me, args);
-                return target;
-            },
-
-            listenTo: function(obj, name, callback, context) {
-                var ctx = context || target;
-                target.listeners || (target.listeners = {});
-                target.listeners[name] || (target.listeners[name] = []);
-                target.listeners[name].push({obj: obj, fn: callback, ctx: ctx});
-
-                obj.on(name, callback, ctx);
-                return target;
-            },
-
-            stopListening: function(obj, name, callback) {
-                if (!target.listeners) return target;
-
-                if (!obj) {
-                    mapObj(target.listeners, function(value, key) {
-                        map(value, function(item) {
-                            item.obj.off(key, item.fn, item.ctx);
-                        });
-                    });
-                    target.listeners = {};
-                    return target;
-                }
-
-                mapObj(target.listeners, function(value, key) {
-                    if (name && name !== key) return;
-
-                    target.listeners[key] = [];
-                    map(value, function(item) {
-                        if (item.obj !== obj || (callback && callback !== item.fn)) {
-                            target.listeners[key].push(item);
-                        } else {
-                            item.obj.off(key, item.fn, item.ctx);
+            stopListening (obj, name, fn) {
+                mapObj(target._listeners, (value, key) => {
+                    const result = [];
+                    map(value, (item) => {
+                        let offIt = fn && (item.fn === fn && name === key && obj === item.obj);
+                        offIt = offIt || (!fn && name && (name === key && obj === item.obj));
+                        offIt = offIt || (!fn && !name && obj && obj === item.obj);
+                        offIt = offIt || (!fn && !name && !obj);
+                        if (offIt) {
+                            item.obj.off(key, item.fn);
+                            return;
                         }
+                        result.push(item);
                     });
-                });
 
-                return target;
+                    target._listeners[key] = result;
+                    if (result.length === 0) {
+                        delete target._listeners[key];
+                    }
+                });
+            },
+
+            on (name, fn, ctx) {
+                target.listenTo(me, name + id, fn, ctx);
+            },
+
+            off (name, fn) {
+                target.stopListening(me, (name && name + id), fn);
+            },
+
+            trigger (name, ...args) {
+                if (!name) return target;
+                args.unshift(name + id) && me.trigger(...args);
             }
         });
-        return me;
+        return this;
     }
 };

@@ -1,3 +1,10 @@
+/*!
+ * DrizzleJS v0.4.0
+ * -------------------------------------
+ * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
+ * Distributed under MIT license
+ */
+
 ;(function(root, factory) {
   if (typeof define === 'function' && define.amd) {
     define([], factory);
@@ -24,13 +31,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-/*!
- * DrizzleJS v0.3.18
- * -------------------------------------
- * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
- * Distributed under MIT license
- */
 
 var Drizzle = {},
     D = Drizzle,
