@@ -39,7 +39,6 @@ describe('Router', function() {
         app = new Drizzle.Application({
             getResource: getResource,
             viewport: 'demo',
-            defaultRegion: document.body,
             routers: ['', 'demo']
         });
     });

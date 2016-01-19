@@ -25,8 +25,6 @@ D.Adapter = {
 
     ajaxResult (args) { return args[0]; },
 
-    getEventTarget (e) { return e.target; },
-
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
 
     addEventListener (el, name, handler, useCapture) {

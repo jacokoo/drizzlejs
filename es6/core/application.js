@@ -5,7 +5,7 @@ D.Application = class Application extends D.Base {
             urlRoot: '',
             urlSuffix: '',
             caseSensitiveHash: false,
-            defaultRegion: root && root.document.body,
+            container: root && root.document.body,
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
@@ -26,7 +26,7 @@ D.Application = class Application extends D.Base {
     _initialize () {
         this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
         this.registerLoader('default', new D.Loader(this), true);
-        this._region = this._createRegion(this._option('defaultRegion'), 'Region');
+        this._region = this._createRegion(this._option('container'), 'Region');
     }
 
     registerLoader (name, loader, isDefault) {

@@ -110,10 +110,10 @@ D.Renderable = class Renderable extends D.Base {
 
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
-        return (event) => {
+        return (e) => {
             if (!this._eventHandlers[handlerName]) this._error('No event handler for name:', handlerName);
 
-            const target = D.Adapter.getEventTarget(event), args = [event];
+            const target = e.target, args = [e];
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);

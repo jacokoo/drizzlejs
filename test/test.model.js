@@ -61,7 +61,6 @@ describe('Store & Model', function() {
         app = new Drizzle.Application({
             getResource: getResource,
             viewport: 'demo',
-            defaultRegion: document.body,
             urlRoot: 'api',
             urlSuffix: '.json'
         });

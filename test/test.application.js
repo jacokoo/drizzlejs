@@ -22,7 +22,6 @@ describe('Application', function() {
         app = new Drizzle.Application({
             getResource: getResource,
             viewport: 'demo',
-            defaultRegion: document.body,
             routers: ['']
         });
     });
@@ -38,7 +37,7 @@ describe('Application', function() {
         expect(app.name).to.equal('Application');
         expect(app.options.getResource).to.equal(getResource);
         expect(app.options.scriptRoot).to.equal('app');
-        expect(app.options.defaultRegion).to.equal(document.body);
+        expect(app.options.container).to.equal(document.body);
         expect(app.Promise).to.be.an.instanceof(Drizzle.Promise);
         expect(app.global).to.be.empty;
 

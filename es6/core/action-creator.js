@@ -15,7 +15,7 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
             { [name]: actionCallback } = this._option('actionCallbacks') || {};
 
         return (e) => {
-            const target = D.Adapter.getEventTarget(event);
+            const target = e.target;
             if (D.Adapter.hasClass(target, disabledClass)) return;
             D.Adapter.addClass(target, disabledClass);
 

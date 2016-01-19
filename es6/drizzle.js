@@ -1,8 +1,6 @@
 const Drizzle = {},
     D = Drizzle,
     slice = [].slice,
-    EMPTY = () => {},
-
     map = (arr, fn) => {
         const result = [];
         if (!arr) return result;
@@ -60,8 +58,9 @@ if (typeof window !== 'undefined') {
 }
 
 map(['Function', 'Array', 'String', 'Object'], (item) => {
+    const name = `[object ${item}]`;
     D[`is${item}`] = function(obj) {
-        return D.toString.call(obj) === `[object ${item}]`;
+        return D.toString.call(obj) === name;
     };
 });
 

@@ -2,12 +2,12 @@ D.ComponentManager = {
     _handlers: {},
     _componentCache: {},
 
-    setDefaultHandler (creator, destructor = EMPTY) {
+    setDefaultHandler (creator, destructor = () => {}) {
         this._defaultHandler = { creator, destructor };
     },
 
-    register (name, creator, destructor) {
-        this._handlers[name] = { creator, destructor: destructor || EMPTY };
+    register (name, creator, destructor = () => {}) {
+        this._handlers[name] = { creator, destructor };
     },
 
     _create (renderable, options) {

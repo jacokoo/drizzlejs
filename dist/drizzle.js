@@ -35,7 +35,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var Drizzle = {},
     D = Drizzle,
     slice = [].slice,
-    EMPTY = function EMPTY() {},
     map = function map(arr, fn) {
     var result = [];
     if (!arr) return result;
@@ -105,8 +104,9 @@ if (typeof window !== 'undefined') {
 }
 
 map(['Function', 'Array', 'String', 'Object'], function (item) {
+    var name = '[object ' + item + ']';
     D['is' + item] = function (obj) {
-        return D.toString.call(obj) === '[object ' + item + ']';
+        return D.toString.call(obj) === name;
     };
 });
 
@@ -162,9 +162,6 @@ D.Adapter = {
     },
     ajaxResult: function ajaxResult(args) {
         return args[0];
-    },
-    getEventTarget: function getEventTarget(e) {
-        return e.target;
     },
     getFormData: function getFormData(el) {
         throw new Error('getFormData is not implemented', el);
@@ -449,12 +446,14 @@ D.ComponentManager = {
     _componentCache: {},
 
     setDefaultHandler: function setDefaultHandler(creator) {
-        var destructor = arguments.length <= 1 || arguments[1] === undefined ? EMPTY : arguments[1];
+        var destructor = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
 
         this._defaultHandler = { creator: creator, destructor: destructor };
     },
-    register: function register(name, creator, destructor) {
-        this._handlers[name] = { creator: creator, destructor: destructor || EMPTY };
+    register: function register(name, creator) {
+        var destructor = arguments.length <= 2 || arguments[2] === undefined ? function () {} : arguments[2];
+
+        this._handlers[name] = { creator: creator, destructor: destructor };
     },
     _create: function _create(renderable, options) {
         var _this4 = this;
@@ -723,11 +722,11 @@ D.Renderable = function (_D$Base) {
             var id = _ref3.id;
             var disabledClass = this.app.options.disabledClass;
 
-            return function (event) {
+            return function (e) {
                 if (!_this12._eventHandlers[handlerName]) _this12._error('No event handler for name:', handlerName);
 
-                var target = D.Adapter.getEventTarget(event),
-                    args = [event];
+                var target = e.target,
+                    args = [e];
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
                 _this12._eventHandlers[handlerName].apply(_this12, args);
@@ -943,7 +942,7 @@ D.ActionCreator = function (_D$Renderable2) {
             var actionCallback = _ref5[name];
 
             return function (e) {
-                var target = D.Adapter.getEventTarget(event);
+                var target = e.target;
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 D.Adapter.addClass(target, disabledClass);
 
@@ -1588,7 +1587,7 @@ D.Application = function (_D$Base7) {
             urlRoot: '',
             urlSuffix: '',
             caseSensitiveHash: false,
-            defaultRegion: root && root.document.body,
+            container: root && root.document.body,
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
@@ -1611,7 +1610,7 @@ D.Application = function (_D$Base7) {
         value: function _initialize() {
             this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
             this.registerLoader('default', new D.Loader(this), true);
-            this._region = this._createRegion(this._option('defaultRegion'), 'Region');
+            this._region = this._createRegion(this._option('container'), 'Region');
         }
     }, {
         key: 'registerLoader',

@@ -42,7 +42,7 @@ exports.actions = {
     'keypress input-*': 'updateTodo'
 };
 
-exports. dataForActions = {
+exports.dataForActions = {
     completeTodo: function(data, e) {
         data.completed = e.target.checked;
         return data;

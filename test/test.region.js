@@ -11,7 +11,6 @@ describe('Region', function() {
     beforeEach(function() {
         app = new Drizzle.Application({
             getResource: getResource,
-            defaultRegion: document.body,
             viewport: 'demo'
         });
     });

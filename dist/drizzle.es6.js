@@ -8,8 +8,6 @@
 const Drizzle = {},
     D = Drizzle,
     slice = [].slice,
-    EMPTY = () => {},
-
     map = (arr, fn) => {
         const result = [];
         if (!arr) return result;
@@ -67,8 +65,9 @@ if (typeof window !== 'undefined') {
 }
 
 map(['Function', 'Array', 'String', 'Object'], (item) => {
+    const name = `[object ${item}]`;
     D[`is${item}`] = function(obj) {
-        return D.toString.call(obj) === `[object ${item}]`;
+        return D.toString.call(obj) === name;
     };
 });
 
@@ -113,8 +112,6 @@ D.Adapter = {
     },
 
     ajaxResult (args) { return args[0]; },
-
-    getEventTarget (e) { return e.target; },
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
 
@@ -355,12 +352,12 @@ D.ComponentManager = {
     _handlers: {},
     _componentCache: {},
 
-    setDefaultHandler (creator, destructor = EMPTY) {
+    setDefaultHandler (creator, destructor = () => {}) {
         this._defaultHandler = { creator, destructor };
     },
 
-    register (name, creator, destructor) {
-        this._handlers[name] = { creator, destructor: destructor || EMPTY };
+    register (name, creator, destructor = () => {}) {
+        this._handlers[name] = { creator, destructor };
     },
 
     _create (renderable, options) {
@@ -560,10 +557,10 @@ D.Renderable = class Renderable extends D.Base {
 
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
-        return (event) => {
+        return (e) => {
             if (!this._eventHandlers[handlerName]) this._error('No event handler for name:', handlerName);
 
-            const target = D.Adapter.getEventTarget(event), args = [event];
+            const target = e.target, args = [e];
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);
@@ -694,7 +691,7 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
             { [name]: actionCallback } = this._option('actionCallbacks') || {};
 
         return (e) => {
-            const target = D.Adapter.getEventTarget(event);
+            const target = e.target;
             if (D.Adapter.hasClass(target, disabledClass)) return;
             D.Adapter.addClass(target, disabledClass);
 
@@ -1141,7 +1138,7 @@ D.Application = class Application extends D.Base {
             urlRoot: '',
             urlSuffix: '',
             caseSensitiveHash: false,
-            defaultRegion: root && root.document.body,
+            container: root && root.document.body,
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
@@ -1162,7 +1159,7 @@ D.Application = class Application extends D.Base {
     _initialize () {
         this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
         this.registerLoader('default', new D.Loader(this), true);
-        this._region = this._createRegion(this._option('defaultRegion'), 'Region');
+        this._region = this._createRegion(this._option('container'), 'Region');
     }
 
     registerLoader (name, loader, isDefault) {

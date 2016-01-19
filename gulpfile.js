@@ -41,7 +41,10 @@ gulp.task('build', ['clean'], function() {
         .pipe(umd({exports: function() { return 'Drizzle';}}))
         .pipe(gulp.dest('dist'))
         .pipe(rename('drizzle.min.js'))
-        .pipe(uglify({ preserveComments: 'some' }))
+        .pipe(uglify({
+            preserveComments: 'some',
+            output: { max_line_len: 500, ascii_only: true }
+        }))
         .pipe(sourcemaps.init())
         .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest('dist'));

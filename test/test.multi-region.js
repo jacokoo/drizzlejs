@@ -15,8 +15,7 @@ describe('MultiRegion', function() {
     beforeEach(function() {
         app = new Drizzle.Application({
             getResource: getResource,
-            viewport: 'demo',
-            defaultRegion: document.body,
+            viewport: 'demo'
         });
     });
 
