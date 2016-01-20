@@ -17,7 +17,7 @@ D.adapt({
 });
 
 window.app = app = new D.Application({
-    defaultRegion: document.getElementById('content'),
+    container: document.getElementById('content'),
     urlRoot: 'api',
     routers: ['']
 });

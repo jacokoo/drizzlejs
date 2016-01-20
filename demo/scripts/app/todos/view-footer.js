@@ -1,18 +1,19 @@
 var _ = require('lodash/collection');
 
 exports.bindings = {
-    todos: true
+    todos: true,
+    filter: true
 };
 
 exports.dataForTemplate = {
     info: function(data) {
         var info = {
             left: _.filter(data.todos, 'completed', false).length,
-            haveCompleted: _.any(data.todos, 'completed', true),
+            haveCompleted: _.some(data.todos, 'completed', true),
             haveItem: data.todos.length > 0
         };
 
-        info[this.module.filterKey] = true;
+        info[data.filter] = true;
         return info;
     }
 };

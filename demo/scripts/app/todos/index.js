@@ -41,7 +41,8 @@ exports.store = {
     },
 
     models: {
-        todos: { autoLoad: 'after' }
+        todos: { autoLoad: 'after' },
+        filter: { data: 'all' }
     }
 };
 
@@ -53,8 +54,6 @@ exports.items = {
 
 exports.mixin = {
     filter: function(id) {
-        this.filterKey = id;
-        this.items.main.render();
-        this.items.footer.render();
+        this.store.models.filter.set(id, true);
     }
 };

@@ -18,7 +18,7 @@ var fs = require('fs'),
     ],
     options = {
         entries: ['./main.js'],
-        extensions: ['.html'],
+        extensions: ['.hbs'],
         basedir: './scripts',
         debug: false,
         cache: {}, packageCache: {}
@@ -30,7 +30,7 @@ var fs = require('fs'),
                 recurse(filename, root, b);
             } else {
                 ext = path.extname(filename);
-                if (ext === '.js' || ext === '.html') {
+                if (ext === '.js' || ext === '.hbs') {
                     filename = path.relative(root, filename);
                     filename = path.join(path.dirname(filename), path.basename(filename, ext));
                     filename = './' + filename.replace(/\\/g, '/');
@@ -83,7 +83,7 @@ gulp.task('main', main);
 gulp.task('default', ['main', 'common'], function() {
     var app = express(), server = jsonServer.create();
 
-    server.use(jsonServer.defaults);
+    server.use(jsonServer.defaults());
     server.use(jsonServer.router('data/todos.json'));
     app.use(function(req, res, next) {
         console.log('Request URL:', req.originalUrl);
@@ -95,5 +95,4 @@ gulp.task('default', ['main', 'common'], function() {
     app.listen(8000, function() {
         console.log('Server started at localhost:8000');
     });
-    // connect.server({root: '.', port: 8000});
 });

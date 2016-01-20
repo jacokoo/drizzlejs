@@ -14,26 +14,25 @@
     ]
   },
   "devDependencies": {
-    "browserify": "^10.2.0",
+    "browserify": "^13.0.0",
     "browserify-handlebars": "^1.0.0",
-    "express": "^4.12.4",
+    "express": "^4.13.3",
     "get-form-data": "^1.2.5",
-    "gulp": "^3.8.11",
+    "gulp": "^3.9.0",
     "gulp-eslint": "^1.1.1",
     "gulp-handlebars": "^4.0.0",
-    "gulp-sourcemaps": "^1.5.2",
-    "gulp-util": "^3.0.4",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-util": "^3.0.7",
     "gulp-wrap": "^0.11.0",
-    "json-server": "^0.7.8",
+    "json-server": "^0.8.6",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
-    "virtual-dom": "^2.0.1",
-    "watchify": "^3.2.1"
+    "watchify": "^3.7.0"
   },
   "dependencies": {
-    "drizzlejs": "^0.3.0",
-    "handlebars": "^3.0.3",
-    "lodash": "^3.8.0",
+    "drizzlejs": "^0.4.0",
+    "handlebars": "^4.0.5",
+    "lodash": "^4.0.0",
     "purecss": "^0.6.0"
   },
   "sleet": {

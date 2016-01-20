@@ -1,7 +1,8 @@
 var _ = require('lodash/collection');
 
 exports.bindings = {
-    todos: true
+    todos: true,
+    filter: true
 };
 
 exports.events = {
@@ -21,14 +22,14 @@ exports.handlers = {
 
 exports.dataForTemplate = {
     todos: function(data) {
-        var filter = this.module.filterKey;
+        var filter = data.filter;
         if (!filter || filter === 'all') {
             return data.todos;
         }
         return _.filter(data.todos, 'completed', filter === 'completed');
     },
     completed: function(data) {
-        return _.all(data.todos, 'completed', true);
+        return _.every(data.todos, 'completed', true);
     },
     haveItem: function(data) {
         return data.todos.length > 0;
@@ -62,8 +63,6 @@ exports.dataForActions = {
         if (!data.text) {
             return false;
         }
-        // caused by https://github.com/marcelklehr/vdom-virtualize/issues/23
-        data.id = data.qid;
         return data;
     }
 };

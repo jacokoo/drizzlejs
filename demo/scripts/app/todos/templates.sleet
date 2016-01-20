@@ -1,4 +1,4 @@
-#!handlebars html
+#!handlebars
 
 module
     div.todoapp
@@ -22,7 +22,7 @@ view('main')
                     button.destroy(id='destroy-' + id)(data-name='id' data-value=id)
                 form
                     input.edit(value=text id='input-' + id name='text')
-                    input(type='hidden' name='qid' value=id)
+                    input(type='hidden' name='id' value=id)
 
 view('footer')
     div.footer(class='hidden')&unless(info.haveItem)
