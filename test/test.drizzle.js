@@ -45,4 +45,28 @@ describe('Drizzle', function() {
         Drizzle.adapt({ h: h});
         expect(Drizzle.Adapter.h).to.equal(h);
     });
+
+    it('#extend', function() {
+        var A = function(name) {
+            this.name = name;
+        };
+        A.a = 'a';
+        A.prototype.hello = function() { return 'hello ' + this.name; };
+
+        var B = function(name) {
+            B.__super__.constructor.call(this, name);
+        };
+
+        Drizzle.extend(B, A, {
+            greet: function() {
+                return 'hi ' + this.name;
+            }
+        });
+
+        var b = new B('b');
+        expect(B.a).to.equal('a');
+        expect(b).to.be.an.instanceof(A);
+        expect(b.hello()).to.equal('hello b');
+        expect(b.greet()).to.equal('hi b');
+    });
 });

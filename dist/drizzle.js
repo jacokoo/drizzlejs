@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.0
+ * DrizzleJS v0.4.1
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -131,6 +131,15 @@ Object.assign(D, {
     },
     adapt: function adapt(obj) {
         Object.assign(D.Adapter, obj);
+    },
+    extend: function extend(theChild, theParent, obj) {
+        var child = theChild;
+        Object.assign(child, theParent);
+        child.prototype = Object.create(theParent.prototype, { constructor: child });
+        Object.assign(child.prototype, obj);
+        child.__super__ = theParent.prototype;
+
+        return child;
     }
 });
 

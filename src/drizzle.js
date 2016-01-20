@@ -76,6 +76,16 @@ Object.assign(D, {
 
     adapt (obj) {
         Object.assign(D.Adapter, obj);
+    },
+
+    extend (theChild, theParent, obj) {
+        const child = theChild;
+        Object.assign(child, theParent);
+        child.prototype = Object.create(theParent.prototype, { constructor: child });
+        Object.assign(child.prototype, obj);
+        child.__super__ = theParent.prototype;
+
+        return child;
     }
 });
 
