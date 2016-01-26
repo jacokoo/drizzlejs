@@ -8,7 +8,7 @@ const PAGE_DEFAULT_OPTIONS = {
 
 D.PageableModel = class PageableModel extends D.Model {
     static setDefault (defaults) {
-        Object.assign(PAGE_DEFAULT_OPTIONS, defaults);
+        assign(PAGE_DEFAULT_OPTIONS, defaults);
     }
 
     constructor (store, options) {

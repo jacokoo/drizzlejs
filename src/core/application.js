@@ -1,6 +1,6 @@
 D.Application = class Application extends D.Base {
     constructor (options) {
-        super(options && options.name || 'Application', Object.assign({
+        super(options && options.name || 'Application', assign({
             scriptRoot: 'app',
             urlRoot: '',
             urlSuffix: '',
@@ -98,4 +98,4 @@ D.Application = class Application extends D.Base {
     }
 };
 
-Object.assign(D.Application.prototype, D.Event);
+assign(D.Application.prototype, D.Event);

@@ -8,7 +8,7 @@ D.Model = class Model extends D.Base {
 
         this._data = this._option('data') || {};
         this._idKey = this._option('idKey') || this.app.options.idKey;
-        this._params = Object.assign({}, this._option('params'));
+        this._params = assign({}, this._option('params'));
         this.app.delegateEvent(this);
     }
 

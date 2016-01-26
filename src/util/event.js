@@ -29,7 +29,7 @@ D.Event = {
     delegateEvent (to) {
         const me = this, id = '--' + to.id, target = to;
 
-        Object.assign(target, {
+        assign(target, {
             _listeners: {},
 
             listenTo (obj, name, fn, ctx) {

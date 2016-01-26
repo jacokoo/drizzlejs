@@ -43,9 +43,9 @@ D.Request = {
     },
 
     _ajax (method, model, data, options) {
-        const params = Object.assign({ type: method }, options);
+        const params = assign({ type: method }, options);
 
-        params.data = Object.assign({}, data, params.data);
+        params.data = assign({}, data, params.data);
         params.url = this._url(model);
 
         return model.Promise.create((resolve, reject) => {

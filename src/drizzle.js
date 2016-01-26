@@ -38,6 +38,12 @@ const Drizzle = {},
         return target;
     },
 
+    assign = (target, ...args) => {
+        const t = target;
+        t && map(args, (arg) => arg && mapObj(arg, (value, key) => t[key] = value));
+        return t;
+    },
+
     typeCache = {
         View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
@@ -69,20 +75,22 @@ map(['Module', 'View', 'Region', 'Model', 'Store'], (item) => {
     typeCache['create' + item] = (name, ...args) => typeCache.create(item, name, ...args);
 });
 
-Object.assign(D, {
+assign(D, {
+    assign,
+
     uniqueId (prefix = '') {
         return `${prefix}${++counter}`;
     },
 
     adapt (obj) {
-        Object.assign(D.Adapter, obj);
+        assign(D.Adapter, obj);
     },
 
     extend (theChild, theParent, obj) {
         const child = theChild;
-        Object.assign(child, theParent);
+        assign(child, theParent);
         child.prototype = Object.create(theParent.prototype, { constructor: child });
-        Object.assign(child.prototype, obj);
+        assign(child.prototype, obj);
         child.__super__ = theParent.prototype;
 
         return child;

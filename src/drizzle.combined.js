@@ -38,6 +38,12 @@ const Drizzle = {},
         return target;
     },
 
+    assign = (target, ...args) => {
+        const t = target;
+        t && map(args, (arg) => arg && mapObj(arg, (value, key) => t[key] = value));
+        return t;
+    },
+
     typeCache = {
         View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
@@ -69,20 +75,22 @@ map(['Module', 'View', 'Region', 'Model', 'Store'], (item) => {
     typeCache['create' + item] = (name, ...args) => typeCache.create(item, name, ...args);
 });
 
-Object.assign(D, {
+assign(D, {
+    assign,
+
     uniqueId (prefix = '') {
         return `${prefix}${++counter}`;
     },
 
     adapt (obj) {
-        Object.assign(D.Adapter, obj);
+        assign(D.Adapter, obj);
     },
 
     extend (theChild, theParent, obj) {
         const child = theChild;
-        Object.assign(child, theParent);
+        assign(child, theParent);
         child.prototype = Object.create(theParent.prototype, { constructor: child });
-        Object.assign(child.prototype, obj);
+        assign(child.prototype, obj);
         child.__super__ = theParent.prototype;
 
         return child;
@@ -247,7 +255,7 @@ D.Event = {
     delegateEvent (to) {
         const me = this, id = '--' + to.id, target = to;
 
-        Object.assign(target, {
+        assign(target, {
             _listeners: {},
 
             listenTo (obj, name, fn, ctx) {
@@ -339,9 +347,9 @@ D.Request = {
     },
 
     _ajax (method, model, data, options) {
-        const params = Object.assign({ type: method }, options);
+        const params = assign({ type: method }, options);
 
-        params.data = Object.assign({}, data, params.data);
+        params.data = assign({}, data, params.data);
         params.url = this._url(model);
 
         return model.Promise.create((resolve, reject) => {
@@ -410,7 +418,7 @@ D.Base = class Base {
         this.name = name;
         this.Promise = new D.Promise(this);
 
-        Object.assign(this, defaults);
+        assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
         this._loadedPromise = this._initialize();
     }
@@ -1019,7 +1027,7 @@ D.Store = class Store extends D.Base {
 
     _initialize () {
         this._initializeModels();
-        this._callbackContext = Object.assign({
+        this._callbackContext = assign({
             models: this.models,
             module: this.module,
             app: this.app
@@ -1048,12 +1056,14 @@ D.Store = class Store extends D.Base {
 
     _loadEagerModels () {
         return this.chain(mapObj(this._models, (model) => {
+            if (model.store !== this) return null;
             return model.options.autoLoad === true ? D.Request.get(model) : null;
         }));
     }
 
     _loadLazyModels () {
         return this.chain(mapObj(this._models, (model) => {
+            if (model.store !== this) return null;
             const { autoLoad } = model.options;
             return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
         }));
@@ -1074,7 +1084,7 @@ D.Model = class Model extends D.Base {
 
         this._data = this._option('data') || {};
         this._idKey = this._option('idKey') || this.app.options.idKey;
-        this._params = Object.assign({}, this._option('params'));
+        this._params = assign({}, this._option('params'));
         this.app.delegateEvent(this);
     }
 
@@ -1157,7 +1167,7 @@ D.Loader = class Loader extends D.Base {
 
 D.Application = class Application extends D.Base {
     constructor (options) {
-        super(options && options.name || 'Application', Object.assign({
+        super(options && options.name || 'Application', assign({
             scriptRoot: 'app',
             urlRoot: '',
             urlSuffix: '',
@@ -1255,7 +1265,7 @@ D.Application = class Application extends D.Base {
     }
 };
 
-Object.assign(D.Application.prototype, D.Event);
+assign(D.Application.prototype, D.Event);
 
 const PUSH_STATE_SUPPORTED = root && root.history && ('pushState' in root.history);
 const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
@@ -1394,7 +1404,7 @@ const PAGE_DEFAULT_OPTIONS = {
 
 D.PageableModel = class PageableModel extends D.Model {
     static setDefault (defaults) {
-        Object.assign(PAGE_DEFAULT_OPTIONS, defaults);
+        assign(PAGE_DEFAULT_OPTIONS, defaults);
     }
 
     constructor (store, options) {

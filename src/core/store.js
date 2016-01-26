@@ -31,7 +31,7 @@ D.Store = class Store extends D.Base {
 
     _initialize () {
         this._initializeModels();
-        this._callbackContext = Object.assign({
+        this._callbackContext = assign({
             models: this.models,
             module: this.module,
             app: this.app
@@ -60,12 +60,14 @@ D.Store = class Store extends D.Base {
 
     _loadEagerModels () {
         return this.chain(mapObj(this._models, (model) => {
+            if (model.store !== this) return null;
             return model.options.autoLoad === true ? D.Request.get(model) : null;
         }));
     }
 
     _loadLazyModels () {
         return this.chain(mapObj(this._models, (model) => {
+            if (model.store !== this) return null;
             const { autoLoad } = model.options;
             return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
         }));

@@ -1,6 +1,6 @@
 {
   "name": "drizzlejs",
-  "version": "0.4.1",
+  "version": "0.4.3",
   "description": "DrizzleJs is light weight frontend framework",
   "main": "dist/drizzle.js",
   "author": "Jaco Koo <jaco.koo@guyong.in>",

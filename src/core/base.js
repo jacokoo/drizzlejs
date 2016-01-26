@@ -5,7 +5,7 @@ D.Base = class Base {
         this.name = name;
         this.Promise = new D.Promise(this);
 
-        Object.assign(this, defaults);
+        assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
         this._loadedPromise = this._initialize();
     }

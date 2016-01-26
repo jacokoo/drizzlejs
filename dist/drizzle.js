@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.1
+ * DrizzleJS v0.4.3
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -79,6 +79,19 @@ var Drizzle = {},
 
     return target;
 },
+    assign = function assign(target) {
+    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+    }
+
+    var t = target;
+    t && map(args, function (arg) {
+        return arg && mapObj(arg, function (value, key) {
+            return t[key] = value;
+        });
+    });
+    return t;
+},
     typeCache = {
     View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
@@ -88,8 +101,8 @@ var Drizzle = {},
     create: function create(type, name) {
         var Clazz = this[type][name] || D[type];
 
-        for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-            args[_key - 2] = arguments[_key];
+        for (var _len2 = arguments.length, args = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+            args[_key2 - 2] = arguments[_key2];
         }
 
         return new (Function.prototype.bind.apply(Clazz, [null].concat(args)))();
@@ -115,28 +128,30 @@ map(['Module', 'View', 'Region', 'Model', 'Store'], function (item) {
         return typeCache.register(item, name, clazz);
     };
     typeCache['create' + item] = function (name) {
-        for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-            args[_key2 - 1] = arguments[_key2];
+        for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+            args[_key3 - 1] = arguments[_key3];
         }
 
         return typeCache.create.apply(typeCache, [item, name].concat(args));
     };
 });
 
-Object.assign(D, {
+assign(D, {
+    assign: assign,
+
     uniqueId: function uniqueId() {
         var prefix = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
 
         return '' + prefix + ++counter;
     },
     adapt: function adapt(obj) {
-        Object.assign(D.Adapter, obj);
+        assign(D.Adapter, obj);
     },
     extend: function extend(theChild, theParent, obj) {
         var child = theChild;
-        Object.assign(child, theParent);
+        assign(child, theParent);
         child.prototype = Object.create(theParent.prototype, { constructor: child });
-        Object.assign(child.prototype, obj);
+        assign(child.prototype, obj);
         child.__super__ = theParent.prototype;
 
         return child;
@@ -225,8 +240,8 @@ D.Promise = function () {
         value: function parallel(items) {
             var _this2 = this;
 
-            for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-                args[_key3 - 1] = arguments[_key3];
+            for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+                args[_key4 - 1] = arguments[_key4];
             }
 
             return this.create(function (resolve, reject) {
@@ -266,8 +281,8 @@ D.Promise = function () {
         value: function chain() {
             var _this3 = this;
 
-            for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-                args[_key4] = arguments[_key4];
+            for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+                args[_key5] = arguments[_key5];
             }
 
             var prev = null;
@@ -327,8 +342,8 @@ D.Event = {
         this._events[name] = result;
     },
     trigger: function trigger(name) {
-        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-            args[_key5 - 1] = arguments[_key5];
+        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+            args[_key6 - 1] = arguments[_key6];
         }
 
         if (!name || !this._events || !this._events[name]) return this;
@@ -341,7 +356,7 @@ D.Event = {
             id = '--' + to.id,
             target = to;
 
-        Object.assign(target, {
+        assign(target, {
             _listeners: {},
 
             listenTo: function listenTo(obj, name, fn, ctx) {
@@ -378,8 +393,8 @@ D.Event = {
             trigger: function trigger(name) {
                 if (!name) return target;
 
-                for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-                    args[_key6 - 1] = arguments[_key6];
+                for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+                    args[_key7 - 1] = arguments[_key7];
                 }
 
                 args.unshift(name + id) && me.trigger.apply(me, args);
@@ -428,22 +443,22 @@ D.Request = {
         return parts.join('/');
     },
     _ajax: function _ajax(method, model, data, options) {
-        var params = Object.assign({ type: method }, options);
+        var params = assign({ type: method }, options);
 
-        params.data = Object.assign({}, data, params.data);
+        params.data = assign({}, data, params.data);
         params.url = this._url(model);
 
         return model.Promise.create(function (resolve, reject) {
             D.Adapter.ajax(params).then(function () {
-                for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-                    args[_key7] = arguments[_key7];
+                for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+                    args[_key8] = arguments[_key8];
                 }
 
                 model.set(D.Adapter.ajaxResult(args), !params.slient);
                 resolve(args);
             }, function () {
-                for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
-                    args[_key8] = arguments[_key8];
+                for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+                    args[_key9] = arguments[_key9];
                 }
 
                 return reject(args);
@@ -524,7 +539,7 @@ D.Base = function () {
         this.name = name;
         this.Promise = new D.Promise(this);
 
-        Object.assign(this, defaults);
+        assign(this, defaults);
         if (options.mixin) this._mixin(options.mixin);
         this._loadedPromise = this._initialize();
     }
@@ -537,8 +552,8 @@ D.Base = function () {
         value: function _option(key) {
             var value = this.options[key];
 
-            for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
-                args[_key9 - 1] = arguments[_key9];
+            for (var _len10 = arguments.length, args = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+                args[_key10 - 1] = arguments[_key10];
             }
 
             return D.isFunction(value) ? value.apply(this, args) : value;
@@ -548,8 +563,8 @@ D.Base = function () {
         value: function _error(message) {
             if (!D.isString(message)) throw message;
 
-            for (var _len10 = arguments.length, rest = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
-                rest[_key10 - 1] = arguments[_key10];
+            for (var _len11 = arguments.length, rest = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
+                rest[_key11 - 1] = arguments[_key11];
             }
 
             throw new Error('[' + (this.module ? this.module.name + ':' : '') + this.name + '] ' + message + ' ' + rest.join(' '));
@@ -568,8 +583,8 @@ D.Base = function () {
 
                 if (D.isFunction(old)) {
                     _this6[key] = function () {
-                        for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
-                            args[_key11] = arguments[_key11];
+                        for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
+                            args[_key12] = arguments[_key12];
                         }
 
                         args.unshift(old);
@@ -1064,8 +1079,8 @@ D.View = function (_D$ActionCreator) {
         value: function _setRegion() {
             var _get2;
 
-            for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
-                args[_key12] = arguments[_key12];
+            for (var _len13 = arguments.length, args = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
+                args[_key13] = arguments[_key13];
             }
 
             (_get2 = _get(Object.getPrototypeOf(View.prototype), '_setRegion', this)).call.apply(_get2, [this].concat(args));
@@ -1076,8 +1091,8 @@ D.View = function (_D$ActionCreator) {
         value: function _close() {
             var _get3;
 
-            for (var _len13 = arguments.length, args = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
-                args[_key13] = arguments[_key13];
+            for (var _len14 = arguments.length, args = Array(_len14), _key14 = 0; _key14 < _len14; _key14++) {
+                args[_key14] = arguments[_key14];
             }
 
             this.chain((_get3 = _get(Object.getPrototypeOf(View.prototype), '_close', this)).call.apply(_get3, [this].concat(args)), this._unbindData, this);
@@ -1411,7 +1426,7 @@ D.Store = function (_D$Base4) {
         key: '_initialize',
         value: function _initialize() {
             this._initializeModels();
-            this._callbackContext = Object.assign({
+            this._callbackContext = assign({
                 models: this.models,
                 module: this.module,
                 app: this.app
@@ -1443,14 +1458,20 @@ D.Store = function (_D$Base4) {
     }, {
         key: '_loadEagerModels',
         value: function _loadEagerModels() {
+            var _this38 = this;
+
             return this.chain(mapObj(this._models, function (model) {
+                if (model.store !== _this38) return null;
                 return model.options.autoLoad === true ? D.Request.get(model) : null;
             }));
         }
     }, {
         key: '_loadLazyModels',
         value: function _loadLazyModels() {
+            var _this39 = this;
+
             return this.chain(mapObj(this._models, function (model) {
+                if (model.store !== _this39) return null;
                 var autoLoad = model.options.autoLoad;
 
                 return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
@@ -1477,17 +1498,17 @@ D.Model = function (_D$Base5) {
     function Model(store, options) {
         _classCallCheck(this, Model);
 
-        var _this38 = _possibleConstructorReturn(this, Object.getPrototypeOf(Model).call(this, 'Model', options, {
+        var _this40 = _possibleConstructorReturn(this, Object.getPrototypeOf(Model).call(this, 'Model', options, {
             app: store.module.app,
             module: store.module,
             store: store
         }));
 
-        _this38._data = _this38._option('data') || {};
-        _this38._idKey = _this38._option('idKey') || _this38.app.options.idKey;
-        _this38._params = Object.assign({}, _this38._option('params'));
-        _this38.app.delegateEvent(_this38);
-        return _this38;
+        _this40._data = _this40._option('data') || {};
+        _this40._idKey = _this40._option('idKey') || _this40.app.options.idKey;
+        _this40._params = assign({}, _this40._option('params'));
+        _this40.app.delegateEvent(_this40);
+        return _this40;
     }
 
     _createClass(Model, [{
@@ -1564,7 +1585,7 @@ D.Loader = function (_D$Base6) {
     _createClass(Loader, [{
         key: 'loadResource',
         value: function loadResource(path) {
-            var _this40 = this;
+            var _this42 = this;
 
             var _app$options = this.app.options;
             var scriptRoot = _app$options.scriptRoot;
@@ -1576,7 +1597,7 @@ D.Loader = function (_D$Base6) {
                 if (amd) {
                     require([fullPath], resolve, reject);
                 } else if (getResource) {
-                    resolve(getResource.call(_this40.app, fullPath));
+                    resolve(getResource.call(_this42.app, fullPath));
                 } else {
                     resolve(require('./' + fullPath));
                 }
@@ -1614,7 +1635,7 @@ D.Application = function (_D$Base7) {
     function Application(options) {
         _classCallCheck(this, Application);
 
-        return _possibleConstructorReturn(this, Object.getPrototypeOf(Application).call(this, options && options.name || 'Application', Object.assign({
+        return _possibleConstructorReturn(this, Object.getPrototypeOf(Application).call(this, options && options.name || 'Application', assign({
             scriptRoot: 'app',
             urlRoot: '',
             urlSuffix: '',
@@ -1649,14 +1670,14 @@ D.Application = function (_D$Base7) {
         key: 'start',
         value: function start(defaultHash) {
             var _router,
-                _this42 = this;
+                _this44 = this;
 
             if (defaultHash) this._router = new D.Router(this);
 
             return this.chain(defaultHash ? (_router = this._router)._mountRoutes.apply(_router, _toConsumableArray(this._option('routers'))) : false, this._region.show(this._option('viewport')), function (viewport) {
-                return _this42.viewport = viewport;
+                return _this44.viewport = viewport;
             }, function () {
-                return defaultHash && _this42._router._start(defaultHash);
+                return defaultHash && _this44._router._start(defaultHash);
             }, this);
         }
     }, {
@@ -1692,7 +1713,7 @@ D.Application = function (_D$Base7) {
     }, {
         key: '_createModule',
         value: function _createModule(name, parentModule) {
-            var _this43 = this;
+            var _this45 = this;
 
             var _D$Loader$_analyse = D.Loader._analyse(name);
 
@@ -1703,13 +1724,13 @@ D.Application = function (_D$Base7) {
             return this.chain(loader.loadModule(moduleName), function () {
                 var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-                return typeCache.createModule(options.type, moduleName, _this43, parentModule, loader, options);
+                return typeCache.createModule(options.type, moduleName, _this45, parentModule, loader, options);
             });
         }
     }, {
         key: '_createView',
         value: function _createView(name, mod) {
-            var _this44 = this;
+            var _this46 = this;
 
             var _D$Loader$_analyse2 = D.Loader._analyse(name);
 
@@ -1720,7 +1741,7 @@ D.Application = function (_D$Base7) {
             return this.chain(loader.loadView(viewName, mod), function () {
                 var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-                return typeCache.createView(options.type, viewName, _this44, mod, loader, options);
+                return typeCache.createView(options.type, viewName, _this46, mod, loader, options);
             });
         }
     }, {
@@ -1752,7 +1773,7 @@ D.Application = function (_D$Base7) {
     return Application;
 }(D.Base);
 
-Object.assign(D.Application.prototype, D.Event);
+assign(D.Application.prototype, D.Event);
 
 var PUSH_STATE_SUPPORTED = root && root.history && 'pushState' in root.history;
 var ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
@@ -1781,7 +1802,7 @@ var Route = function () {
         key: 'handle',
         value: function handle(hash) {
             var _router2,
-                _this45 = this;
+                _this47 = this;
 
             this.pattern.lastIndex = 0;
             var args = this.pattern.exec(hash).slice(1),
@@ -1790,7 +1811,7 @@ var Route = function () {
             handlers.push(this.fn);
             return (_router2 = this.router).chain.apply(_router2, _toConsumableArray(map(handlers, function (fn, i) {
                 return function (prev) {
-                    return fn.apply(_this45.router, i > 0 ? [prev].concat(args) : args);
+                    return fn.apply(_this47.router, i > 0 ? [prev].concat(args) : args);
                 };
             })));
         }
@@ -1805,17 +1826,17 @@ D.Router = function (_D$Base8) {
     function Router(app) {
         _classCallCheck(this, Router);
 
-        var _this46 = _possibleConstructorReturn(this, Object.getPrototypeOf(Router).call(this, 'Router', {}, {
+        var _this48 = _possibleConstructorReturn(this, Object.getPrototypeOf(Router).call(this, 'Router', {}, {
             app: app,
             _routes: [],
             _interceptors: {},
             _started: false
         }));
 
-        _this46._EVENT_HANDLER = function () {
-            return _this46._dispath(_this46._getHash());
+        _this48._EVENT_HANDLER = function () {
+            return _this48._dispath(_this48._getHash());
         };
-        return _this46;
+        return _this48;
     }
 
     _createClass(Router, [{
@@ -1864,33 +1885,33 @@ D.Router = function (_D$Base8) {
     }, {
         key: '_mountRoutes',
         value: function _mountRoutes() {
-            var _this47 = this;
+            var _this49 = this;
 
             var paths = slice.call(arguments);
             return this.chain(map(paths, function (path) {
-                return _this47.app._getLoader(path).loadRouter(path);
+                return _this49.app._getLoader(path).loadRouter(path);
             }), function (options) {
                 return map(options, function (option, i) {
-                    return _this47._addRoute(paths[i], option);
+                    return _this49._addRoute(paths[i], option);
                 });
             });
         }
     }, {
         key: '_addRoute',
         value: function _addRoute(path, options) {
-            var _this48 = this;
+            var _this50 = this;
 
             var routes = options.routes;
             var interceptors = options.interceptors;
 
             mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
                 var p = (path + '/' + key).replace(/^\/|\/$/g, '');
-                _this48._routes.unshift(new Route(_this48.app, _this48, p, options[value]));
+                _this50._routes.unshift(new Route(_this50.app, _this50, p, options[value]));
             });
 
             mapObj(D.isFunction(interceptors) ? interceptors.apply(this) : interceptors, function (value, key) {
                 var p = (path + '/' + key).replace(/^\/|\/$/g, '');
-                _this48._interceptors[p] = options[value];
+                _this50._interceptors[p] = options[value];
             });
         }
     }, {
@@ -1935,25 +1956,25 @@ D.PageableModel = function (_D$Model) {
     _createClass(PageableModel, null, [{
         key: 'setDefault',
         value: function setDefault(defaults) {
-            Object.assign(PAGE_DEFAULT_OPTIONS, defaults);
+            assign(PAGE_DEFAULT_OPTIONS, defaults);
         }
     }]);
 
     function PageableModel(store, options) {
         _classCallCheck(this, PageableModel);
 
-        var _this49 = _possibleConstructorReturn(this, Object.getPrototypeOf(PageableModel).call(this, store, options));
+        var _this51 = _possibleConstructorReturn(this, Object.getPrototypeOf(PageableModel).call(this, store, options));
 
-        _this49._data = _this49._option('data') || [];
-        _this49._p = {
-            page: _this49._option('page') || 1,
+        _this51._data = _this51._option('data') || [];
+        _this51._p = {
+            page: _this51._option('page') || 1,
             pageCount: 0,
-            pageSize: _this49._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
-            pageKey: _this49._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
-            pageSizeKey: _this49._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
-            recordCountKey: _this49._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
+            pageSize: _this51._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
+            pageKey: _this51._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
+            pageSizeKey: _this51._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
+            recordCountKey: _this51._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
         };
-        return _this49;
+        return _this51;
     }
 
     _createClass(PageableModel, [{
@@ -2060,7 +2081,7 @@ D.MultiRegion = function (_D$Region) {
     }, {
         key: 'show',
         value: function show(renderable) {
-            var _this51 = this;
+            var _this53 = this;
 
             var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
 
@@ -2081,11 +2102,11 @@ D.MultiRegion = function (_D$Region) {
             }
 
             return this.chain(str ? this.app._createModule(renderable) : renderable, [function (obj) {
-                return _this51.chain(obj._region && obj._region.close(), obj);
+                return _this53.chain(obj._region && obj._region.close(), obj);
             }, function () {
-                return _this51.chain(item && item._close(), function () {
-                    delete _this51._items[key];
-                    delete _this51._elements[key];
+                return _this53.chain(item && item._close(), function () {
+                    delete _this53._items[key];
+                    delete _this53._elements[key];
                 });
             }], function (_ref9) {
                 var _ref10 = _slicedToArray(_ref9, 1);
@@ -2093,11 +2114,11 @@ D.MultiRegion = function (_D$Region) {
                 var obj = _ref10[0];
 
                 var attr = obj.module ? obj.module.name + ':' + obj.name : obj.name,
-                    el = _this51._getElement(obj, key);
+                    el = _this53._getElement(obj, key);
 
-                _this51._items[key] = obj;
+                _this53._items[key] = obj;
                 el.setAttribute('data-current', attr);
-                obj._setRegion(_this51);
+                obj._setRegion(_this53);
                 return obj._render(options, false);
             });
         }
@@ -2136,14 +2157,14 @@ D.MultiRegion = function (_D$Region) {
     }, {
         key: 'close',
         value: function close() {
-            var _this52 = this;
+            var _this54 = this;
 
             return this.chain(mapObj(this._items, function (item) {
                 return item._close();
             }), function () {
-                _this52._elements = {};
-                _this52._items = {};
-                delete _this52._current;
+                _this54._elements = {};
+                _this54._items = {};
+                delete _this54._current;
             }, this);
         }
     }]);
