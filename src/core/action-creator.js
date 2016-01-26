@@ -6,16 +6,16 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
 
     _createEventHandler (name, obj) {
         const isAction = !!(this._option('actions') || {})[obj.key];
-        return isAction ? this._createAction(name) : super._createEventHandler(name, obj);
+        return isAction ? this._createAction(name, obj) : super._createEventHandler(name, obj);
     }
 
-    _createAction (name) {
+    _createAction (name, { id }) {
         const { disabledClass } = this.app.options,
             { [name]: dataForAction } = this._option('dataForActions') || {},
             { [name]: actionCallback } = this._option('actionCallbacks') || {};
 
         return (e) => {
-            const target = e.target;
+            const target = this._getEventTarget(e.target, id);
             if (D.Adapter.hasClass(target, disabledClass)) return;
             D.Adapter.addClass(target, disabledClass);
 

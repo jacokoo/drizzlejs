@@ -3,9 +3,9 @@ D.Adapter = {
 
     ajax (params) {
         const xhr = new XMLHttpRequest();
-        let url = params.url;
-        if (params.type === 'GET' && params.data) url += '?' + (mapObj(params.data, (v, k) => `${k}=${v}`)).join('&');
-        xhr.open(params.type, url, true);
+        let data = '';
+        if (params.data) data = mapObj(params.data, (v, k) => `${k}=${encodeURIComponent(v)}`).join('&');
+        xhr.open(params.type, (data && params.type === 'GET') ? params.url + '?' + data : params.url, true);
         const promise = new Promise((resolve, reject) => {
             xhr.onload = function() {
                 if (this.status >= 200 && this.status < 400) {
@@ -19,7 +19,9 @@ D.Adapter = {
                 reject(xhr);
             };
         });
-        xhr.send(params.data);
+        if (data) xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        params.beforeRequest && params.beforeRequest(xhr);
+        xhr.send(data);
         return promise;
     },
 

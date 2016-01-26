@@ -9,13 +9,7 @@ D.Application = class Application extends D.Base {
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
-            viewport: 'viewport',
-
-            fileNames: {
-                module: 'index',
-                view: 'view-',
-                router: 'router'
-            }
+            viewport: 'viewport'
         }, options), {
             global: {},
             _modules: {},

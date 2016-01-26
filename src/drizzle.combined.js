@@ -94,9 +94,9 @@ D.Adapter = {
 
     ajax (params) {
         const xhr = new XMLHttpRequest();
-        let url = params.url;
-        if (params.type === 'GET' && params.data) url += '?' + (mapObj(params.data, (v, k) => `${k}=${v}`)).join('&');
-        xhr.open(params.type, url, true);
+        let data = '';
+        if (params.data) data = mapObj(params.data, (v, k) => `${k}=${encodeURIComponent(v)}`).join('&');
+        xhr.open(params.type, (data && params.type === 'GET') ? params.url + '?' + data : params.url, true);
         const promise = new Promise((resolve, reject) => {
             xhr.onload = function() {
                 if (this.status >= 200 && this.status < 400) {
@@ -110,7 +110,9 @@ D.Adapter = {
                 reject(xhr);
             };
         });
-        xhr.send(params.data);
+        if (data) xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        params.beforeRequest && params.beforeRequest(xhr);
+        xhr.send(data);
         return promise;
     },
 
@@ -558,12 +560,22 @@ D.Renderable = class Renderable extends D.Base {
         });
     }
 
+    _getEventTarget (target, id) {
+        const el = this._element;
+        let current = target;
+        while (current !== el) {
+            const cid = current.getAttribute('id');
+            if (cid && cid.slice(0, id.length) === id) return current;
+            current = current.parentNode;
+        }
+    }
+
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
         return (e) => {
             if (!this._eventHandlers[handlerName]) this._error('No event handler for name:', handlerName);
 
-            const target = e.target, args = [e];
+            const target = this._getEventTarget(e.target, id), args = [e];
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);
@@ -685,16 +697,16 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
 
     _createEventHandler (name, obj) {
         const isAction = !!(this._option('actions') || {})[obj.key];
-        return isAction ? this._createAction(name) : super._createEventHandler(name, obj);
+        return isAction ? this._createAction(name, obj) : super._createEventHandler(name, obj);
     }
 
-    _createAction (name) {
+    _createAction (name, { id }) {
         const { disabledClass } = this.app.options,
             { [name]: dataForAction } = this._option('dataForActions') || {},
             { [name]: actionCallback } = this._option('actionCallbacks') || {};
 
         return (e) => {
-            const target = e.target;
+            const target = this._getEventTarget(e.target, id);
             if (D.Adapter.hasClass(target, disabledClass)) return;
             D.Adapter.addClass(target, disabledClass);
 
@@ -845,7 +857,7 @@ D.Region = class Region extends D.Base {
                 return item;
             }, [
                 (item) => this.chain(item._region && item._region.close(), item),
-                () => this.close()
+                () => this._current && this.close()
             ],
             ([item]) => {
                 this._current = item;
@@ -1018,7 +1030,16 @@ D.Store = class Store extends D.Base {
         mapObj(this._option('models'), (value, key) => {
             const v = (D.isFunction(value) ? value.call(this) : value) || {};
             if (v.shared === true) {
-                this._models[key] = this.app.viewport.store.models[key];
+                if (this.app.viewport) {
+                    this._models[key] = this.app.viewport.store.models[key];
+                    return;
+                }
+                if (this.module.name === this.app._option('viewport')) {
+                    this._error('Can not define shared model in viewport');
+                }
+                if (this.module.module && this.module.module.name === this.app._option('viewport')) {
+                    this._models[key] = this.module.module.store.models[key];
+                }
                 return;
             }
             this._models[key] = this.app._createModel(this, v);
@@ -1121,15 +1142,15 @@ D.Loader = class Loader extends D.Base {
     }
 
     loadModule (name) {
-        return this.loadResource(`${name}/${this.app.options.fileNames.module}`);
+        return this.loadResource(`${name}/index`);
     }
 
     loadView (name, mod) {
-        return this.loadModuleResource(mod, `${this.app.options.fileNames.view}${name}`);
+        return this.loadModuleResource(mod, `view-${name}`);
     }
 
     loadRouter (path) {
-        const name = this.app.options.fileNames.router;
+        const name = 'router';
         return this.loadResource(path ? `${path}/${name}` : name);
     }
 };
@@ -1145,13 +1166,7 @@ D.Application = class Application extends D.Base {
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
-            viewport: 'viewport',
-
-            fileNames: {
-                module: 'index',
-                view: 'view-',
-                router: 'router'
-            }
+            viewport: 'viewport'
         }, options), {
             global: {},
             _modules: {},

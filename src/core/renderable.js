@@ -108,12 +108,22 @@ D.Renderable = class Renderable extends D.Base {
         });
     }
 
+    _getEventTarget (target, id) {
+        const el = this._element;
+        let current = target;
+        while (current !== el) {
+            const cid = current.getAttribute('id');
+            if (cid && cid.slice(0, id.length) === id) return current;
+            current = current.parentNode;
+        }
+    }
+
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
         return (e) => {
             if (!this._eventHandlers[handlerName]) this._error('No event handler for name:', handlerName);
 
-            const target = e.target, args = [e];
+            const target = this._getEventTarget(e.target, id), args = [e];
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);

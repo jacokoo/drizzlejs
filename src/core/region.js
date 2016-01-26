@@ -28,7 +28,7 @@ D.Region = class Region extends D.Base {
                 return item;
             }, [
                 (item) => this.chain(item._region && item._region.close(), item),
-                () => this.close()
+                () => this._current && this.close()
             ],
             ([item]) => {
                 this._current = item;

@@ -148,11 +148,11 @@ D.Adapter = {
 
     ajax: function ajax(params) {
         var xhr = new XMLHttpRequest();
-        var url = params.url;
-        if (params.type === 'GET' && params.data) url += '?' + mapObj(params.data, function (v, k) {
-            return k + '=' + v;
+        var data = '';
+        if (params.data) data = mapObj(params.data, function (v, k) {
+            return k + '=' + encodeURIComponent(v);
         }).join('&');
-        xhr.open(params.type, url, true);
+        xhr.open(params.type, data && params.type === 'GET' ? params.url + '?' + data : params.url, true);
         var promise = new Promise(function (resolve, reject) {
             xhr.onload = function () {
                 if (this.status >= 200 && this.status < 400) {
@@ -166,7 +166,9 @@ D.Adapter = {
                 reject(xhr);
             };
         });
-        xhr.send(params.data);
+        if (data) xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        params.beforeRequest && params.beforeRequest(xhr);
+        xhr.send(data);
         return promise;
     },
     ajaxResult: function ajaxResult(args) {
@@ -723,6 +725,17 @@ D.Renderable = function (_D$Base) {
             });
         }
     }, {
+        key: '_getEventTarget',
+        value: function _getEventTarget(target, id) {
+            var el = this._element;
+            var current = target;
+            while (current !== el) {
+                var cid = current.getAttribute('id');
+                if (cid && cid.slice(0, id.length) === id) return current;
+                current = current.parentNode;
+            }
+        }
+    }, {
         key: '_createEventHandler',
         value: function _createEventHandler(handlerName, _ref3) {
             var _this12 = this;
@@ -734,7 +747,7 @@ D.Renderable = function (_D$Base) {
             return function (e) {
                 if (!_this12._eventHandlers[handlerName]) _this12._error('No event handler for name:', handlerName);
 
-                var target = e.target,
+                var target = _this12._getEventTarget(e.target, id),
                     args = [e];
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
@@ -933,25 +946,26 @@ D.ActionCreator = function (_D$Renderable2) {
         key: '_createEventHandler',
         value: function _createEventHandler(name, obj) {
             var isAction = !!(this._option('actions') || {})[obj.key];
-            return isAction ? this._createAction(name) : _get(Object.getPrototypeOf(ActionCreator.prototype), '_createEventHandler', this).call(this, name, obj);
+            return isAction ? this._createAction(name, obj) : _get(Object.getPrototypeOf(ActionCreator.prototype), '_createEventHandler', this).call(this, name, obj);
         }
     }, {
         key: '_createAction',
-        value: function _createAction(name) {
+        value: function _createAction(name, _ref4) {
             var _this21 = this;
 
+            var id = _ref4.id;
             var disabledClass = this.app.options.disabledClass;
 
-            var _ref4 = this._option('dataForActions') || {};
+            var _ref5 = this._option('dataForActions') || {};
 
-            var dataForAction = _ref4[name];
+            var dataForAction = _ref5[name];
 
-            var _ref5 = this._option('actionCallbacks') || {};
+            var _ref6 = this._option('actionCallbacks') || {};
 
-            var actionCallback = _ref5[name];
+            var actionCallback = _ref6[name];
 
             return function (e) {
-                var target = e.target;
+                var target = _this21._getEventTarget(e.target, id);
                 if (D.Adapter.hasClass(target, disabledClass)) return;
                 D.Adapter.addClass(target, disabledClass);
 
@@ -1188,11 +1202,11 @@ D.Region = function (_D$Base2) {
             }, [function (item) {
                 return _this30.chain(item._region && item._region.close(), item);
             }, function () {
-                return _this30.close();
-            }], function (_ref6) {
-                var _ref7 = _slicedToArray(_ref6, 1);
+                return _this30._current && _this30.close();
+            }], function (_ref7) {
+                var _ref8 = _slicedToArray(_ref7, 1);
 
-                var item = _ref7[0];
+                var item = _ref8[0];
 
                 _this30._current = item;
                 var attr = item.module ? item.module.name + ':' + item.name : item.name;
@@ -1411,7 +1425,16 @@ D.Store = function (_D$Base4) {
             mapObj(this._option('models'), function (value, key) {
                 var v = (D.isFunction(value) ? value.call(_this37) : value) || {};
                 if (v.shared === true) {
-                    _this37._models[key] = _this37.app.viewport.store.models[key];
+                    if (_this37.app.viewport) {
+                        _this37._models[key] = _this37.app.viewport.store.models[key];
+                        return;
+                    }
+                    if (_this37.module.name === _this37.app._option('viewport')) {
+                        _this37._error('Can not define shared model in viewport');
+                    }
+                    if (_this37.module.module && _this37.module.module.name === _this37.app._option('viewport')) {
+                        _this37._models[key] = _this37.module.module.store.models[key];
+                    }
                     return;
                 }
                 _this37._models[key] = _this37.app._createModel(_this37, v);
@@ -1567,17 +1590,17 @@ D.Loader = function (_D$Base6) {
     }, {
         key: 'loadModule',
         value: function loadModule(name) {
-            return this.loadResource(name + '/' + this.app.options.fileNames.module);
+            return this.loadResource(name + '/index');
         }
     }, {
         key: 'loadView',
         value: function loadView(name, mod) {
-            return this.loadModuleResource(mod, '' + this.app.options.fileNames.view + name);
+            return this.loadModuleResource(mod, 'view-' + name);
         }
     }, {
         key: 'loadRouter',
         value: function loadRouter(path) {
-            var name = this.app.options.fileNames.router;
+            var name = 'router';
             return this.loadResource(path ? path + '/' + name : name);
         }
     }]);
@@ -1600,13 +1623,7 @@ D.Application = function (_D$Base7) {
             disabledClass: 'disabled',
             getResource: null,
             idKey: 'id',
-            viewport: 'viewport',
-
-            fileNames: {
-                module: 'index',
-                view: 'view-',
-                router: 'router'
-            }
+            viewport: 'viewport'
         }, options), {
             global: {},
             _modules: {},
@@ -2070,10 +2087,10 @@ D.MultiRegion = function (_D$Region) {
                     delete _this51._items[key];
                     delete _this51._elements[key];
                 });
-            }], function (_ref8) {
-                var _ref9 = _slicedToArray(_ref8, 1);
+            }], function (_ref9) {
+                var _ref10 = _slicedToArray(_ref9, 1);
 
-                var obj = _ref9[0];
+                var obj = _ref10[0];
 
                 var attr = obj.module ? obj.module.name + ':' + obj.name : obj.name,
                     el = _this51._getElement(obj, key);

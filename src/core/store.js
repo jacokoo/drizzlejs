@@ -42,7 +42,16 @@ D.Store = class Store extends D.Base {
         mapObj(this._option('models'), (value, key) => {
             const v = (D.isFunction(value) ? value.call(this) : value) || {};
             if (v.shared === true) {
-                this._models[key] = this.app.viewport.store.models[key];
+                if (this.app.viewport) {
+                    this._models[key] = this.app.viewport.store.models[key];
+                    return;
+                }
+                if (this.module.name === this.app._option('viewport')) {
+                    this._error('Can not define shared model in viewport');
+                }
+                if (this.module.module && this.module.module.name === this.app._option('viewport')) {
+                    this._models[key] = this.module.module.store.models[key];
+                }
                 return;
             }
             this._models[key] = this.app._createModel(this, v);

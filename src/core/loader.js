@@ -34,15 +34,15 @@ D.Loader = class Loader extends D.Base {
     }
 
     loadModule (name) {
-        return this.loadResource(`${name}/${this.app.options.fileNames.module}`);
+        return this.loadResource(`${name}/index`);
     }
 
     loadView (name, mod) {
-        return this.loadModuleResource(mod, `${this.app.options.fileNames.view}${name}`);
+        return this.loadModuleResource(mod, `view-${name}`);
     }
 
     loadRouter (path) {
-        const name = this.app.options.fileNames.router;
+        const name = 'router';
         return this.loadResource(path ? `${path}/${name}` : name);
     }
 };
