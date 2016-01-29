@@ -16,6 +16,8 @@ D.Model = class Model extends D.Base {
 
     get params () { return this._params; }
 
+    set params (value) { this._params = value; }
+
     get data () { return this._data; }
 
     set (data, trigger) {
