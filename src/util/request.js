@@ -49,7 +49,7 @@ D.Request = {
         params.url = this._url(model);
 
         return model.Promise.create((resolve, reject) => {
-            D.Adapter.ajax(params).then((...args) => {
+            D.Adapter.ajax(params, model).then((...args) => {
                 model.set(D.Adapter.ajaxResult(args), !params.slient);
                 resolve(args);
             }, (...args) => reject(args));
