@@ -10,8 +10,16 @@ D.Store = class Store extends D.Base {
 
         this._callbacks = this._option('callbacks');
         mapObj(this._callbacks, (value, key) => {
-            if (key.slice(0, 4) !== 'app.') return;
-            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+            if (key.slice(0, 4) === 'app.') {
+                this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+                return;
+            }
+
+            if (key.slice(0, 7) === 'shared.') {
+                const name = key.slice(7), model = this._models[name];
+                if (!model || model.store === this) this._error(`Can not bind to model: ${key}`);
+                this.listenTo(model, 'changed', () => value.call(this._callbackContext));
+            }
         });
     }
 
@@ -32,10 +40,13 @@ D.Store = class Store extends D.Base {
     _initialize () {
         this._initializeModels();
         this._callbackContext = assign({
+            app: this.app,
             models: this.models,
             module: this.module,
-            app: this.app
+            chain: this.chain
         }, D.Request);
+
+        this._callbackContext.Promise = new D.Promise(this._callbackContext);
     }
 
     _initializeModels () {
