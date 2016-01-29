@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.3
+ * DrizzleJS v0.4.4
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -449,7 +449,7 @@ D.Request = {
         params.url = this._url(model);
 
         return model.Promise.create(function (resolve, reject) {
-            D.Adapter.ajax(params).then(function () {
+            D.Adapter.ajax(params, model).then(function () {
                 for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
                     args[_key8] = arguments[_key8];
                 }
@@ -1072,7 +1072,6 @@ D.View = function (_D$ActionCreator) {
         key: '_unbindData',
         value: function _unbindData() {
             this.stopListening();
-            this.bindings = {};
         }
     }, {
         key: '_setRegion',
@@ -1399,10 +1398,21 @@ D.Store = function (_D$Base4) {
 
         _this36._callbacks = _this36._option('callbacks');
         mapObj(_this36._callbacks, function (value, key) {
-            if (key.slice(0, 4) !== 'app.') return;
-            _this36.listenTo(_this36.app, key, function (payload) {
-                return value.call(_this36._callbackContext, payload);
-            });
+            if (key.slice(0, 4) === 'app.') {
+                _this36.listenTo(_this36.app, key, function (payload) {
+                    return value.call(_this36._callbackContext, payload);
+                });
+                return;
+            }
+
+            if (key.slice(0, 7) === 'shared.') {
+                var name = key.slice(7),
+                    model = _this36._models[name];
+                if (!model || model.store === _this36) _this36._error('Can not bind to model: ' + key);
+                _this36.listenTo(model, 'changed', function () {
+                    return value.call(_this36._callbackContext);
+                });
+            }
         });
         return _this36;
     }
@@ -1427,10 +1437,13 @@ D.Store = function (_D$Base4) {
         value: function _initialize() {
             this._initializeModels();
             this._callbackContext = assign({
+                app: this.app,
                 models: this.models,
                 module: this.module,
-                app: this.app
+                chain: this.chain
             }, D.Request);
+
+            this._callbackContext.Promise = new D.Promise(this._callbackContext);
         }
     }, {
         key: '_initializeModels',
@@ -1548,6 +1561,9 @@ D.Model = function (_D$Base5) {
         key: 'params',
         get: function get() {
             return this._params;
+        },
+        set: function set(value) {
+            this._params = value;
         }
     }, {
         key: 'data',

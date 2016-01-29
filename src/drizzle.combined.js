@@ -353,7 +353,7 @@ D.Request = {
         params.url = this._url(model);
 
         return model.Promise.create((resolve, reject) => {
-            D.Adapter.ajax(params).then((...args) => {
+            D.Adapter.ajax(params, model).then((...args) => {
                 model.set(D.Adapter.ajaxResult(args), !params.slient);
                 resolve(args);
             }, (...args) => reject(args));
@@ -780,7 +780,6 @@ D.View = class View extends D.ActionCreator {
 
     _unbindData () {
         this.stopListening();
-        this.bindings = {};
     }
 
     _setRegion (...args) {
@@ -1006,8 +1005,16 @@ D.Store = class Store extends D.Base {
 
         this._callbacks = this._option('callbacks');
         mapObj(this._callbacks, (value, key) => {
-            if (key.slice(0, 4) !== 'app.') return;
-            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+            if (key.slice(0, 4) === 'app.') {
+                this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+                return;
+            }
+
+            if (key.slice(0, 7) === 'shared.') {
+                const name = key.slice(7), model = this._models[name];
+                if (!model || model.store === this) this._error(`Can not bind to model: ${key}`);
+                this.listenTo(model, 'changed', () => value.call(this._callbackContext));
+            }
         });
     }
 
@@ -1028,10 +1035,13 @@ D.Store = class Store extends D.Base {
     _initialize () {
         this._initializeModels();
         this._callbackContext = assign({
+            app: this.app,
             models: this.models,
             module: this.module,
-            app: this.app
+            chain: this.chain
         }, D.Request);
+
+        this._callbackContext.Promise = new D.Promise(this._callbackContext);
     }
 
     _initializeModels () {
@@ -1091,6 +1101,8 @@ D.Model = class Model extends D.Base {
     get fullUrl () { return D.Request._url(this); }
 
     get params () { return this._params; }
+
+    set params (value) { this._params = value; }
 
     get data () { return this._data; }
 
