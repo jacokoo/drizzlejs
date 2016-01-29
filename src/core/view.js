@@ -24,7 +24,6 @@ D.View = class View extends D.ActionCreator {
 
     _unbindData () {
         this.stopListening();
-        this.bindings = {};
     }
 
     _setRegion (...args) {
