@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.5
+ * DrizzleJS v0.4.6
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -196,7 +196,7 @@ D.Adapter = {
         el.addEventListener(name, handler, useCapture);
     },
     removeEventListener: function removeEventListener(el, name, handler) {
-        el.removeEventListener(el, name, handler);
+        el.removeEventListener(name, handler);
     },
     hasClass: function hasClass(el, clazz) {
         return el.classList.contains(clazz);
