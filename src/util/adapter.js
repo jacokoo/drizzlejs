@@ -34,7 +34,7 @@ D.Adapter = {
     },
 
     removeEventListener (el, name, handler) {
-        el.removeEventListener(el, name, handler);
+        el.removeEventListener(name, handler);
     },
 
     hasClass (el, clazz) { return el.classList.contains(clazz); },
