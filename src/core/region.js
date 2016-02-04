@@ -13,9 +13,9 @@ D.Region = class Region extends D.Base {
         app.delegateEvent(this);
     }
 
-    show (renderable, options = {}) {
+    show (renderable, options) {
         if (this._isCurrent(renderable)) {
-            if (options.forceRender === false) return this.Promise.resolve(this._current);
+            if (options && options.forceRender === false) return this.Promise.resolve(this._current);
             return this._current._render(options, true);
         }
 

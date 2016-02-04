@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.4
+ * DrizzleJS v0.4.5
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -655,15 +655,12 @@ D.Renderable = function (_D$Base) {
         }
     }, {
         key: '_render',
-        value: function _render() {
+        value: function _render(options, update) {
             var _this9 = this;
-
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-            var update = arguments[1];
 
             if (!this._region) this._error('Region is null');
 
-            this.renderOptions = options;
+            this.renderOptions = options == null ? this.renderOptions || {} : options;
             return this.chain(this._loadedPromise, this._destroyComponents, function () {
                 return _this9.trigger('beforeRender');
             }, function () {
@@ -906,9 +903,9 @@ D.RenderableContainer = function (_D$Renderable) {
             return this.chain(mapObj(this.items, function (item) {
                 var region = item.moduleOptions.region;
 
-                if (!region) return;
+                if (!region) return null;
                 if (!_this19.regions[region]) _this19._error('Region: ' + region + ' is not defined');
-                _this19.regions[region].show(item);
+                return _this19.regions[region].show(item);
             }), this);
         }
     }, {
@@ -1155,6 +1152,8 @@ D.Module = function (_D$RenderableContaine) {
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_beforeRender', this).call(this), function () {
                 return _this27._store._loadEagerModels();
+            }).then(null, function () {
+                return _this27.Promise.resolve();
             });
         }
     }, {
@@ -1164,6 +1163,8 @@ D.Module = function (_D$RenderableContaine) {
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_afterRender', this).call(this), function () {
                 return _this28._store._loadLazyModels();
+            }).then(null, function () {
+                return _this28.Promise.resolve();
             });
         }
     }, {
@@ -1198,13 +1199,11 @@ D.Region = function (_D$Base2) {
 
     _createClass(Region, [{
         key: 'show',
-        value: function show(renderable) {
+        value: function show(renderable, options) {
             var _this30 = this;
 
-            var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
             if (this._isCurrent(renderable)) {
-                if (options.forceRender === false) return this.Promise.resolve(this._current);
+                if (options && options.forceRender === false) return this.Promise.resolve(this._current);
                 return this._current._render(options, true);
             }
 

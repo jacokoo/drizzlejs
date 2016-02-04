@@ -493,10 +493,10 @@ D.Renderable = class Renderable extends D.Base {
         return this._element.querySelectorAll(selector);
     }
 
-    _render (options = {}, update) {
+    _render (options, update) {
         if (!this._region) this._error('Region is null');
 
-        this.renderOptions = options;
+        this.renderOptions = options == null ? this.renderOptions || {} : options;
         return this.chain(
             this._loadedPromise,
             this._destroyComponents,
@@ -678,9 +678,9 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
     _renderItems () {
         return this.chain(mapObj(this.items, (item) => {
             const { region } = item.moduleOptions;
-            if (!region) return;
+            if (!region) return null;
             if (!this.regions[region]) this._error(`Region: ${region} is not defined`);
-            this.regions[region].show(item);
+            return this.regions[region].show(item);
         }), this);
     }
 
@@ -826,11 +826,13 @@ D.Module = class Module extends D.RenderableContainer {
     }
 
     _beforeRender () {
-        return this.chain(super._beforeRender(), () => this._store._loadEagerModels());
+        return this.chain(super._beforeRender(), () => this._store._loadEagerModels())
+            .then(null, () => this.Promise.resolve());
     }
 
     _afterRender () {
-        return this.chain(super._afterRender(), () => this._store._loadLazyModels());
+        return this.chain(super._afterRender(), () => this._store._loadLazyModels())
+            .then(null, () => this.Promise.resolve());
     }
 };
 
@@ -849,9 +851,9 @@ D.Region = class Region extends D.Base {
         app.delegateEvent(this);
     }
 
-    show (renderable, options = {}) {
+    show (renderable, options) {
         if (this._isCurrent(renderable)) {
-            if (options.forceRender === false) return this.Promise.resolve(this._current);
+            if (options && options.forceRender === false) return this.Promise.resolve(this._current);
             return this._current._render(options, true);
         }
 

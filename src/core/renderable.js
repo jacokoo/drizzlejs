@@ -33,10 +33,10 @@ D.Renderable = class Renderable extends D.Base {
         return this._element.querySelectorAll(selector);
     }
 
-    _render (options = {}, update) {
+    _render (options, update) {
         if (!this._region) this._error('Region is null');
 
-        this.renderOptions = options;
+        this.renderOptions = options == null ? this.renderOptions || {} : options;
         return this.chain(
             this._loadedPromise,
             this._destroyComponents,

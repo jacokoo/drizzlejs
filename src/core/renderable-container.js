@@ -48,9 +48,9 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
     _renderItems () {
         return this.chain(mapObj(this.items, (item) => {
             const { region } = item.moduleOptions;
-            if (!region) return;
+            if (!region) return null;
             if (!this.regions[region]) this._error(`Region: ${region} is not defined`);
-            this.regions[region].show(item);
+            return this.regions[region].show(item);
         }), this);
     }
 
