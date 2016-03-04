@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.6
+ * DrizzleJS v0.4.7
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -15,6 +15,8 @@
   }
 }(this, function() {
 'use strict';
+
+var _set = function set(object, property, value, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent !== null) { set(parent, property, value, receiver); } } else if ("value" in desc && desc.writable) { desc.value = value; } else { var setter = desc.set; if (setter !== undefined) { setter.call(receiver, value); } } return value; };
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
@@ -2049,6 +2051,9 @@ D.PageableModel = function (_D$Model) {
             params[pageKey] = page;
             params[pageSizeKey] = pageSize;
             return PAGE_DEFAULT_OPTIONS.params(params);
+        },
+        set: function set(value) {
+            _set(Object.getPrototypeOf(PageableModel.prototype), 'params', value, this);
         }
     }, {
         key: 'pageInfo',

@@ -39,6 +39,10 @@ D.PageableModel = class PageableModel extends D.Model {
         return PAGE_DEFAULT_OPTIONS.params(params);
     }
 
+    set params (value) {
+        super.params = value;
+    }
+
     clear (trigger) {
         this._p.page = 1;
         this._p.recordCount = 0;
