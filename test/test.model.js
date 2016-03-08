@@ -150,35 +150,35 @@ describe('Store & Model', function() {
             request = requests[index ++];
             expect(request.method).to.equal('POST');
             expect(request.url).to.equal('api/prefix/foo/foo.json');
-            expect(request.requestBody).to.eql({name: '2'});
+            expect(request.requestBody).to.eql('name=2');
 
             model.set({id: 1, name: '2'});
             Drizzle.Request.put(model);
             request = requests[index ++];
             expect(request.method).to.equal('PUT');
             expect(request.url).to.equal('api/prefix/foo/foo/1.json');
-            expect(request.requestBody).to.eql({id: 1, name: '2'});
+            expect(request.requestBody).to.eql('id=1&name=2');
 
             model.set({id: 1, name: '2'});
             Drizzle.Request.del(model);
             request = requests[index ++];
             expect(request.method).to.equal('DELETE');
             expect(request.url).to.equal('api/prefix/foo/foo/1.json');
-            expect(request.requestBody).to.eql({id: 1, name: '2'});
+            expect(request.requestBody).to.eql('id=1&name=2');
 
             model.set({name: '2'});
             Drizzle.Request.save(model);
             request = requests[index ++];
             expect(request.method).to.equal('POST');
             expect(request.url).to.equal('api/prefix/foo/foo.json');
-            expect(request.requestBody).to.eql({name: '2'});
+            expect(request.requestBody).to.eql('name=2');
 
             model.set({name: '2', id: 1});
             Drizzle.Request.save(model);
             request = requests[index ++];
             expect(request.method).to.equal('PUT');
             expect(request.url).to.equal('api/prefix/foo/foo/1.json');
-            expect(request.requestBody).to.eql({name: '2', id: 1});
+            expect(request.requestBody).to.eql('name=2&id=1');
 
             return Drizzle.Request.save(model);
         }).then(null, function() { done(); });

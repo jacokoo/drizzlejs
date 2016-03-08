@@ -124,6 +124,8 @@ D.Adapter = {
         return promise;
     },
 
+    exportError () {},
+
     ajaxResult (args) { return args[0]; },
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
@@ -170,6 +172,7 @@ D.Promise = class Promiser {
                 try {
                     value = D.isFunction(item) ? item.apply(this.context, args) : item;
                 } catch (e) {
+                    D.Adapter.exportError(e);
                     reject(e);
                     return;
                 }
@@ -208,6 +211,7 @@ D.Promise = class Promiser {
                 try {
                     value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
                 } catch (e) {
+                    D.Adapter.exportError(e);
                     reject(e);
                     return;
                 }
@@ -826,13 +830,11 @@ D.Module = class Module extends D.RenderableContainer {
     }
 
     _beforeRender () {
-        return this.chain(super._beforeRender(), () => this._store._loadEagerModels())
-            .then(null, () => this.Promise.resolve());
+        return this.chain(super._beforeRender(), () => this._store._loadEagerModels());
     }
 
     _afterRender () {
-        return this.chain(super._afterRender(), () => this._store._loadLazyModels())
-            .then(null, () => this.Promise.resolve());
+        return this.chain(super._afterRender(), () => this._store._loadLazyModels());
     }
 };
 

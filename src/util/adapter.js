@@ -25,6 +25,8 @@ D.Adapter = {
         return promise;
     },
 
+    exportError () {},
+
     ajaxResult (args) { return args[0]; },
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },

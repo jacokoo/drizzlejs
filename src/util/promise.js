@@ -25,6 +25,7 @@ D.Promise = class Promiser {
                 try {
                     value = D.isFunction(item) ? item.apply(this.context, args) : item;
                 } catch (e) {
+                    D.Adapter.exportError(e);
                     reject(e);
                     return;
                 }
@@ -63,6 +64,7 @@ D.Promise = class Promiser {
                 try {
                     value = D.isFunction(ring) ? ring.apply(this.context, prev != null ? [prev] : []) : ring;
                 } catch (e) {
+                    D.Adapter.exportError(e);
                     reject(e);
                     return;
                 }

@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.7
+ * DrizzleJS v0.4.8
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -188,6 +188,7 @@ D.Adapter = {
         xhr.send(data);
         return promise;
     },
+    exportError: function exportError() {},
     ajaxResult: function ajaxResult(args) {
         return args[0];
     },
@@ -255,6 +256,7 @@ D.Promise = function () {
                     try {
                         value = D.isFunction(item) ? item.apply(_this2.context, args) : item;
                     } catch (e) {
+                        D.Adapter.exportError(e);
                         reject(e);
                         return;
                     }
@@ -301,6 +303,7 @@ D.Promise = function () {
                     try {
                         value = D.isFunction(ring) ? ring.apply(_this3.context, prev != null ? [prev] : []) : ring;
                     } catch (e) {
+                        D.Adapter.exportError(e);
                         reject(e);
                         return;
                     }
@@ -1154,8 +1157,6 @@ D.Module = function (_D$RenderableContaine) {
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_beforeRender', this).call(this), function () {
                 return _this27._store._loadEagerModels();
-            }).then(null, function () {
-                return _this27.Promise.resolve();
             });
         }
     }, {
@@ -1165,8 +1166,6 @@ D.Module = function (_D$RenderableContaine) {
 
             return this.chain(_get(Object.getPrototypeOf(Module.prototype), '_afterRender', this).call(this), function () {
                 return _this28._store._loadLazyModels();
-            }).then(null, function () {
-                return _this28.Promise.resolve();
             });
         }
     }, {

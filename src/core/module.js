@@ -24,12 +24,10 @@ D.Module = class Module extends D.RenderableContainer {
     }
 
     _beforeRender () {
-        return this.chain(super._beforeRender(), () => this._store._loadEagerModels())
-            .then(null, () => this.Promise.resolve());
+        return this.chain(super._beforeRender(), () => this._store._loadEagerModels());
     }
 
     _afterRender () {
-        return this.chain(super._afterRender(), () => this._store._loadLazyModels())
-            .then(null, () => this.Promise.resolve());
+        return this.chain(super._afterRender(), () => this._store._loadLazyModels());
     }
 };
