@@ -44,6 +44,19 @@ const Drizzle = {},
         return t;
     },
 
+    extend = (theChild, theParent, obj) => {
+        const child = theChild;
+        assign(child, theParent);
+
+        function Class () { this.constructor = theChild; }
+        Class.prototype = theParent.prototype;
+        child.prototype = new Class();
+        assign(child.prototype, obj);
+        child.__super__ = theParent.prototype;
+
+        return child;
+    },
+
     typeCache = {
         View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
@@ -86,15 +99,7 @@ assign(D, {
         assign(D.Adapter, obj);
     },
 
-    extend (theChild, theParent, obj) {
-        const child = theChild;
-        assign(child, theParent);
-        child.prototype = Object.create(theParent.prototype, { constructor: child });
-        assign(child.prototype, obj);
-        child.__super__ = theParent.prototype;
-
-        return child;
-    }
+    extend
 });
 
 D.Adapter = {
@@ -145,24 +150,24 @@ D.Adapter = {
     removeClass (el, clazz) { el.classList.remove(clazz); }
 };
 
-D.Promise = class Promiser {
-    constructor (context) {
-        this.context = context;
-    }
+D.Promise = function Promiser (context) {
+    this.context = context;
+};
 
+D.assign(D.Promise.prototype, {
     create (fn) {
         return new D.Adapter.Promise((resolve, reject) => {
             fn.call(this.context, resolve, reject);
         });
-    }
+    },
 
     resolve (data) {
         return D.Adapter.Promise.resolve(data);
-    }
+    },
 
     reject (data) {
         return D.Adapter.Promise.reject(data);
-    }
+    },
 
     parallel (items, ...args) {
         return this.create((resolve, reject) => {
@@ -193,7 +198,7 @@ D.Promise = class Promiser {
                 reject(as);
             });
         });
-    }
+    },
 
     chain (...args) {
         let prev = null;
@@ -226,7 +231,7 @@ D.Promise = class Promiser {
             doRing(args, args.shift(), resolve, reject);
         });
     }
-};
+});
 
 D.Event = {
     on (name, fn, ctx) {
@@ -308,7 +313,7 @@ D.Event = {
 
 D.Request = {
     get (model, options) {
-        return this._ajax('GET', model, model.params, options);
+        return this._ajax('GET', model, model.getParams(), options);
     },
 
     post (model, options) {
@@ -415,30 +420,30 @@ D.ComponentManager = {
     }
 };
 
-D.Base = class Base {
-    constructor (name, options = {}, defaults) {
-        this.options = options;
-        this.id = D.uniqueId('D');
-        this.name = name;
-        this.Promise = new D.Promise(this);
+D.Base = function Base (name, options = {}, defaults) {
+    this.options = options;
+    this.id = D.uniqueId('D');
+    this.name = name;
+    this.Promise = new D.Promise(this);
 
-        assign(this, defaults);
-        if (options.mixin) this._mixin(options.mixin);
-        this._loadedPromise = this._initialize();
-    }
+    assign(this, defaults);
+    if (options.mixin) this._mixin(options.mixin);
+    this._loadedPromise = this._initialize();
+};
 
+D.assign(D.Base.prototype, {
     _initialize () {
-    }
+    },
 
     _option (key, ...args) {
         const value = this.options[key];
         return D.isFunction(value) ? value.apply(this, args) : value;
-    }
+    },
 
     _error (message, ...rest) {
         if (!D.isString(message)) throw message;
         throw new Error(`[${this.module ? this.module.name + ':' : ''}${this.name}] ${message} ${rest.join(' ')}`);
-    }
+    },
 
     _mixin (obj) {
         mapObj(obj, (value, key) => {
@@ -455,27 +460,27 @@ D.Base = class Base {
                 };
             }
         });
-    }
+    },
 
     chain (...args) {
         return this.Promise.chain(...args);
     }
+});
+
+D.Renderable = function Renderable (name, app, mod, loader, options) {
+    D.Renderable.__super__.constructor.call(this, name, options, {
+        app,
+        module: mod,
+        components: {},
+        _loader: loader,
+        _componentMap: {},
+        _events: {}
+    });
+    this._eventHandlers = this._option('handlers');
+    app.delegateEvent(this);
 };
 
-D.Renderable = class Renderable extends D.Base {
-    constructor (name, app, mod, loader, options) {
-        super(name, options, {
-            app,
-            module: mod,
-            components: {},
-            _loader: loader,
-            _componentMap: {},
-            _events: {}
-        });
-        this._eventHandlers = this._option('handlers');
-        app.delegateEvent(this);
-    }
-
+extend(D.Renderable, D.Base, {
     _initialize () {
         this._templateEngine = this._option('templateEngine')
             || this.module && this.module._templateEngine || this.app._templateEngine;
@@ -483,19 +488,19 @@ D.Renderable = class Renderable extends D.Base {
             [this._templateEngine._load(this), this._initializeEvents()],
             ([template]) => this._template = template
         );
-    }
+    },
 
     render (options) {
         return this._render(options == null ? this.renderOptions : options, true);
-    }
+    },
 
     $ (id) {
         return this.$$('#' + this._wrapDomId(id))[0];
-    }
+    },
 
     $$ (selector) {
-        return this._element.querySelectorAll(selector);
-    }
+        return this._getElement().querySelectorAll(selector);
+    },
 
     _render (options, update) {
         if (!this._region) this._error('Region is null');
@@ -515,12 +520,12 @@ D.Renderable = class Renderable extends D.Base {
             () => this.trigger('afterRender'),
             this
         );
-    }
+    },
 
     _setRegion (region) {
         this._region = region;
         this._bindEvents();
-    }
+    },
 
     _close () {
         if (!this._region) return this.Promise.resolve(this);
@@ -536,22 +541,22 @@ D.Renderable = class Renderable extends D.Base {
             () => delete this._region,
             this
         );
-    }
+    },
 
-    get _element () {
+    _getElement () {
         return this._region ? this._region._getElement(this) : null;
-    }
+    },
 
     _serializeData () {
         return {
             Global: this.app.global,
             Self: this
         };
-    }
+    },
 
     _renderTemplate (data, update) {
         this._templateEngine._execute(this, data, this._template, update);
-    }
+    },
 
     _initializeEvents (events) {
         mapObj(events || this._option('events'), (value, key) => {
@@ -570,17 +575,17 @@ D.Renderable = class Renderable extends D.Base {
             result.handler = this._createEventHandler(value, result);
             this._events[key] = result;
         });
-    }
+    },
 
     _getEventTarget (target, id) {
-        const el = this._element;
+        const el = this._getElement();
         let current = target;
         while (current !== el) {
             const cid = current.getAttribute('id');
             if (cid && cid.slice(0, id.length) === id) return current;
             current = current.parentNode;
         }
-    }
+    },
 
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
@@ -592,17 +597,17 @@ D.Renderable = class Renderable extends D.Base {
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);
         };
-    }
+    },
 
     _bindEvents () {
         mapObj(this._events, (value) => {
             this._region._delegateDomEvent(this, value.eventType, value.selector, value.handler);
         });
-    }
+    },
 
     _unbindEvents () {
         this._region._undelegateDomEvents(this);
-    }
+    },
 
     _renderComponents () {
         return this.chain(map(this._option('components'), (item) => {
@@ -614,48 +619,43 @@ D.Renderable = class Renderable extends D.Base {
             D.isArray(value) ? value.push(component) : (this.components[id] = (value ? [value, component] : component));
             this._componentMap[index] = item;
         }));
-    }
+    },
 
     _destroyComponents () {
         this.components = {};
         mapObj(this._componentMap, (value) => D.ComponentManager._destroy(this, value));
         this._componentMap = {};
-    }
+    },
 
     _wrapDomId (id) {
         return this.id + id;
-    }
+    },
 
-    _beforeRender () {}
-    _afterRender () {}
-    _beforeClose () {}
+    _beforeRender () {},
+    _afterRender () {},
+    _beforeClose () {},
     _afterClose () {}
+});
+
+D.RenderableContainer = function RenderableContainer () {
+    D.RenderableContainer.__super__.constructor.apply(this, arguments);
 };
 
-D.RenderableContainer = class RenderableContainer extends D.Renderable {
-
-    get items () {
-        return this._items || {};
-    }
-
-    get regions () {
-        return this._regions || {};
-    }
-
+extend(D.RenderableContainer, D.Renderable, {
     _initialize () {
-        const promise = super._initialize();
+        const promise = D.RenderableContainer.__super__._initialize.call(this);
 
-        this._items = {};
+        this.items = {};
         return this.chain(promise, this._initializeItems);
-    }
+    },
 
     _afterRender () {
         return this.chain(this._initializeRegions, this._renderItems);
-    }
+    },
 
     _afterClose () {
         return this._closeRegions();
-    }
+    },
 
     _initializeItems () {
         this.chain(mapObj(this._option('items'), (options = {}, name) => {
@@ -665,19 +665,19 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             return this.app[options.isModule ? '_createModule' : '_createView'](name, this).then((item) => {
                 const i = item;
                 i.moduleOptions = opt;
-                this._items[name] = item;
+                this.items[name] = item;
                 return item;
             });
         }));
-    }
+    },
 
     _initializeRegions () {
-        this._regions = {};
+        this.regions = {};
         return this.chain(this.closeRegions, map(this.$$('[data-region]'), (el) => {
             const region = this._createRegion(el);
-            this._regions[region.name] = region;
+            this.regions[region.name] = region;
         }));
-    }
+    },
 
     _renderItems () {
         return this.chain(mapObj(this.items, (item) => {
@@ -686,31 +686,37 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             if (!this.regions[region]) this._error(`Region: ${region} is not defined`);
             return this.regions[region].show(item);
         }), this);
-    }
+    },
 
     _createRegion (el) {
         const name = el.getAttribute('data-region');
         return this.app._createRegion(el, name, this);
-    }
+    },
 
     _closeRegions () {
-        const regions = this._regions;
+        const regions = this.regions;
         if (!regions) return this;
-        delete this._regions;
+        delete this.regions;
         return this.chain(mapObj(regions, (region) => region.close()), this);
     }
+});
+
+D.ActionCreator = function ActionCreator () {
+    D.ActionCreator.__super__.constructor.apply(this, arguments);
 };
 
-D.ActionCreator = class ActionCreator extends D.Renderable {
+D.extend(D.ActionCreator, D.Renderable, {
     _initializeEvents () {
-        super._initializeEvents();
-        super._initializeEvents(this._option('actions'));
-    }
+        const su = D.ActionCreator.__super__._initializeEvents;
+        su.call(this);
+        su.call(this, this._option('actions'));
+    },
 
     _createEventHandler (name, obj) {
+        const su = D.ActionCreator.__super__._createEventHandler;
         const isAction = !!(this._option('actions') || {})[obj.key];
-        return isAction ? this._createAction(name, obj) : super._createEventHandler(name, obj);
-    }
+        return isAction ? this._createAction(name, obj) : su.call(this, name, obj);
+    },
 
     _createAction (name, { id }) {
         const { disabledClass } = this.app.options,
@@ -732,10 +738,10 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
                 () => D.Adapter.removeClass(target, disabledClass)
             );
         };
-    }
+    },
 
     _getActionPayload (target) {
-        const rootEl = this._element;
+        const rootEl = this._getElement();
         let current = target, targetName = false;
         while (current && current !== rootEl && current.tagName !== 'FORM') current = current.parentNode;
 
@@ -756,13 +762,17 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
         });
         return data;
     }
+});
+
+D.View = function View () {
+    D.View.__super__.constructor.apply(this, arguments);
 };
 
-D.View = class View extends D.ActionCreator {
+extend(D.View, D.ActionCreator, {
     _initialize () {
         this.bindings = {};
-        return this.chain(super._initialize(), this._initializeDataBinding);
-    }
+        return this.chain(D.View.__super__._initialize.call(this), this._initializeDataBinding);
+    },
 
     _initializeDataBinding () {
         this._dataBinding = {};
@@ -776,83 +786,83 @@ D.View = class View extends D.ActionCreator {
                 if (D.isString(value)) this._option(value);
             } };
         });
-    }
+    },
 
     _bindData () {
         mapObj(this._dataBinding, (value) => this.listenTo(value.model, 'changed', value.fn));
-    }
+    },
 
     _unbindData () {
         this.stopListening();
-    }
+    },
 
     _setRegion (...args) {
-        super._setRegion(...args);
+        D.View.__super__._setRegion.apply(this, args);
         this._bindData();
-    }
+    },
 
     _close (...args) {
-        this.chain(super._close(...args), this._unbindData, this);
-    }
+        this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
+    },
 
     _serializeData () {
-        const data = super._serializeData();
+        const data = D.View.__super__._serializeData.call(this);
         mapObj(this.bindings, (value, key) => data[key] = value.get(true));
         mapObj(this._option('dataForTemplate'), (value, key) => data[key] = value.call(this, data));
         return data;
     }
 
+});
+
+D.Module = function Module () {
+    D.Module.__super__.constructor.apply(this, arguments);
 };
 
-D.Module = class Module extends D.RenderableContainer {
+D.extend(D.Module, D.RenderableContainer, {
     _initialize () {
         this.app._modules[`${this.name}--${this.id}`] = this;
         this._initializeStore();
-        return super._initialize();
-    }
-
-    get store () {
-        return this._store;
-    }
+        return D.Module.__super__._initialize.call(this);
+    },
 
     dispatch (name, payload) {
-        return this._store.dispatch(name, payload);
-    }
+        return this.store.dispatch(name, payload);
+    },
 
     _initializeStore () {
-        this._store = this.app._createStore(this, this._option('store'));
-    }
+        this.store = this.app._createStore(this, this._option('store'));
+    },
 
     _afterClose () {
         delete this.app._modules[`${this.name}--${this.id}`];
-        this._store._destory();
-        return super._afterClose();
-    }
+        this.store._destory();
+        return D.Module.__super__._afterClose.call(this);
+    },
 
     _beforeRender () {
-        return this.chain(super._beforeRender(), () => this._store._loadEagerModels());
-    }
+        return this.chain(D.Module.__super__._beforeRender.call(this), () => this.store._loadEagerModels());
+    },
 
     _afterRender () {
-        return this.chain(super._afterRender(), () => this._store._loadLazyModels());
+        return this.chain(D.Module.__super__._afterRender.call(this), () => this.store._loadLazyModels());
     }
-};
+});
 
 const CAPTURES = ['blur', 'focus', 'scroll', 'resize'];
 
-D.Region = class Region extends D.Base {
-    constructor (app, mod, el, name) {
-        super(name || 'Region', {}, {
-            app,
-            module: mod,
-            _el: el,
-            _delegated: {}
-        });
+D.Region = function Region (app, mod, el, name) {
+    D.Region.__super__.constructor.call(this, name || 'Region', {}, {
+        app,
+        module: mod,
+        _el: el,
+        _delegated: {}
+    });
 
-        if (!this._el) this._error('The DOM element for region is required');
-        app.delegateEvent(this);
-    }
+    if (!this._el) this._error('The DOM element for region is required');
+    app.delegateEvent(this);
+};
 
+extend(D.Region, D.Base, {
     show (renderable, options) {
         if (this._isCurrent(renderable)) {
             if (options && options.forceRender === false) return this.Promise.resolve(this._current);
@@ -879,7 +889,7 @@ D.Region = class Region extends D.Base {
             },
             (item) => item._render(options, false)
         );
-    }
+    },
 
     close () {
         return this.chain(
@@ -887,26 +897,26 @@ D.Region = class Region extends D.Base {
             () => delete this._current,
             this
         );
-    }
+    },
 
     $$ (selector) {
         return this._getElement().querySelectorAll(selector);
-    }
+    },
 
     _isCurrent (renderable) {
         if (!this._current) return false;
         if (this._current.name === renderable) return true;
         if (renderable && renderable.id === this._current.id) return true;
         return false;
-    }
+    },
 
     _getElement () {
         return this._el;
-    }
+    },
 
     _empty () {
         this._getElement().innerHTML = '';
-    }
+    },
 
     _createDelegateListener (name) {
         return (e) => {
@@ -925,7 +935,7 @@ D.Region = class Region extends D.Base {
                 matched && item.fn.call(item.renderable, e);
             });
         };
-    }
+    },
 
     _delegateDomEvent (renderable, name, selector, fn) {
         let obj = this._delegated[name];
@@ -934,7 +944,7 @@ D.Region = class Region extends D.Base {
             D.Adapter.addEventListener(this._getElement(), name, obj.listener, CAPTURES.indexOf(name) !== -1);
         }
         obj.items.push({ selector, fn, renderable });
-    }
+    },
 
     _undelegateDomEvents (renderable) {
         mapObj(this._delegated, (value, key) => {
@@ -949,13 +959,13 @@ D.Region = class Region extends D.Base {
             }
         });
     }
+});
+
+D.TemplateEngine = function TemplateEngine (options) {
+    D.TemplateEngine.__super__.constructor.call(this, 'Template Engine', options, { _templateCache: {} });
 };
 
-D.TemplateEngine = class TemplateEngine extends D.Base {
-    constructor (options) {
-        super('Template Engine', options, { _templateCache: {} });
-    }
-
+extend(D.TemplateEngine, D.Base, {
     executeIdReplacement (el, renderable) {
         const used = {};
         map(el.querySelectorAll('[id]'), (item) => {
@@ -973,13 +983,13 @@ D.TemplateEngine = class TemplateEngine extends D.Base {
                 wrapped = withHash ? `#${renderable._wrapDomId(value.slice(1))}` : renderable._wrapDomId(value);
             item.setAttribute(attr, wrapped);
         }));
-    }
+    },
 
     _load (renderable) {
         const id = renderable.id;
         if (this._templateCache[id]) return this._templateCache[id];
         return this._templateCache[id] = this._loadIt(renderable);
-    }
+    },
 
     _loadIt (renderable) {
         if (renderable instanceof Drizzle.Module) {
@@ -987,43 +997,41 @@ D.TemplateEngine = class TemplateEngine extends D.Base {
         }
 
         return () => renderable.module._template;
-    }
+    },
 
     _execute (renderable, data, template /* , update */) {
-        const el = renderable._element;
+        const el = renderable._getElement();
         el.innerHTML = template(data);
         this.executeIdReplacement(el, renderable);
     }
 
+});
+
+D.Store = function Store (mod, options) {
+    D.Store.__super__.constructor.call(this, 'Store', options, {
+        app: mod.app,
+        module: mod,
+        models: {}
+    });
+
+    this.app.delegateEvent(this);
+
+    this._callbacks = this._option('callbacks');
+    mapObj(this._callbacks, (value, key) => {
+        if (key.slice(0, 4) === 'app.') {
+            this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
+            return;
+        }
+
+        if (key.slice(0, 7) === 'shared.') {
+            const name = key.slice(7), model = this.models[name];
+            if (!model || model.store === this) this._error(`Can not bind to model: ${key}`);
+            this.listenTo(model, 'changed', () => value.call(this._callbackContext));
+        }
+    });
 };
 
-D.Store = class Store extends D.Base {
-    constructor (mod, options) {
-        super('Store', options, {
-            app: mod.app,
-            module: mod,
-            _models: {}
-        });
-
-        this.app.delegateEvent(this);
-
-        this._callbacks = this._option('callbacks');
-        mapObj(this._callbacks, (value, key) => {
-            if (key.slice(0, 4) === 'app.') {
-                this.listenTo(this.app, key, (payload) => value.call(this._callbackContext, payload));
-                return;
-            }
-
-            if (key.slice(0, 7) === 'shared.') {
-                const name = key.slice(7), model = this._models[name];
-                if (!model || model.store === this) this._error(`Can not bind to model: ${key}`);
-                this.listenTo(model, 'changed', () => value.call(this._callbackContext));
-            }
-        });
-    }
-
-    get models () {return this._models;}
-
+extend(D.Store, D.Base, {
     dispatch (name, payload) {
         let callback, n = name, p = payload;
         if (D.isObject(n)) {
@@ -1034,7 +1042,7 @@ D.Store = class Store extends D.Base {
         callback = this._callbacks[n];
         if (!callback) this._error(`No action callback for name: ${name}`);
         return this.chain(callback.call(this._callbackContext, p));
-    }
+    },
 
     _initialize () {
         this._initializeModels();
@@ -1046,94 +1054,94 @@ D.Store = class Store extends D.Base {
         }, D.Request);
 
         this._callbackContext.Promise = new D.Promise(this._callbackContext);
-    }
+    },
 
     _initializeModels () {
         mapObj(this._option('models'), (value, key) => {
             const v = (D.isFunction(value) ? value.call(this) : value) || {};
             if (v.shared === true) {
                 if (this.app.viewport) {
-                    this._models[key] = this.app.viewport.store.models[key];
+                    this.models[key] = this.app.viewport.store.models[key];
                     return;
                 }
                 if (this.module.name === this.app._option('viewport')) {
                     this._error('Can not define shared model in viewport');
                 }
                 if (this.module.module && this.module.module.name === this.app._option('viewport')) {
-                    this._models[key] = this.module.module.store.models[key];
+                    this.models[key] = this.module.module.store.models[key];
                 }
                 return;
             }
-            this._models[key] = this.app._createModel(this, v);
+            this.models[key] = this.app._createModel(this, v);
         });
-    }
+    },
 
     _loadEagerModels () {
-        return this.chain(mapObj(this._models, (model) => {
+        return this.chain(mapObj(this.models, (model) => {
             if (model.store !== this) return null;
             return model.options.autoLoad === true ? D.Request.get(model) : null;
         }));
-    }
+    },
 
     _loadLazyModels () {
-        return this.chain(mapObj(this._models, (model) => {
+        return this.chain(mapObj(this.models, (model) => {
             if (model.store !== this) return null;
             const { autoLoad } = model.options;
             return autoLoad && autoLoad !== true ? D.Request.get(model) : null;
         }));
-    }
+    },
 
     _destory () {
         this.stopListening();
     }
+});
+
+D.Model = function Model (store, options) {
+    D.Model.__super__.constructor.call(this, 'Model', options, {
+        app: store.module.app,
+        module: store.module,
+        store
+    });
+
+    this.data = this._option('data') || {};
+    this._idKey = this._option('idKey') || this.app.options.idKey;
+    this.params = assign({}, this._option('params'));
+    this.app.delegateEvent(this);
 };
 
-D.Model = class Model extends D.Base {
-    constructor (store, options) {
-        super('Model', options, {
-            app: store.module.app,
-            module: store.module,
-            store
-        });
-
-        this._data = this._option('data') || {};
-        this._idKey = this._option('idKey') || this.app.options.idKey;
-        this._params = assign({}, this._option('params'));
-        this.app.delegateEvent(this);
-    }
-
-    get fullUrl () { return D.Request._url(this); }
-
-    get params () { return this._params; }
-
-    set params (value) { this._params = value; }
-
-    get data () { return this._data; }
+D.extend(D.Model, D.Base, {
+    getFullUrl () { return D.Request._url(this); },
 
     set (data, trigger) {
         const d = this.options.parse ? this._option('parse', data) : data;
-        this._data = this.options.root ? d[this.options.root] : d;
+        this.data = this.options.root ? d[this.options.root] : d;
         if (trigger) this.changed();
-    }
+    },
+
+    getParams () { return this.params; },
 
     get (cloneIt) {
-        return cloneIt ? clone(this._data) : this._data;
-    }
+        return cloneIt ? clone(this.data) : this.data;
+    },
 
     clear (trigger) {
-        this._data = D.isArray(this._data) ? [] : {};
+        this.data = D.isArray(this.data) ? [] : {};
         if (trigger) this.changed();
-    }
+    },
 
-    changed () { this.trigger('changed'); }
+    changed () { this.trigger('changed'); },
 
     _url () {
         return this._option('url') || '';
     }
+});
+
+D.Loader = function Loader (app, options) {
+    D.Loader.__super__.constructor.call(this, 'Loader', options, { app });
 };
 
-D.Loader = class Loader extends D.Base {
-    static _analyse (name) {
+D.assign(D.Loader, {
+    _analyse (name) {
         if (!D.isString(name)) {
             return { loader: null, name };
         }
@@ -1143,11 +1151,9 @@ D.Loader = class Loader extends D.Base {
 
         return { loader, name: args.shift(), args };
     }
+});
 
-    constructor (app, options) {
-        super('Loader', options, { app });
-    }
-
+D.extend(D.Loader, D.Base, {
     loadResource (path) {
         const { scriptRoot, getResource, amd } = this.app.options,
             fullPath = `${scriptRoot}/${path}`;
@@ -1161,56 +1167,56 @@ D.Loader = class Loader extends D.Base {
                 resolve(require(`./${fullPath}`));
             }
         });
-    }
+    },
 
     loadModuleResource (mod, path) {
         return this.loadResource(`${mod.name}/${path}`);
-    }
+    },
 
     loadModule (name) {
         return this.loadResource(`${name}/index`);
-    }
+    },
 
     loadView (name, mod) {
         return this.loadModuleResource(mod, `view-${name}`);
-    }
+    },
 
     loadRouter (path) {
         const name = 'router';
         return this.loadResource(path ? `${path}/${name}` : name);
     }
+});
+
+D.Application = function Application (options) {
+    D.Application.__super__.constructor.call(this, options && options.name || 'Application', assign({
+        scriptRoot: 'app',
+        urlRoot: '',
+        urlSuffix: '',
+        caseSensitiveHash: false,
+        container: root && root.document.body,
+        disabledClass: 'disabled',
+        getResource: null,
+        idKey: 'id',
+        viewport: 'viewport'
+    }, options), {
+        global: {},
+        _modules: {},
+        _loaders: {}
+    });
 };
 
-D.Application = class Application extends D.Base {
-    constructor (options) {
-        super(options && options.name || 'Application', assign({
-            scriptRoot: 'app',
-            urlRoot: '',
-            urlSuffix: '',
-            caseSensitiveHash: false,
-            container: root && root.document.body,
-            disabledClass: 'disabled',
-            getResource: null,
-            idKey: 'id',
-            viewport: 'viewport'
-        }, options), {
-            global: {},
-            _modules: {},
-            _loaders: {}
-        });
-    }
-
+D.extend(D.Application, D.Base, {
     _initialize () {
         this._templateEngine = this._option('templateEngine') || new D.TemplateEngine();
         this.registerLoader('default', new D.Loader(this), true);
         this._region = this._createRegion(this._option('container'), 'Region');
-    }
+    },
 
     registerLoader (name, loader, isDefault) {
         this._loaders[name] = loader;
         if (isDefault) this._defaultLoader = loader;
         return this;
-    }
+    },
 
     start (defaultHash) {
         if (defaultHash) this._router = new D.Router(this);
@@ -1222,32 +1228,32 @@ D.Application = class Application extends D.Base {
             () => defaultHash && this._router._start(defaultHash),
             this
         );
-    }
+    },
 
     stop () {
         this.off();
         this._region.close();
         if (this._router) this._router._stop();
-    }
+    },
 
     navigate (hash, trigger) {
         if (!this._router) return;
         this._router.navigate(hash, trigger);
-    }
+    },
 
     dispatch (name, payload) {
         const n = D.isObject(name) ? name.name : name,
             p = D.isObject(name) ? name.payload : payload;
         this.trigger(`app.${n}`, p);
-    }
+    },
 
     show (region, moduleName, options) {
         return this.viewport.regions[region].show(moduleName, options);
-    }
+    },
 
     _getLoader (name, mod) {
         return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
-    }
+    },
 
     _createModule (name, parentModule) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
@@ -1256,7 +1262,7 @@ D.Application = class Application extends D.Base {
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
             return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options);
         });
-    }
+    },
 
     _createView (name, mod) {
         const { name: viewName, loader: loaderName } = D.Loader._analyse(name),
@@ -1265,45 +1271,45 @@ D.Application = class Application extends D.Base {
         return this.chain(loader.loadView(viewName, mod), (options = {}) => {
             return typeCache.createView(options.type, viewName, this, mod, loader, options);
         });
-    }
+    },
 
     _createRegion (el, name, mod) {
         const { name: regionName, loader: type } = D.Loader._analyse(name);
         return typeCache.createRegion(type, this, mod, el, regionName);
-    }
+    },
 
     _createStore (mod, options = {}) {
         return typeCache.createStore(options.type, mod, options);
-    }
+    },
 
     _createModel (store, options = {}) {
         return typeCache.createModel(options.type, store, options);
     }
-};
+});
 
 assign(D.Application.prototype, D.Event);
 
 const PUSH_STATE_SUPPORTED = root && root.history && ('pushState' in root.history);
 const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
-class Route {
-    constructor (app, router, path, fn) {
-        const pattern = path
-            .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
-            .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
+function Route (app, router, path, fn) {
+    const pattern = path
+          .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
+          .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
 
-        this.pattern = new RegExp(`^${pattern}$`, app.options.caseSensitiveHash ? 'g' : 'gi');
+    this.pattern = new RegExp(`^${pattern}$`, app.options.caseSensitiveHash ? 'g' : 'gi');
 
-        this.app = app;
-        this.router = router;
-        this.path = path;
-        this.fn = fn;
-    }
+    this.app = app;
+    this.router = router;
+    this.path = path;
+    this.fn = fn;
+}
 
+assign(Route.prototype, {
     match (hash) {
         this.pattern.lastIndex = 0;
         return this.pattern.test(hash);
-    }
+    },
 
     handle (hash) {
         this.pattern.lastIndex = 0;
@@ -1315,20 +1321,20 @@ class Route {
             return (prev) => fn.apply(this.router, (i > 0 ? [prev].concat(args) : args));
         }));
     }
-}
+});
 
-D.Router = class Router extends D.Base {
-    constructor (app) {
-        super('Router', {}, {
-            app,
-            _routes: [],
-            _interceptors: {},
-            _started: false
-        });
+D.Router = function Router (app) {
+    D.Router.__super__.constructor.call(this, 'Router', {}, {
+        app,
+        _routes: [],
+        _interceptors: {},
+        _started: false
+    });
 
-        this._EVENT_HANDLER = () => this._dispath(this._getHash());
-    }
+    this._EVENT_HANDLER = () => this._dispath(this._getHash());
+};
 
+extend(D.Router, D.Base, {
     navigate (path, trigger) {
         if (!this._started) return;
         if (PUSH_STATE_SUPPORTED) {
@@ -1338,7 +1344,7 @@ D.Router = class Router extends D.Base {
         }
 
         if (trigger !== false) this._dispath(path);
-    }
+    },
 
     _start (defaultPath) {
         if (this._started || !root) return;
@@ -1347,13 +1353,13 @@ D.Router = class Router extends D.Base {
         const hash = this._getHash() || defaultPath;
         this._started = true;
         if (hash) this.navigate(hash);
-    }
+    },
 
     _stop () {
         if (!this._started) return;
         D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
         this._started = false;
-    }
+    },
 
     _dispath (path) {
         if (path === this._previousHash) return;
@@ -1366,7 +1372,7 @@ D.Router = class Router extends D.Base {
                 return;
             }
         }
-    }
+    },
 
     _mountRoutes () {
         const paths = slice.call(arguments);
@@ -1374,7 +1380,7 @@ D.Router = class Router extends D.Base {
             map(paths, (path) => this.app._getLoader(path).loadRouter(path)),
             (options) => map(options, (option, i) => this._addRoute(paths[i], option))
         );
-    }
+    },
 
     _addRoute (path, options) {
         const { routes, interceptors } = options;
@@ -1388,7 +1394,7 @@ D.Router = class Router extends D.Base {
             const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
             this._interceptors[p] = options[value];
         });
-    }
+    },
 
     _getInterceptors (path) {
         const result = [], items = path.split('/');
@@ -1402,13 +1408,13 @@ D.Router = class Router extends D.Base {
 
         if (this._interceptors['']) result.unshift(this._interceptors['']);
         return result;
-    }
+    },
 
     _getHash () {
         return root.location.hash.slice(1);
     }
 
-};
+});
 
 const PAGE_DEFAULT_OPTIONS = {
     pageSize: 10,
@@ -1418,64 +1424,62 @@ const PAGE_DEFAULT_OPTIONS = {
     params: (item) => item
 };
 
-D.PageableModel = class PageableModel extends D.Model {
-    static setDefault (defaults) {
+D.PageableModel = function PageableModel (store, options) {
+    D.PageableModel.__super__.constructor.call(this, store, options);
+
+    this.data = this._option('data') || [];
+    this._p = {
+        page: this._option('page') || 1,
+        pageCount: 0,
+        pageSize: this._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
+        pageKey: this._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
+        pageSizeKey: this._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
+        recordCountKey: this._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
+    };
+};
+
+assign(D.PageableModel, {
+    setDefault (defaults) {
         assign(PAGE_DEFAULT_OPTIONS, defaults);
     }
+});
 
-    constructor (store, options) {
-        super(store, options);
-
-        this._data = this._option('data') || [];
-        this._p = {
-            page: this._option('page') || 1,
-            pageCount: 0,
-            pageSize: this._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
-            pageKey: this._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
-            pageSizeKey: this._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
-            recordCountKey: this._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
-        };
-    }
-
+extend(D.PageableModel, D.Model, {
     set (data = {}, trigger) {
         this._p.recordCount = data[this._p.recordCountKey] || 0;
         this._p.pageCount = Math.ceil(this._p.recordCount / this._p.pageSize);
-        super.set(data, trigger);
-    }
+        D.PageableModel.__super__.set.call(this, data, trigger);
+    },
 
-    get params () {
+    getParams () {
         const { page, pageKey, pageSizeKey, pageSize } = this._p;
-        const params = super.params;
+        const params = this.params;
         params[pageKey] = page;
         params[pageSizeKey] = pageSize;
         return PAGE_DEFAULT_OPTIONS.params(params);
-    }
-
-    set params (value) {
-        super.params = value;
-    }
+    },
 
     clear (trigger) {
         this._p.page = 1;
         this._p.recordCount = 0;
         this._p.pageCount = 0;
-        super.clear(trigger);
-    }
+        D.PageableModel.__super__.clear.call(this, trigger);
+    },
 
     turnToPage (page) {
         if (page <= this._p.pageCount && page >= 1) this._p.page = page;
         return this;
-    }
+    },
 
-    firstPage () { return this.turnToPage(1); }
+    firstPage () { return this.turnToPage(1); },
 
-    lastPage () { return this.turnToPage(this._p.pageCount); }
+    lastPage () { return this.turnToPage(this._p.pageCount); },
 
-    nextPage () { return this.turnToPage(this._p.page + 1); }
+    nextPage () { return this.turnToPage(this._p.page + 1); },
 
-    prevPage () { return this.turnToPage(this._p.page - 1); }
+    prevPage () { return this.turnToPage(this._p.page - 1); },
 
-    get pageInfo () {
+    getPageInfo () {
         const { page, pageSize, recordCount } = this._p;
         let result;
         if (this.data && this.data.length > 0) {
@@ -1487,17 +1491,21 @@ D.PageableModel = class PageableModel extends D.Model {
         if (result.end > result.total) result.end = result.total;
         return result;
     }
-};
+});
 
 D.registerModel('pageable', D.PageableModel);
 
-D.MultiRegion = class MultiRegion extends D.Region {
+D.MultiRegion = function MultiRegion () {
+    D.MultiRegion.__super__.constructor.apply(this, arguments);
+};
+
+D.extend(D.MultiRegion, D.Region, {
     _initialize () {
         this._items = {};
         this._elements = {};
-    }
+    },
 
-    activate () {}
+    activate () {},
 
     show (renderable, options = {}) {
         const opt = renderable.moduleOptions, str = D.isString(renderable);
@@ -1534,35 +1542,35 @@ D.MultiRegion = class MultiRegion extends D.Region {
                 return obj._render(options, false);
             }
         );
-    }
+    },
 
     _createElement () {
         const el = root.document.createElement('div');
         this._el.appendChild(el);
         return el;
-    }
+    },
 
     _getElement (item, key) {
         if (!item) return this._el;
         const k = key || item.renderOptions.key || item.moduleOptions.key;
         if (!this._elements[k]) this._elements[k] = this._createElement(k, item);
         return this._elements[k];
-    }
+    },
 
     _isCurrent (key, item, renderable) {
         if (!item) return false;
         return item.name === renderable || (renderable && renderable.id === item.id);
-    }
+    },
 
     _empty (item) {
         if (!item) {
-            super._empty();
+            D.MultiRegion.__super__._empty.call(this);
             return;
         }
 
         const el = this._getElement(item);
         el.parentNode.removeChild(el);
-    }
+    },
 
     close () {
         return this.chain(
@@ -1575,4 +1583,4 @@ D.MultiRegion = class MultiRegion extends D.Region {
             this
         );
     }
-};
+});

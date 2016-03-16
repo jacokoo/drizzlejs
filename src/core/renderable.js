@@ -1,17 +1,17 @@
-D.Renderable = class Renderable extends D.Base {
-    constructor (name, app, mod, loader, options) {
-        super(name, options, {
-            app,
-            module: mod,
-            components: {},
-            _loader: loader,
-            _componentMap: {},
-            _events: {}
-        });
-        this._eventHandlers = this._option('handlers');
-        app.delegateEvent(this);
-    }
+D.Renderable = function Renderable (name, app, mod, loader, options) {
+    D.Renderable.__super__.constructor.call(this, name, options, {
+        app,
+        module: mod,
+        components: {},
+        _loader: loader,
+        _componentMap: {},
+        _events: {}
+    });
+    this._eventHandlers = this._option('handlers');
+    app.delegateEvent(this);
+};
 
+extend(D.Renderable, D.Base, {
     _initialize () {
         this._templateEngine = this._option('templateEngine')
             || this.module && this.module._templateEngine || this.app._templateEngine;
@@ -19,19 +19,19 @@ D.Renderable = class Renderable extends D.Base {
             [this._templateEngine._load(this), this._initializeEvents()],
             ([template]) => this._template = template
         );
-    }
+    },
 
     render (options) {
         return this._render(options == null ? this.renderOptions : options, true);
-    }
+    },
 
     $ (id) {
         return this.$$('#' + this._wrapDomId(id))[0];
-    }
+    },
 
     $$ (selector) {
-        return this._element.querySelectorAll(selector);
-    }
+        return this._getElement().querySelectorAll(selector);
+    },
 
     _render (options, update) {
         if (!this._region) this._error('Region is null');
@@ -51,12 +51,12 @@ D.Renderable = class Renderable extends D.Base {
             () => this.trigger('afterRender'),
             this
         );
-    }
+    },
 
     _setRegion (region) {
         this._region = region;
         this._bindEvents();
-    }
+    },
 
     _close () {
         if (!this._region) return this.Promise.resolve(this);
@@ -72,22 +72,22 @@ D.Renderable = class Renderable extends D.Base {
             () => delete this._region,
             this
         );
-    }
+    },
 
-    get _element () {
+    _getElement () {
         return this._region ? this._region._getElement(this) : null;
-    }
+    },
 
     _serializeData () {
         return {
             Global: this.app.global,
             Self: this
         };
-    }
+    },
 
     _renderTemplate (data, update) {
         this._templateEngine._execute(this, data, this._template, update);
-    }
+    },
 
     _initializeEvents (events) {
         mapObj(events || this._option('events'), (value, key) => {
@@ -106,17 +106,17 @@ D.Renderable = class Renderable extends D.Base {
             result.handler = this._createEventHandler(value, result);
             this._events[key] = result;
         });
-    }
+    },
 
     _getEventTarget (target, id) {
-        const el = this._element;
+        const el = this._getElement();
         let current = target;
         while (current !== el) {
             const cid = current.getAttribute('id');
             if (cid && cid.slice(0, id.length) === id) return current;
             current = current.parentNode;
         }
-    }
+    },
 
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
@@ -128,17 +128,17 @@ D.Renderable = class Renderable extends D.Base {
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);
         };
-    }
+    },
 
     _bindEvents () {
         mapObj(this._events, (value) => {
             this._region._delegateDomEvent(this, value.eventType, value.selector, value.handler);
         });
-    }
+    },
 
     _unbindEvents () {
         this._region._undelegateDomEvents(this);
-    }
+    },
 
     _renderComponents () {
         return this.chain(map(this._option('components'), (item) => {
@@ -150,20 +150,20 @@ D.Renderable = class Renderable extends D.Base {
             D.isArray(value) ? value.push(component) : (this.components[id] = (value ? [value, component] : component));
             this._componentMap[index] = item;
         }));
-    }
+    },
 
     _destroyComponents () {
         this.components = {};
         mapObj(this._componentMap, (value) => D.ComponentManager._destroy(this, value));
         this._componentMap = {};
-    }
+    },
 
     _wrapDomId (id) {
         return this.id + id;
-    }
+    },
 
-    _beforeRender () {}
-    _afterRender () {}
-    _beforeClose () {}
+    _beforeRender () {},
+    _afterRender () {},
+    _beforeClose () {},
     _afterClose () {}
-};
+});

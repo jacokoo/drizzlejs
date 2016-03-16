@@ -1,18 +1,18 @@
 const CAPTURES = ['blur', 'focus', 'scroll', 'resize'];
 
-D.Region = class Region extends D.Base {
-    constructor (app, mod, el, name) {
-        super(name || 'Region', {}, {
-            app,
-            module: mod,
-            _el: el,
-            _delegated: {}
-        });
+D.Region = function Region (app, mod, el, name) {
+    D.Region.__super__.constructor.call(this, name || 'Region', {}, {
+        app,
+        module: mod,
+        _el: el,
+        _delegated: {}
+    });
 
-        if (!this._el) this._error('The DOM element for region is required');
-        app.delegateEvent(this);
-    }
+    if (!this._el) this._error('The DOM element for region is required');
+    app.delegateEvent(this);
+};
 
+extend(D.Region, D.Base, {
     show (renderable, options) {
         if (this._isCurrent(renderable)) {
             if (options && options.forceRender === false) return this.Promise.resolve(this._current);
@@ -39,7 +39,7 @@ D.Region = class Region extends D.Base {
             },
             (item) => item._render(options, false)
         );
-    }
+    },
 
     close () {
         return this.chain(
@@ -47,26 +47,26 @@ D.Region = class Region extends D.Base {
             () => delete this._current,
             this
         );
-    }
+    },
 
     $$ (selector) {
         return this._getElement().querySelectorAll(selector);
-    }
+    },
 
     _isCurrent (renderable) {
         if (!this._current) return false;
         if (this._current.name === renderable) return true;
         if (renderable && renderable.id === this._current.id) return true;
         return false;
-    }
+    },
 
     _getElement () {
         return this._el;
-    }
+    },
 
     _empty () {
         this._getElement().innerHTML = '';
-    }
+    },
 
     _createDelegateListener (name) {
         return (e) => {
@@ -85,7 +85,7 @@ D.Region = class Region extends D.Base {
                 matched && item.fn.call(item.renderable, e);
             });
         };
-    }
+    },
 
     _delegateDomEvent (renderable, name, selector, fn) {
         let obj = this._delegated[name];
@@ -94,7 +94,7 @@ D.Region = class Region extends D.Base {
             D.Adapter.addEventListener(this._getElement(), name, obj.listener, CAPTURES.indexOf(name) !== -1);
         }
         obj.items.push({ selector, fn, renderable });
-    }
+    },
 
     _undelegateDomEvents (renderable) {
         mapObj(this._delegated, (value, key) => {
@@ -109,4 +109,4 @@ D.Region = class Region extends D.Base {
             }
         });
     }
-};
+});

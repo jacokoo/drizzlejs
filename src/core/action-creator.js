@@ -1,13 +1,19 @@
-D.ActionCreator = class ActionCreator extends D.Renderable {
+D.ActionCreator = function ActionCreator () {
+    D.ActionCreator.__super__.constructor.apply(this, arguments);
+};
+
+D.extend(D.ActionCreator, D.Renderable, {
     _initializeEvents () {
-        super._initializeEvents();
-        super._initializeEvents(this._option('actions'));
-    }
+        const su = D.ActionCreator.__super__._initializeEvents;
+        su.call(this);
+        su.call(this, this._option('actions'));
+    },
 
     _createEventHandler (name, obj) {
+        const su = D.ActionCreator.__super__._createEventHandler;
         const isAction = !!(this._option('actions') || {})[obj.key];
-        return isAction ? this._createAction(name, obj) : super._createEventHandler(name, obj);
-    }
+        return isAction ? this._createAction(name, obj) : su.call(this, name, obj);
+    },
 
     _createAction (name, { id }) {
         const { disabledClass } = this.app.options,
@@ -29,10 +35,10 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
                 () => D.Adapter.removeClass(target, disabledClass)
             );
         };
-    }
+    },
 
     _getActionPayload (target) {
-        const rootEl = this._element;
+        const rootEl = this._getElement();
         let current = target, targetName = false;
         while (current && current !== rootEl && current.tagName !== 'FORM') current = current.parentNode;
 
@@ -53,4 +59,4 @@ D.ActionCreator = class ActionCreator extends D.Renderable {
         });
         return data;
     }
-};
+});

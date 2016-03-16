@@ -6,64 +6,62 @@ const PAGE_DEFAULT_OPTIONS = {
     params: (item) => item
 };
 
-D.PageableModel = class PageableModel extends D.Model {
-    static setDefault (defaults) {
+D.PageableModel = function PageableModel (store, options) {
+    D.PageableModel.__super__.constructor.call(this, store, options);
+
+    this.data = this._option('data') || [];
+    this._p = {
+        page: this._option('page') || 1,
+        pageCount: 0,
+        pageSize: this._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
+        pageKey: this._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
+        pageSizeKey: this._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
+        recordCountKey: this._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
+    };
+};
+
+assign(D.PageableModel, {
+    setDefault (defaults) {
         assign(PAGE_DEFAULT_OPTIONS, defaults);
     }
+});
 
-    constructor (store, options) {
-        super(store, options);
-
-        this._data = this._option('data') || [];
-        this._p = {
-            page: this._option('page') || 1,
-            pageCount: 0,
-            pageSize: this._option('pageSize') || PAGE_DEFAULT_OPTIONS.pageSize,
-            pageKey: this._option('pageKey') || PAGE_DEFAULT_OPTIONS.pageKey,
-            pageSizeKey: this._option('pageSizeKey') || PAGE_DEFAULT_OPTIONS.pageSizeKey,
-            recordCountKey: this._option('recordCountKey') || PAGE_DEFAULT_OPTIONS.recordCountKey
-        };
-    }
-
+extend(D.PageableModel, D.Model, {
     set (data = {}, trigger) {
         this._p.recordCount = data[this._p.recordCountKey] || 0;
         this._p.pageCount = Math.ceil(this._p.recordCount / this._p.pageSize);
-        super.set(data, trigger);
-    }
+        D.PageableModel.__super__.set.call(this, data, trigger);
+    },
 
-    get params () {
+    getParams () {
         const { page, pageKey, pageSizeKey, pageSize } = this._p;
-        const params = super.params;
+        const params = this.params;
         params[pageKey] = page;
         params[pageSizeKey] = pageSize;
         return PAGE_DEFAULT_OPTIONS.params(params);
-    }
-
-    set params (value) {
-        super.params = value;
-    }
+    },
 
     clear (trigger) {
         this._p.page = 1;
         this._p.recordCount = 0;
         this._p.pageCount = 0;
-        super.clear(trigger);
-    }
+        D.PageableModel.__super__.clear.call(this, trigger);
+    },
 
     turnToPage (page) {
         if (page <= this._p.pageCount && page >= 1) this._p.page = page;
         return this;
-    }
+    },
 
-    firstPage () { return this.turnToPage(1); }
+    firstPage () { return this.turnToPage(1); },
 
-    lastPage () { return this.turnToPage(this._p.pageCount); }
+    lastPage () { return this.turnToPage(this._p.pageCount); },
 
-    nextPage () { return this.turnToPage(this._p.page + 1); }
+    nextPage () { return this.turnToPage(this._p.page + 1); },
 
-    prevPage () { return this.turnToPage(this._p.page - 1); }
+    prevPage () { return this.turnToPage(this._p.page - 1); },
 
-    get pageInfo () {
+    getPageInfo () {
         const { page, pageSize, recordCount } = this._p;
         let result;
         if (this.data && this.data.length > 0) {
@@ -75,6 +73,6 @@ D.PageableModel = class PageableModel extends D.Model {
         if (result.end > result.total) result.end = result.total;
         return result;
     }
-};
+});
 
 D.registerModel('pageable', D.PageableModel);

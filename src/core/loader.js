@@ -1,5 +1,9 @@
-D.Loader = class Loader extends D.Base {
-    static _analyse (name) {
+D.Loader = function Loader (app, options) {
+    D.Loader.__super__.constructor.call(this, 'Loader', options, { app });
+};
+
+D.assign(D.Loader, {
+    _analyse (name) {
         if (!D.isString(name)) {
             return { loader: null, name };
         }
@@ -9,11 +13,9 @@ D.Loader = class Loader extends D.Base {
 
         return { loader, name: args.shift(), args };
     }
+});
 
-    constructor (app, options) {
-        super('Loader', options, { app });
-    }
-
+D.extend(D.Loader, D.Base, {
     loadResource (path) {
         const { scriptRoot, getResource, amd } = this.app.options,
             fullPath = `${scriptRoot}/${path}`;
@@ -27,22 +29,22 @@ D.Loader = class Loader extends D.Base {
                 resolve(require(`./${fullPath}`));
             }
         });
-    }
+    },
 
     loadModuleResource (mod, path) {
         return this.loadResource(`${mod.name}/${path}`);
-    }
+    },
 
     loadModule (name) {
         return this.loadResource(`${name}/index`);
-    }
+    },
 
     loadView (name, mod) {
         return this.loadModuleResource(mod, `view-${name}`);
-    }
+    },
 
     loadRouter (path) {
         const name = 'router';
         return this.loadResource(path ? `${path}/${name}` : name);
     }
-};
+});

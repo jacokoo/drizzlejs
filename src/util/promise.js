@@ -1,21 +1,21 @@
-D.Promise = class Promiser {
-    constructor (context) {
-        this.context = context;
-    }
+D.Promise = function Promiser (context) {
+    this.context = context;
+};
 
+D.assign(D.Promise.prototype, {
     create (fn) {
         return new D.Adapter.Promise((resolve, reject) => {
             fn.call(this.context, resolve, reject);
         });
-    }
+    },
 
     resolve (data) {
         return D.Adapter.Promise.resolve(data);
-    }
+    },
 
     reject (data) {
         return D.Adapter.Promise.reject(data);
-    }
+    },
 
     parallel (items, ...args) {
         return this.create((resolve, reject) => {
@@ -46,7 +46,7 @@ D.Promise = class Promiser {
                 reject(as);
             });
         });
-    }
+    },
 
     chain (...args) {
         let prev = null;
@@ -79,4 +79,4 @@ D.Promise = class Promiser {
             doRing(args, args.shift(), resolve, reject);
         });
     }
-};
+});
