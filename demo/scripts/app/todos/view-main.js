@@ -26,7 +26,7 @@ exports.dataForTemplate = {
         if (!filter || filter === 'all') {
             return data.todos;
         }
-        return _.filter(data.todos, 'completed', filter === 'completed');
+        return _.filter(data.todos, {completed: filter === 'completed'});
     },
     completed: function(data) {
         return _.every(data.todos, 'completed', true);
