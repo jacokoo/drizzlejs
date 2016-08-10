@@ -69,8 +69,9 @@ extend(D.Region, D.Base, {
     },
 
     _createDelegateListener (name) {
-        return (e) => {
+        return (...args) => {
             if (!this._delegated[name]) return;
+            const e = args[0];
             const { target } = e;
             map(this._delegated[name].items, (item) => {
                 const els = this._getElement().querySelectorAll(item.selector);
@@ -82,7 +83,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.call(item.renderable, e);
+                matched && item.fn.apply(item.renderable, args);
             });
         };
     },

@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.9
+ * DrizzleJS v0.4.10
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -37,7 +37,7 @@ var Drizzle = {},
 },
     mapObj = function mapObj(obj, fn) {
     var result = [];
-    var key = undefined;
+    var key = void 0;
     if (!obj) return result;
 
     for (key in obj) {
@@ -152,6 +152,7 @@ assign(D, {
         assign(D.Adapter, obj);
     },
 
+
     extend: extend
 });
 
@@ -237,7 +238,7 @@ D.assign(D.Promise.prototype, {
                 thenables = [],
                 indexMap = {};
             map(items, function (item, i) {
-                var value = undefined;
+                var value = void 0;
                 try {
                     value = D.isFunction(item) ? item.apply(_this2.context, args) : item;
                 } catch (e) {
@@ -282,7 +283,7 @@ D.assign(D.Promise.prototype, {
             if (D.isArray(ring)) {
                 ring.length === 0 ? nextRing([]) : _this3.parallel.apply(_this3, [ring].concat(_toConsumableArray(prev != null ? [prev] : []))).then(nextRing, reject);
             } else {
-                var value = undefined;
+                var value = void 0;
                 try {
                     value = D.isFunction(ring) ? ring.apply(_this3.context, prev != null ? [prev] : []) : ring;
                 } catch (e) {
@@ -699,11 +700,15 @@ extend(D.Renderable, D.Base, {
         var id = _ref3.id;
         var disabledClass = this.app.options.disabledClass;
 
-        return function (e) {
+        return function () {
+            for (var _len13 = arguments.length, args = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
+                args[_key13] = arguments[_key13];
+            }
+
             if (!_this11._eventHandlers[handlerName]) _this11._error('No event handler for name:', handlerName);
 
-            var target = _this11._getEventTarget(e.target, id),
-                args = [e];
+            var e = args[0];
+            var target = _this11._getEventTarget(e.target, id);
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             _this11._eventHandlers[handlerName].apply(_this11, args);
@@ -852,6 +857,7 @@ D.extend(D.ActionCreator, D.Renderable, {
 
         var actionCallback = _ref6[name];
 
+
         return function (e) {
             var target = _this18._getEventTarget(e.target, id);
             if (D.Adapter.hasClass(target, disabledClass)) return;
@@ -930,16 +936,16 @@ extend(D.View, D.ActionCreator, {
         this.stopListening();
     },
     _setRegion: function _setRegion() {
-        for (var _len13 = arguments.length, args = Array(_len13), _key13 = 0; _key13 < _len13; _key13++) {
-            args[_key13] = arguments[_key13];
+        for (var _len14 = arguments.length, args = Array(_len14), _key14 = 0; _key14 < _len14; _key14++) {
+            args[_key14] = arguments[_key14];
         }
 
         D.View.__super__._setRegion.apply(this, args);
         this._bindData();
     },
     _close: function _close() {
-        for (var _len14 = arguments.length, args = Array(_len14), _key14 = 0; _key14 < _len14; _key14++) {
-            args[_key14] = arguments[_key14];
+        for (var _len15 = arguments.length, args = Array(_len15), _key15 = 0; _key15 < _len15; _key15++) {
+            args[_key15] = arguments[_key15];
         }
 
         this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
@@ -1066,8 +1072,13 @@ extend(D.Region, D.Base, {
     _createDelegateListener: function _createDelegateListener(name) {
         var _this26 = this;
 
-        return function (e) {
+        return function () {
+            for (var _len16 = arguments.length, args = Array(_len16), _key16 = 0; _key16 < _len16; _key16++) {
+                args[_key16] = arguments[_key16];
+            }
+
             if (!_this26._delegated[name]) return;
+            var e = args[0];
             var target = e.target;
 
             map(_this26._delegated[name].items, function (item) {
@@ -1080,7 +1091,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.call(item.renderable, e);
+                matched && item.fn.apply(item.renderable, args);
             });
         };
     },
@@ -1191,7 +1202,7 @@ D.Store = function Store(mod, options) {
 
 extend(D.Store, D.Base, {
     dispatch: function dispatch(name, payload) {
-        var callback = undefined,
+        var callback = void 0,
             n = name,
             p = payload;
         if (D.isObject(n)) {
@@ -1568,6 +1579,7 @@ extend(D.Router, D.Base, {
         var routes = options.routes;
         var interceptors = options.interceptors;
 
+
         mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
             var p = (path + '/' + key).replace(/^\/|\/$/g, '');
             _this40._routes.unshift(new Route(_this40.app, _this40, p, options[value]));
@@ -1676,7 +1688,7 @@ extend(D.PageableModel, D.Model, {
         var pageSize = _p2.pageSize;
         var recordCount = _p2.recordCount;
 
-        var result = undefined;
+        var result = void 0;
         if (this.data && this.data.length > 0) {
             result = { page: page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
         } else {

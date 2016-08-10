@@ -589,10 +589,11 @@ extend(D.Renderable, D.Base, {
 
     _createEventHandler (handlerName, { haveStar, id }) {
         const { disabledClass } = this.app.options;
-        return (e) => {
+        return (...args) => {
             if (!this._eventHandlers[handlerName]) this._error('No event handler for name:', handlerName);
 
-            const target = this._getEventTarget(e.target, id), args = [e];
+            const e = args[0];
+            const target = this._getEventTarget(e.target, id);
             if (D.Adapter.hasClass(target, disabledClass)) return;
             if (haveStar) args.unshift(target.getAttribute('id').slice(id.length));
             this._eventHandlers[handlerName].apply(this, args);
@@ -919,8 +920,9 @@ extend(D.Region, D.Base, {
     },
 
     _createDelegateListener (name) {
-        return (e) => {
+        return (...args) => {
             if (!this._delegated[name]) return;
+            const e = args[0];
             const { target } = e;
             map(this._delegated[name].items, (item) => {
                 const els = this._getElement().querySelectorAll(item.selector);
@@ -932,7 +934,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.call(item.renderable, e);
+                matched && item.fn.apply(item.renderable, args);
             });
         };
     },
