@@ -135,6 +135,8 @@ D.Adapter = {
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
 
+    eventPrevented (e) { return e.defaultPrevented; },
+
     addEventListener (el, name, handler, useCapture) {
         el.addEventListener(name, handler, useCapture);
     },
@@ -674,10 +676,12 @@ extend(D.RenderableContainer, D.Renderable, {
 
     _initializeRegions () {
         this.regions = {};
-        return this.chain(this.closeRegions, map(this.$$('[data-region]'), (el) => {
-            const region = this._createRegion(el);
-            this.regions[region.name] = region;
-        }));
+        return this.chain(this._closeRegions, () => {
+            map(this.$$('[data-region]'), (el) => {
+                const region = this._createRegion(el);
+                this.regions[region.name] = region;
+            });
+        });
     },
 
     _renderItems () {
@@ -697,7 +701,7 @@ extend(D.RenderableContainer, D.Renderable, {
     _closeRegions () {
         const regions = this.regions;
         if (!regions) return this;
-        delete this.regions;
+        this.regions = {};
         return this.chain(mapObj(regions, (region) => region.close()), this);
     }
 });
@@ -925,6 +929,7 @@ extend(D.Region, D.Base, {
             const e = args[0];
             const { target } = e;
             map(this._delegated[name].items, (item) => {
+                if (D.Adapter.eventPrevented(e)) return;
                 const els = this._getElement().querySelectorAll(item.selector);
                 let matched = false;
                 for (let i = 0; i < els.length; i ++) {
@@ -934,7 +939,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.apply(item.renderable, args);
+                matched && item.fn.apply(item.renderable, args.concat([matched]));
             });
         };
     },
@@ -1482,12 +1487,12 @@ extend(D.PageableModel, D.Model, {
     prevPage () { return this.turnToPage(this._p.page - 1); },
 
     getPageInfo () {
-        const { page, pageSize, recordCount } = this._p;
+        const { page, pageSize, recordCount, pageCount } = this._p;
         let result;
         if (this.data && this.data.length > 0) {
-            result = { page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
+            result = { page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount, pageCount };
         } else {
-            result = { page, start: 0, end: 0, total: 0 };
+            result = { page, start: 0, end: 0, total: 0, pageCount };
         }
 
         if (result.end > result.total) result.end = result.total;

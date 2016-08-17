@@ -62,12 +62,12 @@ extend(D.PageableModel, D.Model, {
     prevPage () { return this.turnToPage(this._p.page - 1); },
 
     getPageInfo () {
-        const { page, pageSize, recordCount } = this._p;
+        const { page, pageSize, recordCount, pageCount } = this._p;
         let result;
         if (this.data && this.data.length > 0) {
-            result = { page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
+            result = { page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount, pageCount };
         } else {
-            result = { page, start: 0, end: 0, total: 0 };
+            result = { page, start: 0, end: 0, total: 0, pageCount };
         }
 
         if (result.end > result.total) result.end = result.total;

@@ -74,6 +74,7 @@ extend(D.Region, D.Base, {
             const e = args[0];
             const { target } = e;
             map(this._delegated[name].items, (item) => {
+                if (D.Adapter.eventPrevented(e)) return;
                 const els = this._getElement().querySelectorAll(item.selector);
                 let matched = false;
                 for (let i = 0; i < els.length; i ++) {
@@ -83,7 +84,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.apply(item.renderable, args);
+                matched && item.fn.apply(item.renderable, args.concat([matched]));
             });
         };
     },

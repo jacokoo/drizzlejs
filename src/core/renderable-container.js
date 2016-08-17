@@ -34,10 +34,12 @@ extend(D.RenderableContainer, D.Renderable, {
 
     _initializeRegions () {
         this.regions = {};
-        return this.chain(this.closeRegions, map(this.$$('[data-region]'), (el) => {
-            const region = this._createRegion(el);
-            this.regions[region.name] = region;
-        }));
+        return this.chain(this._closeRegions, () => {
+            map(this.$$('[data-region]'), (el) => {
+                const region = this._createRegion(el);
+                this.regions[region.name] = region;
+            });
+        });
     },
 
     _renderItems () {
@@ -57,7 +59,7 @@ extend(D.RenderableContainer, D.Renderable, {
     _closeRegions () {
         const regions = this.regions;
         if (!regions) return this;
-        delete this.regions;
+        this.regions = {};
         return this.chain(mapObj(regions, (region) => region.close()), this);
     }
 });

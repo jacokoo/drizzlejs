@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.10
+ * DrizzleJS v0.4.11
  * -------------------------------------
  * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -190,6 +190,9 @@ D.Adapter = {
     },
     getFormData: function getFormData(el) {
         throw new Error('getFormData is not implemented', el);
+    },
+    eventPrevented: function eventPrevented(e) {
+        return e.defaultPrevented;
     },
     addEventListener: function addEventListener(el, name, handler, useCapture) {
         el.addEventListener(name, handler, useCapture);
@@ -798,10 +801,12 @@ extend(D.RenderableContainer, D.Renderable, {
         var _this16 = this;
 
         this.regions = {};
-        return this.chain(this.closeRegions, map(this.$$('[data-region]'), function (el) {
-            var region = _this16._createRegion(el);
-            _this16.regions[region.name] = region;
-        }));
+        return this.chain(this._closeRegions, function () {
+            map(_this16.$$('[data-region]'), function (el) {
+                var region = _this16._createRegion(el);
+                _this16.regions[region.name] = region;
+            });
+        });
     },
     _renderItems: function _renderItems() {
         var _this17 = this;
@@ -821,7 +826,7 @@ extend(D.RenderableContainer, D.Renderable, {
     _closeRegions: function _closeRegions() {
         var regions = this.regions;
         if (!regions) return this;
-        delete this.regions;
+        this.regions = {};
         return this.chain(mapObj(regions, function (region) {
             return region.close();
         }), this);
@@ -1082,6 +1087,7 @@ extend(D.Region, D.Base, {
             var target = e.target;
 
             map(_this26._delegated[name].items, function (item) {
+                if (D.Adapter.eventPrevented(e)) return;
                 var els = _this26._getElement().querySelectorAll(item.selector);
                 var matched = false;
                 for (var i = 0; i < els.length; i++) {
@@ -1091,7 +1097,7 @@ extend(D.Region, D.Base, {
                         break;
                     }
                 }
-                matched && item.fn.apply(item.renderable, args);
+                matched && item.fn.apply(item.renderable, args.concat([matched]));
             });
         };
     },
@@ -1687,12 +1693,13 @@ extend(D.PageableModel, D.Model, {
         var page = _p2.page;
         var pageSize = _p2.pageSize;
         var recordCount = _p2.recordCount;
+        var pageCount = _p2.pageCount;
 
         var result = void 0;
         if (this.data && this.data.length > 0) {
-            result = { page: page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount };
+            result = { page: page, start: (page - 1) * pageSize + 1, end: page * pageSize, total: recordCount, pageCount: pageCount };
         } else {
-            result = { page: page, start: 0, end: 0, total: 0 };
+            result = { page: page, start: 0, end: 0, total: 0, pageCount: pageCount };
         }
 
         if (result.end > result.total) result.end = result.total;
