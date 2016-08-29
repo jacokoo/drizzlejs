@@ -31,6 +31,8 @@ D.Adapter = {
 
     getFormData (el) { throw new Error('getFormData is not implemented', el); },
 
+    eventPrevented (e) { return e.defaultPrevented; },
+
     addEventListener (el, name, handler, useCapture) {
         el.addEventListener(name, handler, useCapture);
     },

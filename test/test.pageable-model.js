@@ -25,30 +25,30 @@ describe('Pageable Model', function() {
         app.chain(app.start(), function() {
             var model = app.viewport.store.models.foo;
             expect(model).to.be.an.instanceof(Drizzle.PageableModel);
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 0, end: 0, total: 0});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 0, end: 0, total: 0, pageCount: 0});
 
             model.set({recordCount: 3, items: [{id: 1}, {id: 2}, {id: 3}]});
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 1, end: 2, total: 3});
-            expect(model.params).to.deep.equal({a: 1, _page: 1, pageSize: 2});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 1, end: 2, total: 3, pageCount: 2});
+            expect(model.getParams()).to.deep.equal({a: 1, _page: 1, pageSize: 2});
 
             model.turnToPage(2);
-            expect(model.pageInfo).to.deep.equal({page: 2, start: 3, end: 3, total: 3});
-            expect(model.params).to.deep.equal({a: 1, _page: 2, pageSize: 2});
+            expect(model.getPageInfo()).to.deep.equal({page: 2, start: 3, end: 3, total: 3, pageCount: 2});
+            expect(model.getParams()).to.deep.equal({a: 1, _page: 2, pageSize: 2});
 
             model.nextPage();
-            expect(model.pageInfo).to.deep.equal({page: 2, start: 3, end: 3, total: 3});
+            expect(model.getPageInfo()).to.deep.equal({page: 2, start: 3, end: 3, total: 3, pageCount: 2});
 
             model.prevPage();
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 1, end: 2, total: 3});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 1, end: 2, total: 3, pageCount: 2});
 
             model.lastPage();
-            expect(model.pageInfo).to.deep.equal({page: 2, start: 3, end: 3, total: 3});
+            expect(model.getPageInfo()).to.deep.equal({page: 2, start: 3, end: 3, total: 3, pageCount: 2});
 
             model.firstPage();
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 1, end: 2, total: 3});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 1, end: 2, total: 3, pageCount: 2});
 
             model.clear();
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 0, end: 0, total: 0});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 0, end: 0, total: 0, pageCount: 0});
         }, done);
     });
 
@@ -66,13 +66,13 @@ describe('Pageable Model', function() {
         });
         app.chain(app.start(), function() {
             var model = app.viewport.store.models.foo;
-            expect(model.pageInfo).to.deep.equal({page: 1, start: 0, end: 0, total: 0});
+            expect(model.getPageInfo()).to.deep.equal({page: 1, start: 0, end: 0, total: 0, pageCount: 0});
 
             model.set({count: 10, items: [1,2,3,4,5,6,7,8,9,10]});
             model.lastPage();
 
-            expect(model.pageInfo).to.deep.equal({page: 5, start: 9, end: 10, total: 10});
-            expect(model.params).to.deep.equal({a: 1, first: 8, max: 2});
+            expect(model.getPageInfo()).to.deep.equal({page: 5, start: 9, end: 10, total: 10, pageCount: 5});
+            expect(model.getParams()).to.deep.equal({a: 1, first: 8, max: 2});
         }, done);
     });
 });

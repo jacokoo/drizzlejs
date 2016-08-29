@@ -1,8 +1,12 @@
-D.View = class View extends D.ActionCreator {
+D.View = function View () {
+    D.View.__super__.constructor.apply(this, arguments);
+};
+
+extend(D.View, D.ActionCreator, {
     _initialize () {
         this.bindings = {};
-        return this.chain(super._initialize(), this._initializeDataBinding);
-    }
+        return this.chain(D.View.__super__._initialize.call(this), this._initializeDataBinding);
+    },
 
     _initializeDataBinding () {
         this._dataBinding = {};
@@ -16,30 +20,30 @@ D.View = class View extends D.ActionCreator {
                 if (D.isString(value)) this._option(value);
             } };
         });
-    }
+    },
 
     _bindData () {
         mapObj(this._dataBinding, (value) => this.listenTo(value.model, 'changed', value.fn));
-    }
+    },
 
     _unbindData () {
         this.stopListening();
-    }
+    },
 
     _setRegion (...args) {
-        super._setRegion(...args);
+        D.View.__super__._setRegion.apply(this, args);
         this._bindData();
-    }
+    },
 
     _close (...args) {
-        this.chain(super._close(...args), this._unbindData, this);
-    }
+        this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
+    },
 
     _serializeData () {
-        const data = super._serializeData();
+        const data = D.View.__super__._serializeData.call(this);
         mapObj(this.bindings, (value, key) => data[key] = value.get(true));
         mapObj(this._option('dataForTemplate'), (value, key) => data[key] = value.call(this, data));
         return data;
     }
 
-};
+});

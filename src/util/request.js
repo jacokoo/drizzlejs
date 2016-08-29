@@ -1,6 +1,6 @@
 D.Request = {
     get (model, options) {
-        return this._ajax('GET', model, model.params, options);
+        return this._ajax('GET', model, model.getParams(), options);
     },
 
     post (model, options) {

@@ -52,7 +52,7 @@ describe('View', function() {
             expect(spy).to.have.been.calledOnce;
             var data = spy.getCall(0).args[0];
             expect(data.foo).to.deep.equal([{id: 1, name: 'foo'}, {id: 2, name: 'bar'}]);
-            expect(view._element.innerHTML).to.equal('<span id="' + view.id + '1">foo</span><span id="'
+            expect(view._getElement().innerHTML).to.equal('<span id="' + view.id + '1">foo</span><span id="'
                                                      + view.id + '2">bar</span><span id="'+ view.id + 'bar">bar</span>');
 
             app.viewport.store.models.foo.set([{id: 3, name: 'baz'}], true);
@@ -62,7 +62,7 @@ describe('View', function() {
                     expect(spy).to.have.been.calledTwice;
                     data = spy.getCall(1).args[0];
                     expect(data.foo).to.deep.equal([{id: 3, name: 'baz'}]);
-                    expect(view._element.innerHTML).to.equal('<span id="' + view.id + '3">baz</span><span id="' + view.id + 'bar">bar</span>');
+                    expect(view._getElement().innerHTML).to.equal('<span id="' + view.id + '3">baz</span><span id="' + view.id + 'bar">bar</span>');
 
                     stub.restore();
                     resolve();

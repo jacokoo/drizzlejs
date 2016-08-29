@@ -36,8 +36,8 @@ describe('Region', function() {
                 expect(region.module).to.equal(app.viewport);
 
                 expect(mod).to.be.an.instanceof(Drizzle.Module);
-                expect(mod._element).to.equal(el);
-                expect(mod._element.getAttribute('data-current')).to.equal('demo');
+                expect(mod._getElement()).to.equal(el);
+                expect(mod._getElement().getAttribute('data-current')).to.equal('demo');
 
                 expect(mod._region).to.equal(region);
                 expect(region._isCurrent(mod)).to.be.true;

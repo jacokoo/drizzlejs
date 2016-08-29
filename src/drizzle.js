@@ -44,6 +44,19 @@ const Drizzle = {},
         return t;
     },
 
+    extend = (theChild, theParent, obj) => {
+        const child = theChild;
+        assign(child, theParent);
+
+        function Class () { this.constructor = theChild; }
+        Class.prototype = theParent.prototype;
+        child.prototype = new Class();
+        assign(child.prototype, obj);
+        child.__super__ = theParent.prototype;
+
+        return child;
+    },
+
     typeCache = {
         View: {}, Region: {}, Module: {}, Model: {}, Store: {},
 
@@ -86,15 +99,7 @@ assign(D, {
         assign(D.Adapter, obj);
     },
 
-    extend (theChild, theParent, obj) {
-        const child = theChild;
-        assign(child, theParent);
-        child.prototype = Object.create(theParent.prototype, { constructor: child });
-        assign(child.prototype, obj);
-        child.__super__ = theParent.prototype;
-
-        return child;
-    }
+    extend
 });
 
 // @include util/adapter.js

@@ -1,10 +1,14 @@
-D.MultiRegion = class MultiRegion extends D.Region {
+D.MultiRegion = function MultiRegion () {
+    D.MultiRegion.__super__.constructor.apply(this, arguments);
+};
+
+D.extend(D.MultiRegion, D.Region, {
     _initialize () {
         this._items = {};
         this._elements = {};
-    }
+    },
 
-    activate () {}
+    activate () {},
 
     show (renderable, options = {}) {
         const opt = renderable.moduleOptions, str = D.isString(renderable);
@@ -41,35 +45,35 @@ D.MultiRegion = class MultiRegion extends D.Region {
                 return obj._render(options, false);
             }
         );
-    }
+    },
 
     _createElement () {
         const el = root.document.createElement('div');
         this._el.appendChild(el);
         return el;
-    }
+    },
 
     _getElement (item, key) {
         if (!item) return this._el;
         const k = key || item.renderOptions.key || item.moduleOptions.key;
         if (!this._elements[k]) this._elements[k] = this._createElement(k, item);
         return this._elements[k];
-    }
+    },
 
     _isCurrent (key, item, renderable) {
         if (!item) return false;
         return item.name === renderable || (renderable && renderable.id === item.id);
-    }
+    },
 
     _empty (item) {
         if (!item) {
-            super._empty();
+            D.MultiRegion.__super__._empty.call(this);
             return;
         }
 
         const el = this._getElement(item);
         el.parentNode.removeChild(el);
-    }
+    },
 
     close () {
         return this.chain(
@@ -82,4 +86,4 @@ D.MultiRegion = class MultiRegion extends D.Region {
             this
         );
     }
-};
+});

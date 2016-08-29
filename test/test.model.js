@@ -117,10 +117,10 @@ describe('Store & Model', function() {
             expect(models.foo.get(true)).to.not.equal(data)
             expect(models.foo.get(true)).to.eql(data);
 
-            expect(models.foo.fullUrl).to.equal('api/prefix/foo/foo.json');
-            expect(models.bar.fullUrl).to.equal('api/prefix/bar.json');
-            expect(models.baz.fullUrl).to.equal('api/baz.json');
-            expect(models.qux.fullUrl).to.equal('api/demo.json');
+            expect(models.foo.getFullUrl()).to.equal('api/prefix/foo/foo.json');
+            expect(models.bar.getFullUrl()).to.equal('api/prefix/bar.json');
+            expect(models.baz.getFullUrl()).to.equal('api/baz.json');
+            expect(models.qux.getFullUrl()).to.equal('api/demo.json');
 
             var spy = sinon.spy();
             models.foo.on('changed', spy);

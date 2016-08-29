@@ -1,27 +1,22 @@
-D.RenderableContainer = class RenderableContainer extends D.Renderable {
+D.RenderableContainer = function RenderableContainer () {
+    D.RenderableContainer.__super__.constructor.apply(this, arguments);
+};
 
-    get items () {
-        return this._items || {};
-    }
-
-    get regions () {
-        return this._regions || {};
-    }
-
+extend(D.RenderableContainer, D.Renderable, {
     _initialize () {
-        const promise = super._initialize();
+        const promise = D.RenderableContainer.__super__._initialize.call(this);
 
-        this._items = {};
+        this.items = {};
         return this.chain(promise, this._initializeItems);
-    }
+    },
 
     _afterRender () {
         return this.chain(this._initializeRegions, this._renderItems);
-    }
+    },
 
     _afterClose () {
         return this._closeRegions();
-    }
+    },
 
     _initializeItems () {
         this.chain(mapObj(this._option('items'), (options = {}, name) => {
@@ -31,19 +26,21 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             return this.app[options.isModule ? '_createModule' : '_createView'](name, this).then((item) => {
                 const i = item;
                 i.moduleOptions = opt;
-                this._items[name] = item;
+                this.items[name] = item;
                 return item;
             });
         }));
-    }
+    },
 
     _initializeRegions () {
-        this._regions = {};
-        return this.chain(this.closeRegions, map(this.$$('[data-region]'), (el) => {
-            const region = this._createRegion(el);
-            this._regions[region.name] = region;
-        }));
-    }
+        this.regions = {};
+        return this.chain(this._closeRegions, () => {
+            map(this.$$('[data-region]'), (el) => {
+                const region = this._createRegion(el);
+                this.regions[region.name] = region;
+            });
+        });
+    },
 
     _renderItems () {
         return this.chain(mapObj(this.items, (item) => {
@@ -52,17 +49,17 @@ D.RenderableContainer = class RenderableContainer extends D.Renderable {
             if (!this.regions[region]) this._error(`Region: ${region} is not defined`);
             return this.regions[region].show(item);
         }), this);
-    }
+    },
 
     _createRegion (el) {
         const name = el.getAttribute('data-region');
         return this.app._createRegion(el, name, this);
-    }
+    },
 
     _closeRegions () {
-        const regions = this._regions;
+        const regions = this.regions;
         if (!regions) return this;
-        delete this._regions;
+        this.regions = {};
         return this.chain(mapObj(regions, (region) => region.close()), this);
     }
-};
+});

@@ -1,24 +1,24 @@
 const PUSH_STATE_SUPPORTED = root && root.history && ('pushState' in root.history);
 const ROUTER_REGEXPS = [/:([\w\d]+)/g, '([^\/]+)', /\*([\w\d]+)/g, '(.*)'];
 
-class Route {
-    constructor (app, router, path, fn) {
-        const pattern = path
-            .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
-            .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
+function Route (app, router, path, fn) {
+    const pattern = path
+          .replace(ROUTER_REGEXPS[0], ROUTER_REGEXPS[1])
+          .replace(ROUTER_REGEXPS[2], ROUTER_REGEXPS[3]);
 
-        this.pattern = new RegExp(`^${pattern}$`, app.options.caseSensitiveHash ? 'g' : 'gi');
+    this.pattern = new RegExp(`^${pattern}$`, app.options.caseSensitiveHash ? 'g' : 'gi');
 
-        this.app = app;
-        this.router = router;
-        this.path = path;
-        this.fn = fn;
-    }
+    this.app = app;
+    this.router = router;
+    this.path = path;
+    this.fn = fn;
+}
 
+assign(Route.prototype, {
     match (hash) {
         this.pattern.lastIndex = 0;
         return this.pattern.test(hash);
-    }
+    },
 
     handle (hash) {
         this.pattern.lastIndex = 0;
@@ -30,20 +30,20 @@ class Route {
             return (prev) => fn.apply(this.router, (i > 0 ? [prev].concat(args) : args));
         }));
     }
-}
+});
 
-D.Router = class Router extends D.Base {
-    constructor (app) {
-        super('Router', {}, {
-            app,
-            _routes: [],
-            _interceptors: {},
-            _started: false
-        });
+D.Router = function Router (app) {
+    D.Router.__super__.constructor.call(this, 'Router', {}, {
+        app,
+        _routes: [],
+        _interceptors: {},
+        _started: false
+    });
 
-        this._EVENT_HANDLER = () => this._dispath(this._getHash());
-    }
+    this._EVENT_HANDLER = () => this._dispath(this._getHash());
+};
 
+extend(D.Router, D.Base, {
     navigate (path, trigger) {
         if (!this._started) return;
         if (PUSH_STATE_SUPPORTED) {
@@ -53,7 +53,7 @@ D.Router = class Router extends D.Base {
         }
 
         if (trigger !== false) this._dispath(path);
-    }
+    },
 
     _start (defaultPath) {
         if (this._started || !root) return;
@@ -62,13 +62,13 @@ D.Router = class Router extends D.Base {
         const hash = this._getHash() || defaultPath;
         this._started = true;
         if (hash) this.navigate(hash);
-    }
+    },
 
     _stop () {
         if (!this._started) return;
         D.Adapter.removeEventListener(root, 'hashchange', this._EVENT_HANDLER);
         this._started = false;
-    }
+    },
 
     _dispath (path) {
         if (path === this._previousHash) return;
@@ -81,7 +81,7 @@ D.Router = class Router extends D.Base {
                 return;
             }
         }
-    }
+    },
 
     _mountRoutes () {
         const paths = slice.call(arguments);
@@ -89,7 +89,7 @@ D.Router = class Router extends D.Base {
             map(paths, (path) => this.app._getLoader(path).loadRouter(path)),
             (options) => map(options, (option, i) => this._addRoute(paths[i], option))
         );
-    }
+    },
 
     _addRoute (path, options) {
         const { routes, interceptors } = options;
@@ -103,7 +103,7 @@ D.Router = class Router extends D.Base {
             const p = `${path}/${key}`.replace(/^\/|\/$/g, '');
             this._interceptors[p] = options[value];
         });
-    }
+    },
 
     _getInterceptors (path) {
         const result = [], items = path.split('/');
@@ -117,10 +117,10 @@ D.Router = class Router extends D.Base {
 
         if (this._interceptors['']) result.unshift(this._interceptors['']);
         return result;
-    }
+    },
 
     _getHash () {
         return root.location.hash.slice(1);
     }
 
-};
+});

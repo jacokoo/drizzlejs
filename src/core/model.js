@@ -1,43 +1,39 @@
-D.Model = class Model extends D.Base {
-    constructor (store, options) {
-        super('Model', options, {
-            app: store.module.app,
-            module: store.module,
-            store
-        });
+D.Model = function Model (store, options) {
+    D.Model.__super__.constructor.call(this, 'Model', options, {
+        app: store.module.app,
+        module: store.module,
+        store
+    });
 
-        this._data = this._option('data') || {};
-        this._idKey = this._option('idKey') || this.app.options.idKey;
-        this._params = assign({}, this._option('params'));
-        this.app.delegateEvent(this);
-    }
+    this.data = clone(this._option('data'));
+    this._idKey = this._option('idKey') || this.app.options.idKey;
+    this.params = assign({}, this._option('params'));
+    this.app.delegateEvent(this);
+};
 
-    get fullUrl () { return D.Request._url(this); }
-
-    get params () { return this._params; }
-
-    set params (value) { this._params = value; }
-
-    get data () { return this._data; }
+D.extend(D.Model, D.Base, {
+    getFullUrl () { return D.Request._url(this); },
 
     set (data, trigger) {
         const d = this.options.parse ? this._option('parse', data) : data;
-        this._data = this.options.root ? d[this.options.root] : d;
+        this.data = this.options.root ? d[this.options.root] : d;
         if (trigger) this.changed();
-    }
+    },
+
+    getParams () { return this.params; },
 
     get (cloneIt) {
-        return cloneIt ? clone(this._data) : this._data;
-    }
+        return cloneIt ? clone(this.data) : this.data;
+    },
 
     clear (trigger) {
-        this._data = D.isArray(this._data) ? [] : {};
+        this.data = D.isArray(this.data) ? [] : {};
         if (trigger) this.changed();
-    }
+    },
 
-    changed () { this.trigger('changed'); }
+    changed () { this.trigger('changed'); },
 
     _url () {
         return this._option('url') || '';
     }
-};
+});
