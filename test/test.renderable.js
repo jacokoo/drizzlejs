@@ -91,10 +91,11 @@ describe('Renderable', function() {
             expect(i).to.equal(1);
             expect(m).to.equal(0);
             expect(item.components.a).to.equal(foo);
-            expect(foo.args).to.have.length(3);
+            expect(foo.args).to.have.length(4);
             expect(foo.args[0]).to.equal(item);
             expect(foo.args[1]).to.equal(item.$('a'));
             expect(foo.args[2]).to.equal(options);
+            expect(foo.args[3]).to.equal('hello');
             return item.render();
         }, function(item) {
             expect(i).to.equal(2);

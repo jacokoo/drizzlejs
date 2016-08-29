@@ -394,7 +394,7 @@ D.ComponentManager = {
         const dom = selector ? renderable.$$(selector) : renderable.$(id);
         const uid = id ? id : D.uniqueId('comp');
 
-        return renderable.chain(handler.creator(renderable, dom, opt), (component) => {
+        return renderable.chain(handler.creator(renderable, dom, opt, name), (component) => {
             const cid = renderable.id + uid,
                 cache = this._componentCache[cid],
                 obj = { id: cid, handler, index: D.uniqueId(cid), options: opt };
@@ -1110,7 +1110,7 @@ D.Model = function Model (store, options) {
         store
     });
 
-    this.data = this._option('data') || {};
+    this.data = clone(this._option('data'));
     this._idKey = this._option('idKey') || this.app.options.idKey;
     this.params = assign({}, this._option('params'));
     this.app.delegateEvent(this);
