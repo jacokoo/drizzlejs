@@ -47,7 +47,7 @@ describe('Router', function() {
         app.stop();
     });
 
-    it('#route', function(done) {
+    it('#!route', function(done) {
         app.chain(app.start('main'), function() {
             expect(app._router).to.be.an.instanceof(Drizzle.Router);
             expect(app._router._started).to.be.true;
@@ -57,7 +57,7 @@ describe('Router', function() {
             expect(spy1).to.be.calledWith('Root');
 
             app.navigate('main/index', false);
-            expect(location.hash).to.equal('#main/index');
+            expect(location.hash).to.equal('#!/main/index');
             expect(spy2).to.have.not.been.called;
             expect(spy3).to.have.not.been.called;
 

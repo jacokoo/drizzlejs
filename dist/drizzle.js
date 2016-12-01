@@ -1526,6 +1526,7 @@ D.Router = function Router(app) {
         _started: false
     });
 
+    this._prefix = app._option('routerPrefix') || '#!/';
     this._EVENT_HANDLER = function () {
         return _this38._dispath(_this38._getHash());
     };
@@ -1535,9 +1536,9 @@ extend(D.Router, D.Base, {
     navigate: function navigate(path, trigger) {
         if (!this._started) return;
         if (PUSH_STATE_SUPPORTED) {
-            root.history.pushState({}, root.document.title, '#' + path);
+            root.history.pushState({}, root.document.title, this._prefix + path);
         } else {
-            root.location.replace('#' + path);
+            root.location.replace(this._prefix + path);
         }
 
         if (trigger !== false) this._dispath(path);
@@ -1556,7 +1557,7 @@ extend(D.Router, D.Base, {
         this._started = false;
     },
     _dispath: function _dispath(path) {
-        if (path === this._previousHash) return;
+        if (!path || path === this._previousHash) return;
         this._previousHash = path;
 
         for (var i = 0; i < this._routes.length; i++) {
@@ -1611,7 +1612,9 @@ extend(D.Router, D.Base, {
         return result;
     },
     _getHash: function _getHash() {
-        return root.location.hash.slice(1);
+        var hash = root.location.hash;
+        if (hash.slice(0, this._prefix.length) !== this._prefix) return '';
+        return hash.slice(this._prefix.length);
     }
 });
 

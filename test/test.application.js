@@ -65,7 +65,7 @@ describe('Application', function() {
             expect(arg).to.equal(app);
             expect(app).to.include.keys('_router');
             expect(app._router).to.be.an.instanceof(Drizzle.Router);
-            expect(window.location.hash).to.equal('#hello');
+            expect(window.location.hash).to.equal('#!/hello');
             done();
         });
     });
@@ -114,10 +114,10 @@ describe('Application', function() {
         expect(location.hash).to.equal('');
 
         app.start('index').then(function() {
-            expect(location.hash).to.equal('#index');
+            expect(location.hash).to.equal('#!/index');
 
             app.navigate('demo')
-            expect(location.hash).to.equal('#demo');
+            expect(location.hash).to.equal('#!/demo');
 
             location.hash = ''
             done();
