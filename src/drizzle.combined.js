@@ -1110,7 +1110,7 @@ D.Model = function Model (store, options) {
         store
     });
 
-    this.data = clone(this._option('data'));
+    this.data = clone(this._option('data')) || {};
     this._idKey = this._option('idKey') || this.app.options.idKey;
     this.params = assign({}, this._option('params'));
     this.app.delegateEvent(this);
