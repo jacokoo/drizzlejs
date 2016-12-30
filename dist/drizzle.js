@@ -580,8 +580,11 @@ D.assign(D.Base.prototype, {
 });
 
 D.Renderable = function Renderable(name, app, mod, loader, options) {
+    var moduleOptions = arguments.length <= 5 || arguments[5] === undefined ? {} : arguments[5];
+
     D.Renderable.__super__.constructor.call(this, name, options, {
         app: app,
+        moduleOptions: moduleOptions,
         module: mod,
         components: {},
         _loader: loader,
@@ -789,9 +792,7 @@ extend(D.RenderableContainer, D.Renderable, {
             var opt = D.isFunction(options) ? options.call(_this15) : options;
             if (D.isString(opt)) opt = { region: opt };
 
-            return _this15.app[options.isModule ? '_createModule' : '_createView'](name, _this15).then(function (item) {
-                var i = item;
-                i.moduleOptions = opt;
+            return _this15.app[options.isModule ? '_createModule' : '_createView'](name, _this15, opt).then(function (item) {
                 _this15.items[name] = item;
                 return item;
             });
@@ -1249,6 +1250,15 @@ extend(D.Store, D.Base, {
                 }
                 return;
             }
+
+            if (v.replaceable === true) {
+                var modelMap = _this30.module.moduleOptions.models || {};
+                if (modelMap[key] && _this30.module.module && _this30.module.module.store.models[modelMap[key]]) {
+                    _this30.models[key] = _this30.module.module.store.models[modelMap[key]];
+                    return;
+                }
+            }
+
             _this30.models[key] = _this30.app._createModel(_this30, v);
         });
     },
@@ -1428,7 +1438,7 @@ D.extend(D.Application, D.Base, {
     _getLoader: function _getLoader(name, mod) {
         return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
     },
-    _createModule: function _createModule(name, parentModule) {
+    _createModule: function _createModule(name, parentModule, moduleOptions) {
         var _this35 = this;
 
         var _D$Loader$_analyse = D.Loader._analyse(name);
@@ -1440,10 +1450,10 @@ D.extend(D.Application, D.Base, {
         return this.chain(loader.loadModule(moduleName), function () {
             var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-            return typeCache.createModule(options.type, moduleName, _this35, parentModule, loader, options);
+            return typeCache.createModule(options.type, moduleName, _this35, parentModule, loader, options, moduleOptions);
         });
     },
-    _createView: function _createView(name, mod) {
+    _createView: function _createView(name, mod, moduleOptions) {
         var _this36 = this;
 
         var _D$Loader$_analyse2 = D.Loader._analyse(name);
@@ -1455,7 +1465,7 @@ D.extend(D.Application, D.Base, {
         return this.chain(loader.loadView(viewName, mod), function () {
             var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-            return typeCache.createView(options.type, viewName, _this36, mod, loader, options);
+            return typeCache.createView(options.type, viewName, _this36, mod, loader, options, moduleOptions);
         });
     },
     _createRegion: function _createRegion(el, name, mod) {

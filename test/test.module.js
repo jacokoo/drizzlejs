@@ -62,7 +62,7 @@ describe('Module', function() {
             expect(foo.regions.content).to.be.an.instanceof(Drizzle.Region);
             expect(foo.regions.foo).to.be.an.instanceof(Drizzle.Region);
 
-            expect(foo.regions.content.name).to.equal('content')
+            expect(foo.regions.content.name).to.equal('content');
             expect(foo.regions.foo.name).to.equal('foo');
 
             expect(requests).to.have.length(2);

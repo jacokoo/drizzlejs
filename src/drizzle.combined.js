@@ -469,9 +469,10 @@ D.assign(D.Base.prototype, {
     }
 });
 
-D.Renderable = function Renderable (name, app, mod, loader, options) {
+D.Renderable = function Renderable (name, app, mod, loader, options, moduleOptions = {}) {
     D.Renderable.__super__.constructor.call(this, name, options, {
         app,
+        moduleOptions,
         module: mod,
         components: {},
         _loader: loader,
@@ -665,9 +666,7 @@ extend(D.RenderableContainer, D.Renderable, {
             let opt = D.isFunction(options) ? options.call(this) : options;
             if (D.isString(opt)) opt = { region: opt };
 
-            return this.app[options.isModule ? '_createModule' : '_createView'](name, this).then((item) => {
-                const i = item;
-                i.moduleOptions = opt;
+            return this.app[options.isModule ? '_createModule' : '_createView'](name, this, opt).then((item) => {
                 this.items[name] = item;
                 return item;
             });
@@ -1079,6 +1078,15 @@ extend(D.Store, D.Base, {
                 }
                 return;
             }
+
+            if (v.replaceable === true) {
+                const modelMap = this.module.moduleOptions.models || {};
+                if (modelMap[key] && this.module.module && this.module.module.store.models[modelMap[key]]) {
+                    this.models[key] = this.module.module.store.models[modelMap[key]];
+                    return;
+                }
+            }
+
             this.models[key] = this.app._createModel(this, v);
         });
     },
@@ -1262,21 +1270,21 @@ D.extend(D.Application, D.Base, {
         return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
     },
 
-    _createModule (name, parentModule) {
+    _createModule (name, parentModule, moduleOptions) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
-            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options);
+            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options, moduleOptions);
         });
     },
 
-    _createView (name, mod) {
+    _createView (name, mod, moduleOptions) {
         const { name: viewName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, mod);
 
         return this.chain(loader.loadView(viewName, mod), (options = {}) => {
-            return typeCache.createView(options.type, viewName, this, mod, loader, options);
+            return typeCache.createView(options.type, viewName, this, mod, loader, options, moduleOptions);
         });
     },
 

@@ -66,21 +66,21 @@ D.extend(D.Application, D.Base, {
         return name && this._loaders[name] || mod && mod._loader || this._defaultLoader;
     },
 
-    _createModule (name, parentModule) {
+    _createModule (name, parentModule, moduleOptions) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
-            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options);
+            return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options, moduleOptions);
         });
     },
 
-    _createView (name, mod) {
+    _createView (name, mod, moduleOptions) {
         const { name: viewName, loader: loaderName } = D.Loader._analyse(name),
             loader = this._getLoader(loaderName, mod);
 
         return this.chain(loader.loadView(viewName, mod), (options = {}) => {
-            return typeCache.createView(options.type, viewName, this, mod, loader, options);
+            return typeCache.createView(options.type, viewName, this, mod, loader, options, moduleOptions);
         });
     },
 

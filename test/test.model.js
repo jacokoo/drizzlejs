@@ -7,7 +7,8 @@ describe('Store & Model', function() {
             'app/demo/index': {
                 store: {
                     models: {
-                        qux: function() { return {data: [1, 2, 3]}; }
+                        qux: function() { return {data: [1, 2, 3]}; },
+                        replaced: {replaceable: true}
                     }
                 }
             },
@@ -16,7 +17,7 @@ describe('Store & Model', function() {
                 urlPrefix: 'prefix',
                 items: {
                     hello: 'content',
-                    demo: {region: 'foo', isModule: true}
+                    demo: {region: 'foo', isModule: true, models: {replaced: 'qux'}}
                 },
 
                 store: {
@@ -24,7 +25,7 @@ describe('Store & Model', function() {
                         foo: {url: 'foo', data: [1, 2], params: returnValue},
                         bar: {url: '../bar', autoLoad: 'after', root: 'a'},
                         baz: {url: '../../baz', autoLoad: true, parse: function(data) {
-                            data.b = 2
+                            data.b = 2;
                             return data;
                         }},
                         qux: {shared: true}
@@ -79,6 +80,7 @@ describe('Store & Model', function() {
             expect(foo.store.models.foo).to.be.an.instanceof(Drizzle.Model);
             expect(foo.store.models.bar).to.be.an.instanceof(Drizzle.Model);
             expect(foo.store.models.baz).to.be.an.instanceof(Drizzle.Model);
+            expect(foo.store.models.qux).to.equal(foo.items.demo.store.models.replaced);
 
             var obj = {a: 1};
             foo.store.dispatch({name: 'foo', payload: obj});
@@ -114,7 +116,7 @@ describe('Store & Model', function() {
             models.foo.set(data);
             expect(models.foo.data).to.equal(data);
             expect(models.foo.get()).to.equal(data);
-            expect(models.foo.get(true)).to.not.equal(data)
+            expect(models.foo.get(true)).to.not.equal(data);
             expect(models.foo.get(true)).to.eql(data);
 
             expect(models.foo.getFullUrl()).to.equal('api/prefix/foo/foo.json');

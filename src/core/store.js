@@ -63,6 +63,15 @@ extend(D.Store, D.Base, {
                 }
                 return;
             }
+
+            if (v.replaceable === true) {
+                const modelMap = this.module.moduleOptions.models || {};
+                if (modelMap[key] && this.module.module && this.module.module.store.models[modelMap[key]]) {
+                    this.models[key] = this.module.module.store.models[modelMap[key]];
+                    return;
+                }
+            }
+
             this.models[key] = this.app._createModel(this, v);
         });
     },

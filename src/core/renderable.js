@@ -1,6 +1,7 @@
-D.Renderable = function Renderable (name, app, mod, loader, options) {
+D.Renderable = function Renderable (name, app, mod, loader, options, moduleOptions = {}) {
     D.Renderable.__super__.constructor.call(this, name, options, {
         app,
+        moduleOptions,
         module: mod,
         components: {},
         _loader: loader,

@@ -23,9 +23,7 @@ extend(D.RenderableContainer, D.Renderable, {
             let opt = D.isFunction(options) ? options.call(this) : options;
             if (D.isString(opt)) opt = { region: opt };
 
-            return this.app[options.isModule ? '_createModule' : '_createView'](name, this).then((item) => {
-                const i = item;
-                i.moduleOptions = opt;
+            return this.app[options.isModule ? '_createModule' : '_createView'](name, this, opt).then((item) => {
                 this.items[name] = item;
                 return item;
             });
