@@ -72,7 +72,7 @@ extend(D.Store, D.Base, {
                 }
             }
 
-            this.models[key] = this.app._createModel(this, v);
+            this.models[key] = this.app._createModel(this, v, key);
         });
     },
 

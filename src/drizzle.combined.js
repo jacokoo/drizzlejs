@@ -824,7 +824,6 @@ D.Module = function Module () {
 
 D.extend(D.Module, D.RenderableContainer, {
     _initialize () {
-        this.app._modules[`${this.name}--${this.id}`] = this;
         this._initializeStore();
         return D.Module.__super__._initialize.call(this);
     },
@@ -844,6 +843,7 @@ D.extend(D.Module, D.RenderableContainer, {
     },
 
     _beforeRender () {
+        this.app._modules[`${this.name}--${this.id}`] = this;
         return this.chain(D.Module.__super__._beforeRender.call(this), () => this.store._loadEagerModels());
     },
 
@@ -1087,7 +1087,7 @@ extend(D.Store, D.Base, {
                 }
             }
 
-            this.models[key] = this.app._createModel(this, v);
+            this.models[key] = this.app._createModel(this, v, key);
         });
     },
 
@@ -1111,8 +1111,8 @@ extend(D.Store, D.Base, {
     }
 });
 
-D.Model = function Model (store, options) {
-    D.Model.__super__.constructor.call(this, 'Model', options, {
+D.Model = function Model (store, options, name) {
+    D.Model.__super__.constructor.call(this, name || 'Model', options, {
         app: store.module.app,
         module: store.module,
         store
@@ -1297,8 +1297,8 @@ D.extend(D.Application, D.Base, {
         return typeCache.createStore(options.type, mod, options);
     },
 
-    _createModel (store, options = {}) {
-        return typeCache.createModel(options.type, store, options);
+    _createModel (store, options = {}, name) {
+        return typeCache.createModel(options.type, store, options, name);
     }
 });
 

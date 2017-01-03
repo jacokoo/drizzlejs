@@ -1,7 +1,7 @@
 /*!
  * DrizzleJS v0.4.14
  * -------------------------------------
- * Copyright (c) 2016 Jaco Koo <jaco.koo@guyong.in>
+ * Copyright (c) 2017 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
  */
 
@@ -976,7 +976,6 @@ D.Module = function Module() {
 
 D.extend(D.Module, D.RenderableContainer, {
     _initialize: function _initialize() {
-        this.app._modules[this.name + '--' + this.id] = this;
         this._initializeStore();
         return D.Module.__super__._initialize.call(this);
     },
@@ -994,6 +993,7 @@ D.extend(D.Module, D.RenderableContainer, {
     _beforeRender: function _beforeRender() {
         var _this22 = this;
 
+        this.app._modules[this.name + '--' + this.id] = this;
         return this.chain(D.Module.__super__._beforeRender.call(this), function () {
             return _this22.store._loadEagerModels();
         });
@@ -1259,7 +1259,7 @@ extend(D.Store, D.Base, {
                 }
             }
 
-            _this30.models[key] = _this30.app._createModel(_this30, v);
+            _this30.models[key] = _this30.app._createModel(_this30, v, key);
         });
     },
     _loadEagerModels: function _loadEagerModels() {
@@ -1285,8 +1285,8 @@ extend(D.Store, D.Base, {
     }
 });
 
-D.Model = function Model(store, options) {
-    D.Model.__super__.constructor.call(this, 'Model', options, {
+D.Model = function Model(store, options, name) {
+    D.Model.__super__.constructor.call(this, name || 'Model', options, {
         app: store.module.app,
         module: store.module,
         store: store
@@ -1483,8 +1483,9 @@ D.extend(D.Application, D.Base, {
     },
     _createModel: function _createModel(store) {
         var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var name = arguments[2];
 
-        return typeCache.createModel(options.type, store, options);
+        return typeCache.createModel(options.type, store, options, name);
     }
 });
 

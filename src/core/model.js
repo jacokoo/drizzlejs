@@ -1,5 +1,5 @@
-D.Model = function Model (store, options) {
-    D.Model.__super__.constructor.call(this, 'Model', options, {
+D.Model = function Model (store, options, name) {
+    D.Model.__super__.constructor.call(this, name || 'Model', options, {
         app: store.module.app,
         module: store.module,
         store

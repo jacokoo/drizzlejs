@@ -93,8 +93,8 @@ D.extend(D.Application, D.Base, {
         return typeCache.createStore(options.type, mod, options);
     },
 
-    _createModel (store, options = {}) {
-        return typeCache.createModel(options.type, store, options);
+    _createModel (store, options = {}, name) {
+        return typeCache.createModel(options.type, store, options, name);
     }
 });
 

@@ -4,7 +4,6 @@ D.Module = function Module () {
 
 D.extend(D.Module, D.RenderableContainer, {
     _initialize () {
-        this.app._modules[`${this.name}--${this.id}`] = this;
         this._initializeStore();
         return D.Module.__super__._initialize.call(this);
     },
@@ -24,6 +23,7 @@ D.extend(D.Module, D.RenderableContainer, {
     },
 
     _beforeRender () {
+        this.app._modules[`${this.name}--${this.id}`] = this;
         return this.chain(D.Module.__super__._beforeRender.call(this), () => this.store._loadEagerModels());
     },
 

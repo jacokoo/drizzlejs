@@ -99,6 +99,8 @@ describe('Store & Model', function() {
             expect(models.foo.store).to.equal(foo.store);
             expect(models.qux.module).to.equal(app.viewport);
 
+            expect(models.foo.name).to.equal('foo');
+
             expect(models.foo.data).to.deep.equal([1, 2]);
             expect(models.foo.params).to.deep.equal({a: 1});
 
@@ -126,7 +128,7 @@ describe('Store & Model', function() {
 
             var spy = sinon.spy();
             models.foo.on('changed', spy);
-            models.foo.set(data, true)
+            models.foo.set(data, true);
             expect(spy).to.be.calledOnce;
             models.foo.changed();
             expect(spy).to.be.calledTwice;
