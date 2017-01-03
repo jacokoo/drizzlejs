@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.14
+ * DrizzleJS v0.4.15
  * -------------------------------------
  * Copyright (c) 2017 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
