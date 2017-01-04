@@ -1,14 +1,15 @@
 D.TemplateEngine = class TemplateEngine {
 
+    static INSTANCE = new TemplateEngine();
     static FILE = 'templates';
     static CACHE = {};
     static ID_ATTRIBUTES = ['for'];
 
-    load (renderable) {
+    _load (renderable) {
         const cache = TemplateEngine.CACHE;
         const id = renderable.id;
 
-        if (cache[renderable]) return Promise.resolve();
+        if (cache[id]) return Promise.resolve();
 
         let template = renderable._get('template');
         if (template) {
@@ -17,24 +18,24 @@ D.TemplateEngine = class TemplateEngine {
         }
 
         return new Promise((resolve, reject) => {
-            this.doLoad(renderable).then(t => {
+            this._doLoad(renderable).then(t => {
                 cache[id] = t;
                 resolve();
             }, reject);
         });
     }
 
-    doLoad (renderable) {
-        return renderable._loader.load(`${renderable.name}/${TemplateEngine.FILE}`);
+    _doLoad (renderable) {
+        return renderable._loader._load(`${renderable.name}/${TemplateEngine.FILE}`);
     }
 
-    execute (renderable, data, isUpdate) {
+    _execute (renderable, data, isUpdate) {
         const el = renderable._getElement();
         el.innerHTML = TemplateEngine.CACHE[renderable.id](data);
-        this.executeIdReplacement(renderable);
+        this._executeIdReplacement(renderable);
     }
 
-    executeIdReplacement (renderable) {
+    _executeIdReplacement (renderable) {
         const el = renderable._getElement();
         const id = renderable.id;
         const used = {};
@@ -53,22 +54,22 @@ D.TemplateEngine = class TemplateEngine {
         }));
     }
 
-    getById (renderable, id) {
+    _getById (renderable, id) {
         return renderable._getElement().getElementById(id);
     }
 
-    getByIdPrefix (renderable, prefix) {
-        return this.getBySelecotr(renderable, `[id^=${prefix}]`);
+    _getByIdPrefix (renderable, prefix) {
+        return this._getBySelecotr(renderable, `[id^=${prefix}]`);
     }
 
-    getBySelecotr (renderable, selector) {
+    _getBySelecotr (renderable, selector) {
         return renderable._getElement().querySelectorAll(selector);
     }
 
-    delegateEvent (renderable, name, selector, fn) {
+    _delegateEvent (renderable, name, selector, fn) {
     }
 
-    undelegeteEvent (renderable, name, selector) {
+    _undelegeteEvent (renderable, name, selector) {
     }
 
 };
