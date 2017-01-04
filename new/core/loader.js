@@ -39,25 +39,17 @@ D.Loader = class Loader {
         return this._fn(name, args);
     }
 
-    _createModuleBuilder () {
-        return new Module.Builder();
-    }
-
-    createModule (parent, name) {
+    _createModule (parent, name) {
         const { name: moduleName, args, loader } = Loader.get(parent, name);
         return loader.load(moduleName, args).then(obj => {
-            let mod = obj;
-            if (isFunction(obj)) {
-                const builder = this._createModuleBuilder();
-                obj(builder);
-                mod = builder._get();
-            }
-
-            if (!(mod instanceof D.Module)) throw new Error('Incorrect module definition: ${name}');
-
-            mod.name = moduleName;
-            mod._loadString = name;
-            return mod;
+            return this._doCreateModule(parent, moduleName, loader, obj);
         });
+    }
+
+    _doCreateModule (parent, name, loader, obj) {
+        if (!isFunction(obj)) throw new Error('Incorrect module definition: ${name}');
+        const builder = new Module.Builder(parent, name, loader);
+        obj(builder);
+        return builder._build();
     }
 };
