@@ -93,3 +93,111 @@ module.exports = b => {
         }
     });
 };
+
+// #1
+exports.type = OtherModule;
+exports.key = 'value';
+exports.other = function() {
+    return true;
+};
+
+// #2 && #3
+exports.items = {
+    viewId: {
+        name: 'hello',
+        region: {
+            id: 'domId',
+            name: 'regionName'
+        }
+    },
+
+    viewId2: {
+        name: 'foot',
+        region: {
+            id: 'domId2',
+            type: OtherRegion,
+            name: 'regionName2',
+            bind: 'users',
+            key: 'user',
+            view: 'viewName',
+            module: 'moduleName'
+        }
+    },
+
+    moduleId: {
+        isModule: true,
+        name: 'module/name',
+        models: {
+            from: 'to'
+        },
+        views: {
+            viewId: 'targetRegion'
+        },
+        state: {
+            name: 'value'
+        },
+        region: 'domId3'
+    }
+};
+
+// regions that parent module can put view into it
+exports.regions = {
+    domId: {
+        type: OtherRegion,
+        some: 'thing'
+    }
+};
+
+// #4
+exports.bindings = ['model1', 'model2', 'model3'];
+
+// #5
+exports.computed = {
+    foo (data) {
+        return data.state.foo + 1;
+    }
+};
+
+// #6
+exports.events = {
+    'click domId' (e) {
+        // handle click event
+    },
+    'click domIdPrefix*' (e) {
+        // handle click
+    }
+};
+
+// #7
+exports.actions = {
+    'click domIdPrefix*': {
+        name: 'actionName',
+        check (data, dispatchIt) {
+            // check data
+            // if data is correct
+            dispatchIt(data).then(d => {
+                // after dispatch
+            });
+        }
+    },
+
+    'click domId': 'actionName'
+};
+
+// #8
+exports.life = {
+    beforeRender () {
+        // do things before render
+    },
+
+    afterClose () {
+        // do things after close
+    }
+};
+
+// #10
+exports.mixin = {
+    api () {
+        // say hello
+    }
+};
