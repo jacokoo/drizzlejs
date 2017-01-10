@@ -1,10 +1,12 @@
 D.Loader = class Loader {
 
-    static CACHE = {};
+    static _CACHE = {};
     static SCRIPT_ROOT = 'app';
+    static VIEW_PREFIX = 'view-';
+    static STORE = 'store';
 
     static register (name, loader) {
-        Loader.CACHE[name] = loader;
+        Loader._CACHE[name] = loader;
     };
 
     static _analyse (name) {
@@ -20,7 +22,7 @@ D.Loader = class Loader {
             return { name, args, loader: parent._loader };
         }
 
-        return { name, args, loader: Loader.CACHE[loader] };
+        return { name, args, loader: Loader._CACHE[loader] };
     };
 
     constructor (fn) {
@@ -39,26 +41,36 @@ D.Loader = class Loader {
         return this._fn(name, args);
     }
 
-    _doCreateModule (parent, name, loader, obj) {
-        if (!isFunction(obj)) throw new Error('Incorrect module definition: ${name}');
-        const builder = new Module.Builder(parent, name, loader);
-        obj(builder);
-        return builder._build();
+    _doCreateModule (parent, name, args, options) {
+        return this._load(name, args).then((obj = {}) => {
+            const Clazz = obj.type || Module;
+            return new Clazz(...[parent, name, this, obj, options]);
+        });
     }
 
-    _doCreateView (parent, name, loader, obj) {
-        if (!isFunction(obj)) throw new Error('Incorrect view definition: ${name}');
-        const builder = new View.Builder(parent, name, loader);
-        obj(builder);
-        return builder._build();
+    _doCreateView (parent, name, args, options) {
+        return this._load(`${parent.name}/${Loader.VIEW_PREFIX}${name}`, args).then((obj = {}) => {
+            const Clazz = obj.type || View;
+            return new Clazz(...[parent, name, this, obj, options]);
+        });
+    }
+
+    _doCreateStore (parent, name, args, options) {
+        return this._load(`${parent.name}/${Loader.STORE}`, args).then((obj = {}) => {
+            const Clazz = obj.type || Store;
+            return new Clazz(...[parent, name, this, obj, options]);
+        });
+    }
+
+    _doCreateModel (parent, name, args, options) {
+        const Clazz = options.type || Model;
+        return new Clazz(...[parent, name, this, options, {}]);
     }
 };
 
-map(['Module', 'View'], (item) => {
-    Loader[`_create${item}`] = (parent, name) => {
+map(['Module', 'View', 'Store', 'Model'], (item) => {
+    Loader[`_create${item}`] = (parent, name, options) => {
         const { name: itemName, args, loader } = Loader._get(parent, name);
-        return loader._load(itemName, args).then(obj => {
-            return loader[`_doCreate${item}`](parent, itemName, loader, obj);
-        });
+        return loader[`_doCreate${item}`](parent, itemName, args, options);
     };
 });
