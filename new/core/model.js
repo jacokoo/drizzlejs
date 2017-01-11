@@ -1,8 +1,6 @@
 D.Model = class Model extends Base {
 
-    constructor (...args) {
-        super(...args);
-
+    _initialize () {
         this.data = clone(this._def('data')) || {};
         this.params = clone(this._def('params')) || {};
 
@@ -22,14 +20,20 @@ D.Model = class Model extends Base {
 
     changed () {
         mapObj(this._bindings, v => this._doUpdateBinding(v));
-        // TODO
+        this._changed = true;
     }
 
-    _createBinding (id) {
-        const d = {};
+    _getBinded () {
+        const result = [];
+        mapObj(this._bindings, v => result.push(v._renderable));
+        return result;
+    }
+
+    _createBinding (renderable) {
+        const d = { _renderable: renderable };
         mapObj(this._def('mixin'), (value, key) => d[key] = value);
         this._doUpdateBinding(d);
-        this._bindings[id] = d;
+        this._bindings[renderable.id] = d;
         return d;
     }
 

@@ -1,8 +1,6 @@
 D.Renderable = class Renderable extends Base {
 
-    constructor (...args) {
-        super(...args);
-
+    _initialize () {
         this._templateEngine = this._def('templateEngine')
             || (this._parent && this._parent._templateEngine) || TemplateEngine._INSTANCE;
     }
@@ -10,4 +8,5 @@ D.Renderable = class Renderable extends Base {
     _doLoadTemplate () {
         return this._templateEngine._load(this);
     }
+
 }

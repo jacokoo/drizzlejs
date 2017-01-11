@@ -15,6 +15,10 @@ D.Base = class Base {
 
     _initialize () {}
 
+    get _name () {
+        return `${this._parent ? this._parent._name + ':' : ''}:${this.name}`;
+    }
+
     _def (key, ...args) {
         const value = this._defs[key];
         return isFunction(value) ? value.apply(this, args) : value;

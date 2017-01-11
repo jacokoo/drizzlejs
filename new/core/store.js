@@ -1,17 +1,31 @@
 D.Store = class Store extends Base {
-    constructor (...args) {
-        super(...args);
 
+    _initialize () {
         this._callbacks = this._def('callbacks');
-        this._bindings = {};
+        this._callbackContext = {}; // TODO
     }
 
-    _bind (modelName, renderable) {
-        if (this._bindings[modelName]) {
-            this._bindings[modelName].push(renderable);
-        } else {
-            this._bindings[modelName] = [renderable];
-        }
+    _initializeModels () {
+        this._models = {};
+
+        const promises = [];
+        const keys = [];
+        mapObj(this._def('models'), (value, k) => {
+            const v = (isFunction(value) ? value.call(this) : value) || {};
+            keys.push(k);
+            if (v.replaceable === true) {
+                const modelMap = this._parent._opt('models');
+                const from = this._parent._parent;
+                if (modelMap[k] && from && from._store._models[k]) {
+                    promises.push(Promise.resolve(from._store._models[k]));
+                    return;
+                }
+            }
+
+            promises.push(Loader._createModel(this, k, v));
+        });
+
+        return Promise.all(promises).then(models => map(models, (m, i) => this._models[keys[i]] = m));
     }
 
     dispatch (action, obj) {
@@ -40,7 +54,7 @@ D.Store = class Store extends Base {
         return result.then(() => {
             this._context.current --;
             if (this._context.current === 0) {
-                this._doRenderItems();
+                this._doRenderRelatedItems();
                 delete this._context;
             }
         }, () => {
@@ -48,21 +62,12 @@ D.Store = class Store extends Base {
         });
     }
 
-    _registerChange (model) {
-        if (!this._context) {
-            throw new Error(`[${this._parent.name}]: Can't change model while no action is dispatching`);
-        }
-
-        this._context.changed[model.name] = true;
-    }
-
-    _doRenderItems () {
+    _doRenderRelatedItems () {
         const called = {};
-        mapObj(this._bindings, (value, key) => this._context.changed[key] && map(value, (v) => {
-            if (!called[v.id]) {
-                v.render();
-                called[v.id] = true;
-            }
+        mapObj(this._models, m => map(m._getBinded(), r => {
+            if (called[v.id]) return;
+            called[v.id] = true;
+            r.render();
         }));
     }
 };

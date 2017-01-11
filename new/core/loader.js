@@ -58,7 +58,9 @@ D.Loader = class Loader {
     _doCreateStore (parent, name, args, options) {
         return this._load(`${parent.name}/${Loader.STORE}`, args).then((obj = {}) => {
             const Clazz = obj.type || Store;
-            return new Clazz(...[parent, name, this, obj, options]);
+            const store = new Clazz(...[parent, name, this, obj, options]);
+
+            return store._initializeModels().then(() => store);
         });
     }
 
