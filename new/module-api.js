@@ -104,10 +104,9 @@ exports.other = function() {
 // #2 && #3
 exports.items = {
     viewId: {
-        name: 'hello',
+        name: 'hello', // optional, the value is set to viewId if ignored
         region: {
-            id: 'domId',
-            name: 'regionName'
+            id: 'domId' // the value `domId` also is regionId
         }
     },
 
@@ -115,26 +114,25 @@ exports.items = {
         name: 'foot',
         region: {
             id: 'domId2',
-            type: OtherRegion,
-            name: 'regionName2',
-            bind: 'users',
+            type: OtherRegion,  // override default Region
+            bind: 'users',      // options for OtherRegion
             key: 'user',
             view: 'viewName',
             module: 'moduleName'
         }
     },
 
-    moduleId: {
-        isModule: true,
-        name: 'module/name',
+    moduleId: {  // moduleId is used to refer the module instance
+        isModule: true,  // indicat this is refer to a module
+        name: 'module/name',  // the module name
         models: {
-            from: 'to'
+            to: 'from'  // replace `module/name` models use models from current module
         },
         views: {
-            viewId: 'targetRegion'
+            viewId: 'targetRegion'  // set view to region placed in `module/name`
         },
         state: {
-            name: 'value'
+            name: 'value'  // set `module/name` state
         },
         region: 'domId3'
     }

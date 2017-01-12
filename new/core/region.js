@@ -40,7 +40,7 @@ D.Region = class Region extends Base {
 
         this._current = renderable;
         this._element.setAttribute('data-current', renderable._name);
-        renderable._region = this;
+        renderable._setRegion(this);
         renderable._render(state, false);
     }
 

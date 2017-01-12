@@ -3,6 +3,7 @@ D.Loader = class Loader {
     static _CACHE = {};
     static SCRIPT_ROOT = 'app';
     static VIEW_PREFIX = 'view-';
+    static MODULE = 'index';
     static STORE = 'store';
 
     static register (name, loader) {
@@ -42,7 +43,7 @@ D.Loader = class Loader {
     }
 
     _doCreateModule (parent, name, args, options) {
-        return this._load(name, args).then((obj = {}) => {
+        return this._load(`${name}/${MODULE}`, args).then((obj = {}) => {
             const Clazz = obj.type || Module;
             return new Clazz(...[parent, name, this, obj, options]);
         });
@@ -59,8 +60,7 @@ D.Loader = class Loader {
         return this._load(`${parent.name}/${Loader.STORE}`, args).then((obj = {}) => {
             const Clazz = obj.type || Store;
             const store = new Clazz(...[parent, name, this, obj, options]);
-
-            return store._initializeModels().then(() => store);
+            return store._load().then(() => store);
         });
     }
 

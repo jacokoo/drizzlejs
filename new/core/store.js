@@ -5,27 +5,25 @@ D.Store = class Store extends Base {
         this._callbackContext = {}; // TODO
     }
 
-    _initializeModels () {
+    _load () {
+        this._doLoadModels();
+        return Promise.resolve();
+    }
+
+    _doLoadModels () {
         this._models = {};
 
-        const promises = [];
-        const keys = [];
-        mapObj(this._def('models'), (value, k) => {
+        const map = this._parent._opt('models');
+        const from = this._parent._parent;
+        mapObj(this._def('modes'), (value, key) => {
             const v = (isFunction(value) ? value.call(this) : value) || {};
-            keys.push(k);
-            if (v.replaceable === true) {
-                const modelMap = this._parent._opt('models');
-                const from = this._parent._parent;
-                if (modelMap[k] && from && from._store._models[k]) {
-                    promises.push(Promise.resolve(from._store._models[k]));
-                    return;
-                }
+            if (v.replaceable === true && map[key] && from && from._store._models[map[key]]) {
+                this._models[key] = from._store._models[map[key]];
+                return;
             }
 
-            promises.push(Loader._createModel(this, k, v));
+            this._models[key] = Loader._createModel(this, key, v);
         });
-
-        return Promise.all(promises).then(models => map(models, (m, i) => this._models[keys[i]] = m));
     }
 
     dispatch (action, obj) {
