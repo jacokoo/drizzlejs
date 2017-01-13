@@ -1,96 +1,71 @@
-* Loader 类型加载
-  Loader 的作用是加载定义文件, 创建类实例.
+* 界面组成
 
-  加载定义文件可能是同步的(如: CMD), 也可能是异步的(如: AMD, http 加载)
+  ~Drizzle~ 启动时初始化一个根 ~Region~
 
-  Loader 需要确保实例里的所有操作不受这里的同步/异步的影响, 所以所有的实例都由 Loader 创建,
-  类实例中如果有需要加载文件, 必须写在 *_load* 方法中, 并返回 Promise, 当这个 Promise resolve 的时候,
-  所有相关的文件及实例都应该加载完毕
+  ~Region~ 中可以放一个 ~Renderable~ 对象
 
-** 管理自定义 Loader
+  ~Renderable~ 中可以定义多个 ~Region~
 
-*** 设置系统默认加载器
+  从而组成一个 Renderable 树结构
+
+** Region
+   
+   Region 是 Renderable 的窗口, 它绑定一个 DOM 元素, 将 Renderalbe 渲染到这个 DOM 元素中
+
+*** show(renderable, state, noRender)
+    
+    - renderable :: 是需要渲染的 renderable 实例
+    - state :: (可选) 是在渲染之前需要传入 renderable 的状态值 (将设置到 state model 中)
+    - noRender :: (可选) 当当前 region 中的 renderable 与传入的 renderable 相同时, 需不需要重新渲染
+      默认是会重新渲染的, 传入 ~true~ 来阻止重新渲染
+
+    show 方法执行顺序:
+
+    1. 把传入的 renderable 从其它 region 中取出来
+    2. 清空当前 region
+    3. 把 renderable 渲染到当前 region
+    4. 如果 renderable 是 Module 则触发初始化状态
+
+*** close
+
+    清空当前 region
+
+
+** Renderable
+
+   Renderable 是所有可以被渲染的类的基类, 目前它有两个子类: ~View~, ~Module~
+
+*** 定义 Region
+
+    Renderable 中可以定义两个类型的 Region: 公开的与私有的
+
+    私有 Region 只能放当前 Renderable 定义的子元素
+
+    公开 Region 除了可以放子元素以外, 还能接收从 parent 中传过来的 Renderable
+
     #+BEGIN_SRC javascript
-    Drizzle.setDefaultLoader(new Drizzle.Loader(file => {
-      // 这个方法必须返回一个 Promise, 用`file`的内容 resolve 这个 Promise
 
-      // CMD
-      return Promise.resolve(require(`./${file}`));
+    // 私有 Region 在定义子元素的时候的同时定义
 
-      // AMD
-      return new Promise((resolve, reject) => {
-        require([file], resolve, reject);
-      });
+    // 定义公开 Region
+    exports.regions = {
+      // 定义简单的 Region, regionId 用来引用该 Region, domId 为绑定的 DOM 元素的 id
+      regionId: 'domId',
 
-      // from a global namespace
-      return Promise.resolve(modules[file]);
-
-    }));
-    #+END_SRC
-
-*** 注册自定义 Loader
-    #+BEGIN_SRC javascript
-    // 第一参数为自定义 Loader 的名称
-    // 第二参数为自定义 Loader 的实例
-    Drizzle.Loader.register('npm', new CustomizeLoader());
-    #+END_SRC
-
-*** 引用自定义 Loader
-    #+BEGIN_SRC javascript
-    // 下面的代码在 Module 中定义了另一个 Module(`module/name`) 的引用
-    exports.items = {
-      viewId: {
-        // 未指定 loader, 会使用 parent 的 loader 来加载这个 View
-        // 如果不存在 parent, 则会使用默认的 loader 来加载
-        name: 'viewName'
-      }
-
-      moduleId: {
-        isModule: true,
-        
-        // 指定使用 npm 来加载 module/name, arg1 与 arg2 是传给 loader 的参数
-        // module/name 是 module 的名字
-        name: 'npm:arg1:arg2:module/name'
+      // 使用其它 Region 实现
+      domId: {
+        type: OtherRegion,
+        options: 'forOtherRegion'
       }
     }
+
     #+END_SRC
 
+*** 定义子元素
 
-** 加载类型定义文件
+    每个 Renderable 都可以定义一些 View, 或引用一些 Module, 并把它他们到自己定义的一些 Region 中去
+    
 
-*** 类型定义文件
-     - Module 定义文件
-
-       | Script root | Module name | File name |
-       |-------------+-------------+-----------|
-       | app/        | module/name | /index.js |
-
-     - View 定义文件
-
-       | Script root | Module name | View name         |
-       |-------------+-------------+-------------------|
-       | app/        | module/name | /view-viewName.js |
-
-     - Store 定义文件
-
-       | Script root | Module name | File name |
-       |-------------+-------------+-----------|
-       | app/        | module/name | /store.js |
-
-*** 配置文件路径
-
-    | Variable name      | Default value | Description                                |
-    |--------------------+---------------+--------------------------------------------|
-    | Loader.SCRIPT_ROOT | app           | 定义文件的根目录                           |
-    | Loader.MODULE      | index         | Module 定义文件的文件名                    |
-    | Loader.STORE       | store         | Store 定义文件的文件名                     |
-    | Loader.VIEW_PREFIX | view-         | View 定义文件的前缀, 文件名是前缀+ViewName |
-
-
-** 创建类型实例
-   - 需要调 ~_load~ 方法的类有: ~Module~, ~View~, ~Store~
-   - 不需要调 ~_load~ 方法的类有: ~Region~, ~Model~
-   
 
 * 数据处理
   
@@ -131,12 +106,216 @@
         // 可选, 设置初始化请求参数 
         // 仅用于 GET 请求
         // 之所以单独出来, 是因为 data 数据会被请求返回数据覆盖, 但 GET 请求的请求参数需要保留
-        params: { default: params }
+        params: { default: params },
+
+        // 可选, 声明这个 model 是可以被父 Module 中的 model 替换
+        replaceable: true,
       }
     }
     #+END_SRC
 
-*** 默认Model: state
-*** 定义 Actions
-*** 初始化状态
 
+*** 默认 Model: state
+
+    Store 在初始化时, 会默认创建一个叫 ~state~ 的 Model, 用于存放 Module 的本地状态
+
+    可以通过 ~exports.models~ 里定义 ~state~ 来覆盖默认的 model
+
+
+*** 定义 Action Handler
+    #+BEGIN_SRC javascript
+    exports.actions = {
+
+      // 如果有异步处理, 必须返回 Promise 对象
+      // 当 Promise resolve 的时候, 所有的异步请求必须全部已完成
+      actionName (payload) {
+
+        // 这里的 this 并不是指向当前 Store, 做了一些特殊处理
+        // 可以通过 this 发起 HTTP 请求(GET, POST, PUT, DELETE)
+        // 可以通过 this 拿到所有当前 Store 定义的 Model
+        // 可以通过 this 分发( dispatch )另外一个 Action
+        const {modelName: model} = this.models;
+        model.set(payload);
+
+        // HTTP 请求的返回值(默认只处理 JSON)将设置到 model 中, 并会触发 changed
+        // 相当于调用 model.set(json, true)
+        return this.post(this.models.modelName);
+      }
+    }
+    #+END_SRC
+    
+
+*** 初始化状态
+    
+    当 Module 在 Region 中第一次渲染完时, 会 dispatch 一个 action, 
+    来调用 Store 定义里的 ~init~ 函数, 通过它来初始化 Store 的初始状态
+
+    #+BEGIN_SRC javascript
+    // 这里要写成 function, 而不是 () => {, 否则 this 不能指向正确的值
+    exports.init = function() {
+      // this 与 action handler 的 this 是一样的
+      this.models.state.set({ key: 'value' }, true);
+
+      // 如果有异步操作, 必须返回 Promise
+      return somePromise;
+    }
+    #+END_SRC
+
+
+** 数据绑定
+
+   如果 View/Module 要使用 Model 的数据, 必须声明绑定
+   #+BEGIN_SRC javascript
+   exports.bindings = ['model1', 'model2'];
+   #+END_SRC
+
+   绑定后, 当被绑定的 Model 数据被修改后, View/Module 会重新渲染一次,
+
+   View/Module 可以通过 ~this.bindings.modelName.data~ API 来获取 Model 中的数据
+
+   *this.bindings.modelName* 并不能拿到 Model 本身, 所以并没有 ~set~ 方法, 将 View/Module 文档中详细说明
+
+   ~state~ 被默认绑定
+
+
+** Action 创建
+
+   Action 是一个简单的 Object, 包括一个字符串的 ~name~ 属性与一个任意类型的 ~payload~ 属性
+   #+BEGIN_SRC javascript
+   store.dispatch(name, payload);
+   store.dispatch({ name: 'actionName', payload: someData });
+   #+END_SRC
+
+   View/Module 中, 除了可以通过 API 来创建分发 Action 以外, 还可以通过 DOM 事件来创建分发 Action,
+   通过这种方式创建的 Action, 会自动取表单数据放到 payload 中
+   #+BEGIN_SRC javascript
+   exports.actions = {
+     // 点击 id 为 btn 的 DOM 元素时, 分发名为 actionName 的 Action
+     // payload 是由框架获取的表单数据
+     'click btn': 'actionName',
+
+     // 点击 id 为 btn2 的 DOM 元素时, 分发名为 actionName2 的 Action
+     'click btn2': {
+       name: 'actionName2',
+
+       // check 一般用来校验数据合法性, 弹框让用户确定操作等
+       // data 是框架获取的表单数据, 具体获取逻辑在 View/Module 文档中说明
+       check (data, dispatch) {
+         if (!data.username) {
+           // notify user
+           return;
+         }
+
+         // 调用 dispatch 方法才会完成分发, data 将作为 action 的 payload
+         dispatch(data);
+       }
+     }
+   }
+   #+END_SRC
+   
+
+** Action 分发
+   
+   Action 的分发使用的 API 在上面都有提到
+
+   *一次 dipatch, 无论多少个 model 数据被个性, 无论在这次 dispatch 中有多少次 dispatch 调用, View/Module 最多重新渲染一次*
+
+
+* Loader 类型加载
+  Loader 的作用是加载定义文件, 创建类实例.
+
+  加载定义文件可能是同步的(如: CMD), 也可能是异步的(如: AMD, http 加载)
+
+  Loader 需要确保实例里的所有操作不受这里的同步/异步的影响, 所以所有的实例都由 Loader 创建,
+  类实例中如果有需要加载文件, 必须写在 *_load* 方法中, 并返回 Promise, 当这个 Promise resolve 的时候,
+  所有相关的文件及实例都应该加载完毕
+
+
+** 管理自定义 Loader
+
+*** 设置系统默认加载器
+    #+BEGIN_SRC javascript
+    Drizzle.setDefaultLoader(new Drizzle.Loader(file => {
+      // 这个方法必须返回一个 Promise, 用`file`的内容 resolve 这个 Promise
+
+      // CMD
+      return Promise.resolve(require(`./${file}`));
+
+      // AMD
+      return new Promise((resolve, reject) => {
+        require([file], resolve, reject);
+      });
+
+      // from a global namespace
+      return Promise.resolve(modules[file]);
+
+    }));
+    #+END_SRC
+
+
+*** 注册自定义 Loader
+    #+BEGIN_SRC javascript
+    // 第一参数为自定义 Loader 的名称
+    // 第二参数为自定义 Loader 的实例
+    Drizzle.Loader.register('npm', new CustomizeLoader());
+    #+END_SRC
+
+
+*** 引用自定义 Loader
+    #+BEGIN_SRC javascript
+    // 下面的代码在 Module 中定义了另一个 Module(`module/name`) 的引用
+    exports.items = {
+      viewId: {
+        // 未指定 loader, 会使用 parent 的 loader 来加载这个 View
+        // 如果不存在 parent, 则会使用默认的 loader 来加载
+        name: 'viewName'
+      }
+
+      moduleId: {
+        isModule: true,
+        
+        // 指定使用 npm 来加载 module/name, arg1 与 arg2 是传给 loader 的参数
+        // module/name 是 module 的名字
+        name: 'npm:arg1:arg2:module/name'
+      }
+    }
+    #+END_SRC
+
+
+** 加载类型定义文件
+
+*** 类型定义文件
+     - Module 定义文件
+
+       | Script root | Module name | File name | Full name                |
+       |-------------+-------------+-----------+--------------------------|
+       | app         | module/name | index.js  | app/module/name/index.js |
+
+     - View 定义文件
+
+       | Script root | Module name | View name         | Full name                        |
+       |-------------+-------------+-------------------+----------------------------------|
+       | app         | module/name | view-viewName.js  | app/module/name/view-viewName.js |
+
+     - Store 定义文件
+
+       | Script root | Module name | File name | Full name                |
+       |-------------+-------------+-----------+--------------------------|
+       | app         | module/name | store.js  | app/module/name/store.js |
+
+
+*** 配置文件路径
+
+    | Variable name      | Default value | Description                                |
+    |--------------------+---------------+--------------------------------------------|
+    | Loader.SCRIPT_ROOT | app           | 定义文件的根目录                           |
+    | Loader.MODULE      | index         | Module 定义文件的文件名                    |
+    | Loader.STORE       | store         | Store 定义文件的文件名                     |
+    | Loader.VIEW_PREFIX | view-         | View 定义文件的前缀, 文件名是前缀+ViewName |
+
+
+** 创建类型实例
+   - 需要调 ~_load~ 方法的类有: ~Module~, ~View~, ~Store~
+   - 不需要调 ~_load~ 方法的类有: ~Region~, ~Model~
+
+   
