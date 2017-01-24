@@ -31,9 +31,12 @@
     清空当前 region
 
 
+
+
 ** Renderable
 
    Renderable 是所有可以被渲染的类的基类, 目前它有两个子类: ~View~, ~Module~
+
 
 *** 定义 Region
 
@@ -61,10 +64,68 @@
 
     #+END_SRC
 
+
 *** 定义子元素
 
     每个 Renderable 都可以定义一些 View, 或引用一些 Module, 并把它他们到自己定义的一些 Region 中去
     
+    #+BEGIN_SRC javascript
+    exports.items = {
+
+      // 定义名为 viewName 的 View, 并把它放到 domId 为 regionId 的 Region 中
+      // viewName 与 viewId 相同
+      // 如果存在 ID 为 regionId 的公共 Region, 则引用它, 否则创建一个 regionId 与 domId 相同的 Region
+      viewName: 'regionId',
+
+      // 定义名为 viewName, ID 为 viewId 的 View, 
+      // 这种方式可以对同一个 View 创建多个引用
+      viewId: {
+        name: 'viewName',
+        
+        // regionId 的规则同上
+        region: 'regionId'
+      },
+
+      viewId2: {
+        name: 'viewName',
+
+        // 使用其它的 Region 实现
+        region: {
+          id: 'regionId',
+          type: OtherRegion,
+          options: 'forOtherRegion'
+        }
+      },
+
+      // 创建其它 Module 的引用
+      moduleId: {
+
+        // 指明当前是一个 Module 引用定义
+        isModule: true,
+
+        // 所引用 Module 的 name
+        name: 'module/name',
+
+        // region 定义同上
+        region: 'regionId',
+
+        // 定义 model 映射, 把当前 Module 的 model 映射到被引用 Module 定义的 replaceable: true 的 model
+        models: {
+          // to: 目标 model 的名称, from: 当前 Module 的 model 的名称
+          to: 'from'
+        },
+
+        // 
+        items: {
+          itemId: 'targetRegion'
+        },
+
+        state: {
+          key: 'value'
+        }
+      }
+    }
+    #+END_SRC
 
 
 * 数据处理
