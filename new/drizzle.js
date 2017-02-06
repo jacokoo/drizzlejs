@@ -8,7 +8,7 @@ const isArray = (arr) => Array.isArray(arr);
 
 const isString = (str) => typeof str === 'string';
 
-const map = (arr, fn) => Array.isArray(arr) ? arr.map(fn) : [];
+const map = (arr, fn) => isArray(arr) ? arr.map(fn) : [];
 
 const mapObj = (obj, fn) => {
     const result = {};
@@ -29,7 +29,7 @@ const clone = (target) => {
 };
 
 const assign = (target, ...arg) => {
-    const result = target || {};
+    const result = target;
     result && map(args, arg => arg && mapObj(arg, (v, k) => result[k] = v));
     return result;
 };

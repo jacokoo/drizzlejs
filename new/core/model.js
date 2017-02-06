@@ -25,6 +25,9 @@ D.Model = class Model extends Base {
 
     _getBinded () {
         const result = [];
+        if (!this._changed) return result;
+
+        this._changed = false;
         mapObj(this._bindings, v => result.push(v._renderable));
         return result;
     }

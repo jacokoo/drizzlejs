@@ -128,6 +128,12 @@
     #+END_SRC
 
 
+*** Module 与 View 的区别
+    
+    - Module 会创建 Store, View 只会使用 Module 的 Store
+    - View 只能在 Module 内引用, Module 可以在 Module 之间引用
+
+
 * 数据处理
   
   框架采用 [[http://redux.js.org/][Redux]] 类似的单向数据流来控制数据展示
