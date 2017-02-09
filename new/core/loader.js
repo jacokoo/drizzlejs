@@ -68,9 +68,14 @@ D.Loader = class Loader {
         const Clazz = options.type || Model;
         return new Clazz(...[parent, name, this, options, {}]);
     }
+
+    _doCreateRegion (parent, name, args, options) {
+        const Clazz = options.type || Region;
+        return new Clazz(...[parent, name, options]);
+    }
 };
 
-map(['Module', 'View', 'Store', 'Model'], (item) => {
+map(['Module', 'View', 'Store', 'Model', 'Region'], (item) => {
     Loader[`_create${item}`] = (parent, name, options) => {
         const { name: itemName, args, loader } = Loader._get(parent, name);
         return loader[`_doCreate${item}`](parent, itemName, args, options);

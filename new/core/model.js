@@ -7,19 +7,19 @@ D.Model = class Model extends Base {
         this._bindings = {};
     }
 
-    set (data, trigger) {
+    set (data, slient) {
         const d = (this._defs.parse || (s => s)).call(this, data) || {};
         this.data = this._defs.root ? d[this._defs.root] : d;
-        if (trigger) this.changed();
+        if (!slient) this.changed();
     }
 
-    clear (trigger) {
+    clear (slient) {
         this.data = isArray(this.data) ? [] : {};
-        if (trigger) this.changed();
+        if (!slient) this.changed();
     }
 
     changed () {
-        mapObj(this._bindings, v => this._doUpdateBinding(v));
+        this._doUpdateBinding();
         this._changed = true;
     }
 
@@ -37,11 +37,18 @@ D.Model = class Model extends Base {
         mapObj(this._def('mixin'), (value, key) => d[key] = value);
         this._doUpdateBinding(d);
         this._bindings[renderable.id] = d;
+
+        this.addDisposable(() => {
+            delete this._bindings[renderable.id];
+        });
         return d;
     }
 
     _doUpdateBinding (binding) {
-        binding.data = clone(this.data);
+        const data = clone(this.data);
+        const fn = v => v.data = data;
+
+        binding ? fn(binding) : mapObj(this._bindings, fn);
     }
 
     _removeBinding(id) {

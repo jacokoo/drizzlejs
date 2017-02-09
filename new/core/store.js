@@ -1,8 +1,29 @@
+const STATE_CHANGE_ACTION = D.uniqueId('__SCA__');
+const STATE_INIT_ACTION = D.uniqueId('__SIA__');
+
 D.Store = class Store extends Base {
 
     _initialize () {
         this._callbacks = this._def('callbacks');
-        this._callbackContext = {}; // TODO
+
+        assign(this._callbacks, {
+            [STATE_CHANGE_ACTION] (payload) {
+                const state = this.models.state;
+
+                state.data = assign(state.data, payload.data);
+                payload.slient ? state._doUpdateBinding() : state.changed();
+            },
+
+            [STATE_INIT_ACTION] () {
+                const init = this._store._defs.init;
+                if (isFunction(init)) init.call(this);
+            }
+        });
+
+        this._callbackContext = assign({
+            _store: this,
+            models: this.models
+        }, {}); // TODO
     }
 
     _load () {
@@ -22,7 +43,19 @@ D.Store = class Store extends Base {
                 return;
             }
 
-            this._models[key] = Loader._createModel(this, key, v);
+            this._doCreateModel(key, v);
+        });
+
+        this._doCreateModel('state', {});
+    }
+
+    _doCreateModel (key, options) {
+        if (this._models[key]) return;
+        this._models[key] = Loader._createModel(this, key, options);
+
+        this.addDisposable(() => {
+            this._models[key].destroy();
+            delete this._models[key];
         });
     }
 
@@ -34,6 +67,10 @@ D.Store = class Store extends Base {
         }
 
         return this._doDispatch(n, p);
+    }
+
+    _setState (data, slient) {
+        return this.dispatch(STATE_CHANGE_ACTION, { data, slient });
     }
 
     _doDispatch (name, payload) {

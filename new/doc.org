@@ -10,7 +10,7 @@
 
 ** Region
    
-   Region 是 Renderable 的窗口, 它绑定一个 DOM 元素, 将 Renderalbe 渲染到这个 DOM 元素中
+   Region 是 Renderable 的容器, 它绑定一个 DOM 元素, 将 Renderalbe 渲染到这个 DOM 元素中
 
 *** show(renderable, state, noRender)
     

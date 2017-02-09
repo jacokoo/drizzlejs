@@ -1,9 +1,9 @@
 D.Region = class Region extends Base {
 
-    constructor (parent, name, defs, el) {
+    constructor (parent, name, defs) {
         super(parent, name, null, defs);
 
-        this._el = el;
+        this._el = parent.$(defs.id);
     }
 
     _show (renderable, state, noRender) {
@@ -36,17 +36,24 @@ D.Region = class Region extends Base {
         }
 
         renderable._region && renderable._region.close();
-        this._current && this._current.close();
+        this.destroy();
 
         this._current = renderable;
         this._element.setAttribute('data-current', renderable._name);
         renderable._setRegion(this);
         renderable._render(state, false);
+
+        if (renderable instanceof Module) renderable.dispatch(STATE_INIT_ACTION);
+
+        this.addDisposable(() => {
+            this._current.destroy();
+            delete this._current;
+        });
     }
 
-    close () {
-        this._current && this._current._close();
-        delete this._current;
+    _update () {
+        if (!this._current) return;
+        this._current.render();
     }
 
     get _element () {

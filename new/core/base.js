@@ -9,6 +9,8 @@ D.Base = class Base {
         this._defs = defs;
         this._opts = opts;
 
+        this._disposables = [];
+
         this._initialize();
         mapObj(this._def('mixin'), (value, key) => this._mixin(key, value));
     }
@@ -24,7 +26,7 @@ D.Base = class Base {
         return isFunction(value) ? value.apply(this, args) : value;
     }
 
-    _option (key, ...args) {
+    _opt (key, ...args) {
         const value = this._opts[key];
         return isFunction(value) ? value.apply(this, args) : value;
     }
@@ -39,5 +41,14 @@ D.Base = class Base {
         if (isFunction(old) && isFunction(value)) {
             this[key] = (...args) => value.apply(this, [old].concat(args));
         }
+    }
+
+    addDisposable (fn) {
+        this._disposables.push(fn);
+    }
+
+    destroy () {
+        map(this._disposables, fn => fn.call(this));
+        this._disposables = [];
     }
 };

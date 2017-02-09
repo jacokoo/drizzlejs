@@ -30,13 +30,13 @@ D.TemplateEngine = class TemplateEngine {
     }
 
     _execute (renderable, data, isUpdate) {
-        const el = renderable._getElement();
+        const el = renderable._element;
         el.innerHTML = TemplateEngine.CACHE[renderable.id](data);
         this._executeIdReplacement(renderable);
     }
 
     _executeIdReplacement (renderable) {
-        const el = renderable._getElement();
+        const el = renderable._element;
         const id = renderable.id;
         const used = {};
 
@@ -55,7 +55,7 @@ D.TemplateEngine = class TemplateEngine {
     }
 
     _getById (renderable, id) {
-        return renderable._getElement().getElementById(id);
+        return renderable._element.getElementById(id);
     }
 
     _getByIdPrefix (renderable, prefix) {
@@ -63,7 +63,7 @@ D.TemplateEngine = class TemplateEngine {
     }
 
     _getBySelecotr (renderable, selector) {
-        return renderable._getElement().querySelectorAll(selector);
+        return renderable._element.querySelectorAll(selector);
     }
 
     _delegateEvent (renderable, name, selector, fn) {
