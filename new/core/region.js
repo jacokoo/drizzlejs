@@ -53,6 +53,11 @@ D.Region = class Region extends Base {
 
     _update () {
         if (!this._current) return;
+
+        const el = this._parent.$(this._def('id'));
+        if (el !== this._el) this._el = el;
+        if (this._el === null) return;
+
         this._current.render();
     }
 
