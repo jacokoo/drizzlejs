@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.15
+ * DrizzleJS v0.4.16
  * -------------------------------------
  * Copyright (c) 2017 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -17,8 +17,6 @@
 'use strict';
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -48,17 +46,11 @@ var Drizzle = {},
 },
     clone = function clone(target) {
     if (D.isObject(target)) {
-        var _ret = function () {
-            var result = {};
-            mapObj(target, function (value, key) {
-                return result[key] = clone(value);
-            });
-            return {
-                v: result
-            };
-        }();
-
-        if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+        var result = {};
+        mapObj(target, function (value, key) {
+            return result[key] = clone(value);
+        });
+        return result;
     }
 
     if (D.isArray(target)) {
@@ -144,7 +136,7 @@ assign(D, {
     assign: assign,
 
     uniqueId: function uniqueId() {
-        var prefix = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+        var prefix = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
 
         return '' + prefix + ++counter;
     },
@@ -461,22 +453,22 @@ D.ComponentManager = {
     _componentCache: {},
 
     setDefaultHandler: function setDefaultHandler(creator) {
-        var destructor = arguments.length <= 1 || arguments[1] === undefined ? function () {} : arguments[1];
+        var destructor = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : function () {};
 
         this._defaultHandler = { creator: creator, destructor: destructor };
     },
     register: function register(name, creator) {
-        var destructor = arguments.length <= 2 || arguments[2] === undefined ? function () {} : arguments[2];
+        var destructor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : function () {};
 
         this._handlers[name] = { creator: creator, destructor: destructor };
     },
     _create: function _create(renderable, options) {
         var _this4 = this;
 
-        var name = options.name;
-        var id = options.id;
-        var selector = options.selector;
-        var opt = options.options;
+        var name = options.name,
+            id = options.id,
+            selector = options.selector,
+            opt = options.options;
 
         if (!name) renderable._error('Component name can not be null');
 
@@ -517,7 +509,7 @@ D.ComponentManager = {
 };
 
 D.Base = function Base(name) {
-    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var defaults = arguments[2];
 
     this.options = options;
@@ -580,7 +572,7 @@ D.assign(D.Base.prototype, {
 });
 
 D.Renderable = function Renderable(name, app, mod, loader, options) {
-    var moduleOptions = arguments.length <= 5 || arguments[5] === undefined ? {} : arguments[5];
+    var moduleOptions = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : {};
 
     D.Renderable.__super__.constructor.call(this, name, options, {
         app: app,
@@ -601,9 +593,9 @@ extend(D.Renderable, D.Base, {
 
         this._templateEngine = this._option('templateEngine') || this.module && this.module._templateEngine || this.app._templateEngine;
         return this.chain([this._templateEngine._load(this), this._initializeEvents()], function (_ref) {
-            var _ref2 = _slicedToArray(_ref, 1);
+            var _ref2 = _slicedToArray(_ref, 1),
+                template = _ref2[0];
 
-            var template = _ref2[0];
             return _this7._template = template;
         });
     },
@@ -702,8 +694,8 @@ extend(D.Renderable, D.Base, {
     _createEventHandler: function _createEventHandler(handlerName, _ref3) {
         var _this11 = this;
 
-        var haveStar = _ref3.haveStar;
-        var id = _ref3.id;
+        var haveStar = _ref3.haveStar,
+            id = _ref3.id;
         var disabledClass = this.app.options.disabledClass;
 
         return function () {
@@ -739,10 +731,11 @@ extend(D.Renderable, D.Base, {
         }), function (components) {
             return map(components, function (item) {
                 if (!item) return;
-                var id = item.id;
-                var component = item.component;
-                var index = item.index;var value = _this13.components[id];
-                D.isArray(value) ? value.push(component) : _this13.components[id] = value ? [value, component] : component;
+                var id = item.id,
+                    component = item.component,
+                    index = item.index;
+
+                _this13.components[id] = component;
                 _this13._componentMap[index] = item;
             });
         });
@@ -786,7 +779,7 @@ extend(D.RenderableContainer, D.Renderable, {
         var _this15 = this;
 
         this.chain(mapObj(this._option('items'), function () {
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
             var name = arguments[1];
 
             var opt = D.isFunction(options) ? options.call(_this15) : options;
@@ -853,15 +846,11 @@ D.extend(D.ActionCreator, D.Renderable, {
         var _this18 = this;
 
         var id = _ref4.id;
-        var disabledClass = this.app.options.disabledClass;
-
-        var _ref5 = this._option('dataForActions') || {};
-
-        var dataForAction = _ref5[name];
-
-        var _ref6 = this._option('actionCallbacks') || {};
-
-        var actionCallback = _ref6[name];
+        var disabledClass = this.app.options.disabledClass,
+            _ref5 = this._option('dataForActions') || {},
+            dataForAction = _ref5[name],
+            _ref6 = this._option('actionCallbacks') || {},
+            actionCallback = _ref6[name];
 
 
         return function (e) {
@@ -1040,9 +1029,8 @@ extend(D.Region, D.Base, {
         }, function () {
             return _this24._current && _this24.close();
         }], function (_ref7) {
-            var _ref8 = _slicedToArray(_ref7, 1);
-
-            var item = _ref8[0];
+            var _ref8 = _slicedToArray(_ref7, 1),
+                item = _ref8[0];
 
             _this24._current = item;
             var attr = item.module ? item.module.name + ':' + item.name : item.name;
@@ -1346,11 +1334,12 @@ D.extend(D.Loader, D.Base, {
     loadResource: function loadResource(path) {
         var _this33 = this;
 
-        var _app$options = this.app.options;
-        var scriptRoot = _app$options.scriptRoot;
-        var getResource = _app$options.getResource;
-        var amd = _app$options.amd;
-        var fullPath = scriptRoot + '/' + path;
+        var _app$options = this.app.options,
+            scriptRoot = _app$options.scriptRoot,
+            getResource = _app$options.getResource,
+            amd = _app$options.amd,
+            fullPath = scriptRoot + '/' + path;
+
 
         return this.Promise.create(function (resolve, reject) {
             if (amd) {
@@ -1441,14 +1430,13 @@ D.extend(D.Application, D.Base, {
     _createModule: function _createModule(name, parentModule, moduleOptions) {
         var _this35 = this;
 
-        var _D$Loader$_analyse = D.Loader._analyse(name);
-
-        var moduleName = _D$Loader$_analyse.name;
-        var loaderName = _D$Loader$_analyse.loader;
-        var loader = this._getLoader(loaderName, parent);
+        var _D$Loader$_analyse = D.Loader._analyse(name),
+            moduleName = _D$Loader$_analyse.name,
+            loaderName = _D$Loader$_analyse.loader,
+            loader = this._getLoader(loaderName, parent);
 
         return this.chain(loader.loadModule(moduleName), function () {
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             return typeCache.createModule(options.type, moduleName, _this35, parentModule, loader, options, moduleOptions);
         });
@@ -1456,33 +1444,31 @@ D.extend(D.Application, D.Base, {
     _createView: function _createView(name, mod, moduleOptions) {
         var _this36 = this;
 
-        var _D$Loader$_analyse2 = D.Loader._analyse(name);
-
-        var viewName = _D$Loader$_analyse2.name;
-        var loaderName = _D$Loader$_analyse2.loader;
-        var loader = this._getLoader(loaderName, mod);
+        var _D$Loader$_analyse2 = D.Loader._analyse(name),
+            viewName = _D$Loader$_analyse2.name,
+            loaderName = _D$Loader$_analyse2.loader,
+            loader = this._getLoader(loaderName, mod);
 
         return this.chain(loader.loadView(viewName, mod), function () {
-            var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
             return typeCache.createView(options.type, viewName, _this36, mod, loader, options, moduleOptions);
         });
     },
     _createRegion: function _createRegion(el, name, mod) {
-        var _D$Loader$_analyse3 = D.Loader._analyse(name);
-
-        var regionName = _D$Loader$_analyse3.name;
-        var type = _D$Loader$_analyse3.loader;
+        var _D$Loader$_analyse3 = D.Loader._analyse(name),
+            regionName = _D$Loader$_analyse3.name,
+            type = _D$Loader$_analyse3.loader;
 
         return typeCache.createRegion(type, this, mod, el, regionName);
     },
     _createStore: function _createStore(mod) {
-        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
         return typeCache.createStore(options.type, mod, options);
     },
     _createModel: function _createModel(store) {
-        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var name = arguments[2];
 
         return typeCache.createModel(options.type, store, options, name);
@@ -1594,8 +1580,8 @@ extend(D.Router, D.Base, {
     _addRoute: function _addRoute(path, options) {
         var _this40 = this;
 
-        var routes = options.routes;
-        var interceptors = options.interceptors;
+        var routes = options.routes,
+            interceptors = options.interceptors;
 
 
         mapObj(D.isFunction(routes) ? routes.apply(this) : routes, function (value, key) {
@@ -1661,7 +1647,7 @@ assign(D.PageableModel, {
 
 extend(D.PageableModel, D.Model, {
     set: function set() {
-        var data = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+        var data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
         var trigger = arguments[1];
 
         this._p.recordCount = data[this._p.recordCountKey] || 0;
@@ -1669,11 +1655,11 @@ extend(D.PageableModel, D.Model, {
         D.PageableModel.__super__.set.call(this, data, trigger);
     },
     getParams: function getParams() {
-        var _p = this._p;
-        var page = _p.page;
-        var pageKey = _p.pageKey;
-        var pageSizeKey = _p.pageSizeKey;
-        var pageSize = _p.pageSize;
+        var _p = this._p,
+            page = _p.page,
+            pageKey = _p.pageKey,
+            pageSizeKey = _p.pageSizeKey,
+            pageSize = _p.pageSize;
 
         var params = this.params;
         params[pageKey] = page;
@@ -1703,11 +1689,11 @@ extend(D.PageableModel, D.Model, {
         return this.turnToPage(this._p.page - 1);
     },
     getPageInfo: function getPageInfo() {
-        var _p2 = this._p;
-        var page = _p2.page;
-        var pageSize = _p2.pageSize;
-        var recordCount = _p2.recordCount;
-        var pageCount = _p2.pageCount;
+        var _p2 = this._p,
+            page = _p2.page,
+            pageSize = _p2.pageSize,
+            recordCount = _p2.recordCount,
+            pageCount = _p2.pageCount;
 
         var result = void 0;
         if (this.data && this.data.length > 0) {
@@ -1736,7 +1722,7 @@ D.extend(D.MultiRegion, D.Region, {
     show: function show(renderable) {
         var _this41 = this;
 
-        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
         var opt = renderable.moduleOptions,
             str = D.isString(renderable);
@@ -1762,9 +1748,8 @@ D.extend(D.MultiRegion, D.Region, {
                 delete _this41._elements[key];
             });
         }], function (_ref9) {
-            var _ref10 = _slicedToArray(_ref9, 1);
-
-            var obj = _ref10[0];
+            var _ref10 = _slicedToArray(_ref9, 1),
+                obj = _ref10[0];
 
             var attr = obj.module ? obj.module.name + ':' + obj.name : obj.name,
                 el = _this41._getElement(obj, key);

@@ -619,8 +619,8 @@ extend(D.Renderable, D.Base, {
             return i ? D.ComponentManager._create(this, i) : null;
         }), (components) => map(components, (item) => {
             if (!item) return;
-            const { id, component, index } = item, value = this.components[id];
-            D.isArray(value) ? value.push(component) : (this.components[id] = (value ? [value, component] : component));
+            const { id, component, index } = item;
+            this.components[id] = component;
             this._componentMap[index] = item;
         }));
     },

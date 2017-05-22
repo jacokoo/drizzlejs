@@ -108,39 +108,6 @@ describe('Renderable', function() {
         }, done);
     });
 
-    it('#two or more components in one element', function(done) {
-        var i = 0, m = 0, foo = {a: 1};
-        Drizzle.ComponentManager.setDefaultHandler(function() {
-            i ++;
-            return foo;
-        }, function() {
-            m ++;
-        });
-
-        app.chain(app.start(), function() {
-            return new Drizzle.Renderable('hello', app, app.viewport, app._defaultLoader, {
-                components: [{
-                    id: 'a', name: 'foo'
-                }, {
-                    id: 'a', name: 'bar'
-                }]
-            });
-        }, function(item) {
-            return app.show('content', item);
-        }, function(item) {
-            expect(item.components.a).to.be.an.array;
-            expect(item.components.a).to.have.length(2);
-            expect(item.components.a[0]).to.equal(foo);
-            expect(item.components.a[1]).to.equal(foo);
-            expect(i).to.equal(2);
-
-            return item.render();
-        }, function(item) {
-            expect(i).to.equal(4);
-            expect(m).to.equal(2);
-        }, done)
-    });
-
     afterEach(function() {
         app.stop();
     });
