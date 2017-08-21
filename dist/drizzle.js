@@ -1,5 +1,5 @@
 /*!
- * DrizzleJS v0.4.16
+ * DrizzleJS v0.4.17
  * -------------------------------------
  * Copyright (c) 2017 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
@@ -943,7 +943,7 @@ extend(D.View, D.ActionCreator, {
             args[_key15] = arguments[_key15];
         }
 
-        this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
+        return this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
     },
     _serializeData: function _serializeData() {
         var _this21 = this;

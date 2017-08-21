@@ -806,7 +806,7 @@ extend(D.View, D.ActionCreator, {
     },
 
     _close (...args) {
-        this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
+        return this.chain(D.View.__super__._close.apply(this, args), this._unbindData, this);
     },
 
     _serializeData () {
