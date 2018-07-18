@@ -1,23 +1,23 @@
 exports.bindings = {
     todos: false
-};
+}
 
 exports.actions = {
     'keypress new-todo': 'createTodo'
-};
+}
 
 exports.dataForActions = {
-    createTodo: function(data, e) {
+    createTodo (data, e) {
         if (e.keyCode !== 13) {
-            return false;
+            return false
         }
-        e.preventDefault();
+        e.preventDefault()
 
         if (!data.text) {
-            return false;
+            return false
         }
 
-        this.$('new-todo').value = '';
-        return data;
+        this.$('new-todo').value = ''
+        return data
     }
-};
+}

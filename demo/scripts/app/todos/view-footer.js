@@ -1,23 +1,19 @@
-var _ = require('lodash/collection');
-
 exports.bindings = {
     todos: true,
     filter: true
-};
+}
 
 exports.dataForTemplate = {
-    info: function(data) {
-        var info = {
-            left: _.filter(data.todos, 'completed', false).length,
-            haveCompleted: _.some(data.todos, 'completed', true),
-            haveItem: data.todos.length > 0
-        };
-
-        info[data.filter] = true;
-        return info;
+    info ({ filter, todos }) {
+        return {
+            left: todos.filter(it => !it.completed).length,
+            haveCompleted: todos.some(it => it.completed),
+            haveItem: todos.length > 0,
+            [filter]: true
+        }
     }
-};
+}
 
 exports.actions = {
     'click remove': 'clearCompleted'
-};
+}

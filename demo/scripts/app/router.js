@@ -8,11 +8,11 @@ module.exports = {
         'todos/:id': 'filterTodos'
     },
 
-    showTodos: function() {
-        return this.app.show('content', 'todos', { forceRender: false });
+    showTodos () {
+        return this.app.show('content', 'todos', { forceRender: false })
     },
 
-    filterTodos: function(todos, id) {
-        todos.filter(id);
+    filterTodos (todos, id) {
+        todos.filter(id)
     }
-};
+}

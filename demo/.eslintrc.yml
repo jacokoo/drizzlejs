@@ -1,18 +1,20 @@
 root: true
-extends: airbnb/legacy
+extends: airbnb-base
 
 env:
     browser: true
 rules:
+    semi:
+        - error
+        - never
     indent:
-        - 2
+        - error
         - 4
     space-before-function-paren:
         - 2
         - anonymous: never
           named: always
     comma-dangle: 0
-    one-var: 0
     func-names: 0
     no-unused-expressions: 0
     max-len:

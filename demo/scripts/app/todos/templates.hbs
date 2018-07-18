@@ -12,12 +12,12 @@
     </form>
 {{/view}}
 {{#view "main"}}
-    <div class="main {{#unless haveItem}}hidden{{/unless}}">
-        <input {{#if completed}} checked="checked"{{/if}} id="toggleAll" class="toggle-all" type="checkbox"/>
+    <div class="main" {{#unless haveItem}} class="hidden"{{/unless}}>
+        <input id="toggleAll" class="toggle-all" {{#if completed}} checked{{/if}} type="checkbox"/>
         <ul class="todo-list">{{#each todos}}
-            <li class="{{#if completed}}completed{{/if}}">
+            <li {{#if completed}} class="completed"{{/if}}>
                 <div class="view">
-                    <input {{#if completed}} checked="checked"{{/if}} class="toggle" type="checkbox" id="toggle-{{id}}" data-name="id" data-value="{{id}}"/>
+                    <input class="toggle" {{#if completed}} checked{{/if}} type="checkbox" id="toggle-{{id}}" data-name="id" data-value="{{id}}"/>
                     <label id="edit-{{id}}">{{text}}</label>
                     <button class="destroy" id="destroy-{{id}}" data-name="id" data-value="{{id}}"></button>
                 </div>
@@ -30,16 +30,16 @@
     </div>
 {{/view}}
 {{#view "footer"}}
-    <div class="footer {{#unless info.haveItem}}hidden{{/unless}}">
+    <div class="footer" {{#unless info.haveItem}} class="hidden"{{/unless}}>
         <span class="todo-count">
             <strong>{{info.left}}</strong>
             items left
         </span>
         <ul class="filters">
-            <li class="all"><a class="{{#if info.all}}selected{{/if}}" href="#todos/all">All</a></li>
-            <li class="active"><a class="{{#if info.active}}selected{{/if}}" href="#todos/active">Active</a></li>
-            <li class="completed"><a class="{{#if info.completed}}selected{{/if}}" href="#todos/completed">Completed</a></li>
+            <li class="all"><a {{#if info.all}} class="selected"{{/if}} href="#!/todos/all">All</a></li>
+            <li class="active"><a {{#if info.active}} class="selected"{{/if}} href="#!/todos/active">Active</a></li>
+            <li class="completed"><a {{#if info.completed}} class="selected"{{/if}} href="#!/todos/completed">Completed</a></li>
         </ul>
-        <button id="remove" class="clear-completed {{#unless info.haveCompleted}}hidden{{/unless}}">Clear completed</button>
+        <button id="remove" class="clear-completed" {{#unless info.haveCompleted}} class="hidden"{{/unless}}>Clear completed</button>
     </div>
 {{/view}}

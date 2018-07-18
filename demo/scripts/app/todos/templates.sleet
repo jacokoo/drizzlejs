@@ -13,11 +13,11 @@ view('header')
 
 view('main')
     div.main(class='hidden')&unless(haveItem)
-        input#toggleAll.toggle-all(type='checkbox')(checked)&if(completed)
+        input#toggleAll.toggle-all(type='checkbox')(checked='true')&if(completed)
         ul.todo-list > each(todos)
             li(class='completed')&if(completed)
                 .view
-                    input.toggle(type='checkbox' id='toggle-' + id data-name='id' data-value=id)(checked)&if(completed)
+                    input.toggle(type='checkbox' id='toggle-' + id data-name='id' data-value=id)(checked='true')&if(completed)
                     label(id='edit-' + id) > echo(text)
                     button.destroy(id='destroy-' + id)(data-name='id' data-value=id)
                 form
@@ -31,8 +31,8 @@ view('footer')
             | items left
 
         ul.filters
-            li.all > a(class='selected')&if(info.all)(href='#todos/all') All
-            li.active > a(class='selected')&if(info.active)(href='#todos/active') Active
-            li.completed > a(class='selected')&if(info.completed)(href='#todos/completed') Completed
+            li.all > a(class='selected')&if(info.all)(href='#!/todos/all') All
+            li.active > a(class='selected')&if(info.active)(href='#!/todos/active') Active
+            li.completed > a(class='selected')&if(info.completed)(href='#!/todos/completed') Completed
 
         button#remove.clear-completed(class='hidden')&unless(info.haveCompleted) Clear completed
