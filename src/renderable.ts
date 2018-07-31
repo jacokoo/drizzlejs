@@ -2,11 +2,13 @@ import { Lifecycle, LifecycleContainer } from './lifecycle'
 import { Application } from './application'
 import { Disposable } from './drizzle'
 import { Node } from './template/node'
+import { ModuleTemplate } from './template/module-template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
     customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
     events?: {[name: string]: (...args) => void}
+    template?: ModuleTemplate
 }
 
 export enum ComponentState {
@@ -29,8 +31,8 @@ export class Renderable<T extends RenderOptions> extends LifecycleContainer {
     protected _busy: Promise<any> = Promise.resolve()
     protected _status = ComponentState.CREATED
 
-    constructor(app: Application, options: T) {
-        super(app, options)
+    constructor(app: Application, options: T, ...args: Lifecycle[]) {
+        super(app, options, ...args)
         this._options = options
     }
 

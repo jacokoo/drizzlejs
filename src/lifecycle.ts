@@ -24,11 +24,12 @@ export class LifecycleContainer {
     app: Application
     private _cycles: Lifecycle[] = []
 
-    constructor (app: Application, options: {cycles?: Lifecycle[]} & Lifecycle) {
+    constructor (app: Application, options: {cycles?: Lifecycle[]} & Lifecycle, ...args: Lifecycle[]) {
         this.app = app
 
         const cs = options.cycles || []
         cs.push(options)
+        args.forEach(it => it && cs.push(it))
         cs.forEach(it => !it.stage && (it.stage = 'default'))
 
         app.options.stages.forEach(s => cs.forEach(c => {

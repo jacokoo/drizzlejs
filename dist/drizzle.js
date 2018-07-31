@@ -983,7 +983,9 @@
     var StaticNode = function (_Node) {
         inherits(StaticNode, _Node);
 
-        function StaticNode(name, attributes, id) {
+        function StaticNode(name) {
+            var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+            var id = arguments[2];
             classCallCheck(this, StaticNode);
 
             var _this = possibleConstructorReturn(this, (StaticNode.__proto__ || Object.getPrototypeOf(StaticNode)).call(this, id));
@@ -1053,6 +1055,14 @@
             this.app = app;
             var cs = options.cycles || [];
             cs.push(options);
+
+            for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+                args[_key - 2] = arguments[_key];
+            }
+
+            args.forEach(function (it) {
+                return it && cs.push(it);
+            });
             cs.forEach(function (it) {
                 return !it.stage && (it.stage = 'default');
             });
@@ -1113,9 +1123,15 @@
         inherits(Renderable, _LifecycleContainer);
 
         function Renderable(app, options) {
+            var _ref;
+
             classCallCheck(this, Renderable);
 
-            var _this = possibleConstructorReturn(this, (Renderable.__proto__ || Object.getPrototypeOf(Renderable)).call(this, app, options));
+            for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+                args[_key - 2] = arguments[_key];
+            }
+
+            var _this = possibleConstructorReturn(this, (_ref = Renderable.__proto__ || Object.getPrototypeOf(Renderable)).call.apply(_ref, [this, app, options].concat(args)));
 
             _this.ids = {};
             _this._busy = Promise.resolve();
@@ -1171,8 +1187,8 @@
             value: function _event(name) {
                 var events = this._options.events;
 
-                for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-                    args[_key - 1] = arguments[_key];
+                for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+                    args[_key2 - 1] = arguments[_key2];
                 }
 
                 if (events && events[name]) events[name].apply(this, args);
@@ -1659,8 +1675,9 @@
         function Module(app, loader, options) {
             classCallCheck(this, Module);
 
-            var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options));
+            var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.life));
 
+            _this.items = {};
             _this._handlers = {};
             _this._loader = loader;
             return _this;
@@ -1765,8 +1782,12 @@
             value: function _loadItems() {
                 var _this6 = this;
 
-                var items = this._options.items;
+                var template = this._options.template;
 
+                if (!template || !template.options) return Promise.resolve();
+                var items = template.options.items;
+
+                if (!items) return Promise.resolve();
                 var ks = Object.keys(items);
                 var loaders = ks.map(function (k) {
                     return items[k].view ? _this6._loader : _this6.app.createLoader(items[k].module.path, items[k].module.loader);
@@ -2092,31 +2113,34 @@
 
             _this.options = { exportedModels: exportedModels, items: {} };
             var me = _this;
-            _this.life.init = function () {
-                var _this2 = this;
+            _this.life = {
+                stage: 'template',
+                init: function init() {
+                    var _this2 = this;
 
-                return Delay.also(function (d) {
-                    return me.init(_this2, d);
-                });
-            };
-            _this.life.beforeRender = function () {
-                var _this3 = this;
+                    Delay.also(function (d) {
+                        return me.init(_this2, d);
+                    });
+                },
+                beforeRender: function beforeRender() {
+                    var _this3 = this;
 
-                return Delay.also(function (d) {
-                    return me.render(_this3.get(), d);
-                });
-            };
-            _this.life.updated = function () {
-                var _this4 = this;
+                    Delay.also(function (d) {
+                        return me.render(_this3.get(), d);
+                    });
+                },
+                updated: function updated() {
+                    var _this4 = this;
 
-                return Delay.also(function (d) {
-                    return me.update(_this4.get(), d);
-                });
-            };
-            _this.life.beforeDestroy = function () {
-                return Delay.also(function (d) {
-                    return me.destroy(d);
-                });
+                    Delay.also(function (d) {
+                        return me.update(_this4.get(), d);
+                    });
+                },
+                beforeDestroy: function beforeDestroy() {
+                    Delay.also(function (d) {
+                        return me.destroy(d);
+                    });
+                }
             };
             return _this;
         }
@@ -2202,6 +2226,28 @@
             key: 'createLoader',
             value: function createLoader(path, loader) {
                 return new Loader(this, path, []);
+            }
+        }, {
+            key: 'start',
+            value: function start() {
+                var _this = this;
+
+                var loader = void 0;
+                var _options = this.options,
+                    entry = _options.entry,
+                    container = _options.container;
+
+                if (typeof entry === 'string') {
+                    loader = this.createLoader(entry);
+                } else {
+                    loader = this.createLoader(entry.path, entry.loader);
+                }
+                return loader.load('index').then(function (opt) {
+                    var v = new Module(_this, loader, opt);
+                    return v._init().then(function () {
+                        return v._render(container);
+                    });
+                });
             }
         }]);
         return Application;

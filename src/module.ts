@@ -17,8 +17,6 @@ interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
     exportedModels?: string[]
     state?: object,
-
-    items?: {[name: string]: ItemOptions}
 }
 
 const UPDATE_ACTION = `update${+new Date()}`
@@ -28,14 +26,14 @@ export class Module extends Renderable<ModuleOptions> {
         type: 'view' | 'module'
         options: ModuleOptions | ViewOptions
         loader: Loader
-    }}
+    }} = {}
 
     private _store: Store
     private _handlers: {[name: string]: ((data: any) => void)[]} = {}
     private _loader: Loader
 
     constructor(app: Application, loader: Loader, options: ModuleOptions) {
-        super(app, options)
+        super(app, options, options.template && options.template.life)
         this._loader = loader
     }
 
@@ -114,7 +112,11 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     private _loadItems (): Promise<any> {
-        const {items} = this._options
+        const {template} = this._options
+        if (!template || !template.options) return Promise.resolve()
+        const {items} = template.options
+        if (!items) return Promise.resolve()
+
         const ks = Object.keys(items)
         const loaders = ks.map(k => {
             return items[k].view ? this._loader : this.app.createLoader(items[k].module.path, items[k].module.loader)

@@ -5,7 +5,7 @@ export class StaticNode extends Node {
     name: string
     attributes: [string, string][]
 
-    constructor(name: string, attributes: [string, string][], id?: string) {
+    constructor(name: string, attributes: [string, string][] = [], id?: string) {
         super(id)
         this.name = name
         this.attributes = attributes

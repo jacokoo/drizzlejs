@@ -5,7 +5,7 @@ import tslint from 'rollup-plugin-tslint'
 export default {
     input: 'src/drizzle.ts',
     plugins: [
-        tslint({throwError: true}),
+        tslint({throwError: false}),
         typescript({
             include: 'src/**',
             typescript: require('typescript')

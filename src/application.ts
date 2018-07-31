@@ -1,5 +1,6 @@
 import { Loader } from './loader'
 import { Disposable } from './drizzle'
+import { Module } from './module'
 
 interface ApplicationOptions {
     stages?: string[],
@@ -23,5 +24,20 @@ export class Application {
 
     createLoader (path: string, loader?: {name: string, args?: string[]}): Loader {
         return new Loader(this, path, [])
+    }
+
+    start (): Promise<any> {
+        let loader: Loader
+        const {entry, container} = this.options
+        if (typeof entry === 'string') {
+            loader = this.createLoader(entry)
+        } else {
+            loader = this.createLoader(entry.path, entry.loader)
+        }
+
+        return loader.load('index').then(opt => {
+            const v = new Module(this, loader, opt)
+            return v._init().then(() => v._render(container))
+        })
     }
 }

@@ -11,10 +11,13 @@ export class ModuleTemplate extends Template<Module> {
         super()
         this.options = {exportedModels, items: {}}
         const me = this
-        this.life.init = function(this: Module) { return Delay.also(d => me.init(this, d)) }
-        this.life.beforeRender = function(this: Module) { return Delay.also(d => me.render(this.get(), d)) }
-        this.life.updated = function(this: Module) { return Delay.also(d => me.update(this.get(), d)) }
-        this.life.beforeDestroy = function(this: Module) { return Delay.also(d => me.destroy(d)) }
+        this.life = {
+            stage: 'template',
+            init (this: Module) { Delay.also(d => me.init(this, d)) },
+            beforeRender (this: Module) { Delay.also(d => me.render(this.get(), d)) },
+            updated (this: Module) { Delay.also(d => me.update(this.get(), d)) },
+            beforeDestroy () { Delay.also(d => me.destroy(d)) }
+        }
     }
 
     views (...views: string[]) {
