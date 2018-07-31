@@ -4,6 +4,7 @@ import { DynamicNode } from './template/dynamic-node'
 
 export interface ViewOptions extends RenderOptions {
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
+    helpers?: {[name: string]: (...any) => any}
 }
 
 export interface BindingGroup {
@@ -18,7 +19,7 @@ export class View extends Renderable<ViewOptions> {
     _state: object = {}
 
     constructor(mod: Module, options: ViewOptions) {
-        super(mod.app, options)
+        super(mod.app, options, options.template && options.template.life)
         this._module = mod
     }
 

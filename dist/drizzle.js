@@ -248,6 +248,10 @@
             return acc[item];
         }, context);
     }
+    function getAttributeValue(attr, context) {
+        if (attr[0] === ValueType.STATIC) return attr[1];
+        return getValue(attr[1], context);
+    }
     function resolveEventArgument(me, context, args, event) {
         var values = args.map(function (_ref) {
             var _ref2 = slicedToArray(_ref, 2),
@@ -287,7 +291,7 @@
             var ee = function ee(e) {
                 if (e.keyCode !== 13) return;
                 e.preventDefault();
-                cb(e);
+                cb.call(this, e);
             };
             node.addEventListener('keypress', ee, false);
             return {
@@ -468,16 +472,62 @@
         return Transfromer;
     }(Helper);
 
-    var ConcatHelper = function (_Helper2) {
-        inherits(ConcatHelper, _Helper2);
+    var DelayTransfomer = function (_Transfromer) {
+        inherits(DelayTransfomer, _Transfromer);
+
+        function DelayTransfomer(name) {
+            var _ref2;
+
+            classCallCheck(this, DelayTransfomer);
+
+            for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key6 = 1; _key6 < _len5; _key6++) {
+                args[_key6 - 1] = arguments[_key6];
+            }
+
+            var _this6 = possibleConstructorReturn(this, (_ref2 = DelayTransfomer.__proto__ || Object.getPrototypeOf(DelayTransfomer)).call.apply(_ref2, [this, null].concat(args)));
+
+            _this6.name = name;
+            return _this6;
+        }
+
+        createClass(DelayTransfomer, [{
+            key: 'init',
+            value: function init(root) {
+                var helpers = root._options.helpers;
+
+                if (helpers && helpers[this.name]) this.fn = helpers[this.name];else throw new Error('no helper found: ' + name);
+            }
+        }]);
+        return DelayTransfomer;
+    }(Transfromer);
+
+    var EchoHelper = function (_Helper2) {
+        inherits(EchoHelper, _Helper2);
+
+        function EchoHelper() {
+            classCallCheck(this, EchoHelper);
+            return possibleConstructorReturn(this, (EchoHelper.__proto__ || Object.getPrototypeOf(EchoHelper)).apply(this, arguments));
+        }
+
+        createClass(EchoHelper, [{
+            key: 'doRender',
+            value: function doRender(context) {
+                return this.arg(0, context);
+            }
+        }]);
+        return EchoHelper;
+    }(Helper);
+
+    var ConcatHelper = function (_Helper3) {
+        inherits(ConcatHelper, _Helper3);
 
         function ConcatHelper() {
             classCallCheck(this, ConcatHelper);
 
-            var _this6 = possibleConstructorReturn(this, (ConcatHelper.__proto__ || Object.getPrototypeOf(ConcatHelper)).apply(this, arguments));
+            var _this8 = possibleConstructorReturn(this, (ConcatHelper.__proto__ || Object.getPrototypeOf(ConcatHelper)).apply(this, arguments));
 
-            _this6.name = 'concat';
-            return _this6;
+            _this8.name = 'concat';
+            return _this8;
         }
 
         createClass(ConcatHelper, [{
@@ -488,26 +538,26 @@
         }, {
             key: 'doRender',
             value: function doRender(context) {
-                var _this7 = this;
+                var _this9 = this;
 
                 return this.args.map(function (it, i) {
-                    return _this7.arg(i, context);
+                    return _this9.arg(i, context);
                 }).join(' ');
             }
         }]);
         return ConcatHelper;
     }(Helper);
 
-    var IfHelper = function (_Helper3) {
-        inherits(IfHelper, _Helper3);
+    var IfHelper = function (_Helper4) {
+        inherits(IfHelper, _Helper4);
 
         function IfHelper() {
             classCallCheck(this, IfHelper);
 
-            var _this8 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
+            var _this10 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
 
-            _this8.name = 'if';
-            return _this8;
+            _this10.name = 'if';
+            return _this10;
         }
 
         createClass(IfHelper, [{
@@ -536,10 +586,10 @@
         function UnlessHelper() {
             classCallCheck(this, UnlessHelper);
 
-            var _this9 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
+            var _this11 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
 
-            _this9.name = 'unless';
-            return _this9;
+            _this11.name = 'unless';
+            return _this11;
         }
 
         createClass(UnlessHelper, [{
@@ -551,8 +601,8 @@
         return UnlessHelper;
     }(IfHelper);
 
-    var EqHelper = function (_Helper4) {
-        inherits(EqHelper, _Helper4);
+    var EqHelper = function (_Helper5) {
+        inherits(EqHelper, _Helper5);
 
         function EqHelper() {
             classCallCheck(this, EqHelper);
@@ -578,8 +628,25 @@
         return EqHelper;
     }(Helper);
 
-    var GtHelper = function (_EqHelper) {
-        inherits(GtHelper, _EqHelper);
+    var NeHelper = function (_EqHelper) {
+        inherits(NeHelper, _EqHelper);
+
+        function NeHelper() {
+            classCallCheck(this, NeHelper);
+            return possibleConstructorReturn(this, (NeHelper.__proto__ || Object.getPrototypeOf(NeHelper)).apply(this, arguments));
+        }
+
+        createClass(NeHelper, [{
+            key: 'use',
+            value: function use(v1, v2) {
+                return v1 !== v2;
+            }
+        }]);
+        return NeHelper;
+    }(EqHelper);
+
+    var GtHelper = function (_EqHelper2) {
+        inherits(GtHelper, _EqHelper2);
 
         function GtHelper() {
             classCallCheck(this, GtHelper);
@@ -595,8 +662,8 @@
         return GtHelper;
     }(EqHelper);
 
-    var GteHelper = function (_EqHelper2) {
-        inherits(GteHelper, _EqHelper2);
+    var GteHelper = function (_EqHelper3) {
+        inherits(GteHelper, _EqHelper3);
 
         function GteHelper() {
             classCallCheck(this, GteHelper);
@@ -612,8 +679,8 @@
         return GteHelper;
     }(EqHelper);
 
-    var LtHelper = function (_EqHelper3) {
-        inherits(LtHelper, _EqHelper3);
+    var LtHelper = function (_EqHelper4) {
+        inherits(LtHelper, _EqHelper4);
 
         function LtHelper() {
             classCallCheck(this, LtHelper);
@@ -629,8 +696,8 @@
         return LtHelper;
     }(EqHelper);
 
-    var LteHelper = function (_EqHelper4) {
-        inherits(LteHelper, _EqHelper4);
+    var LteHelper = function (_EqHelper5) {
+        inherits(LteHelper, _EqHelper5);
 
         function LteHelper() {
             classCallCheck(this, LteHelper);
@@ -664,23 +731,31 @@
             key: 'init',
             value: function init(root, delay) {
                 this.root = root;
-                this.trueNode.nextSibling = this.nextSibling;
                 this.trueNode.init(root, delay);
                 if (this.falseNode) {
-                    this.falseNode.nextSibling = this.nextSibling;
                     this.falseNode.init(root, delay);
                 }
             }
         }, {
             key: 'use',
             value: function use(context) {
-                return !!getValue(this.args[0], context);
+                if (this.args[0][0] === ValueType.STATIC) {
+                    // TODO throw
+                    return false;
+                }
+                return !!getAttributeValue(this.args[0], context);
             }
         }, {
             key: 'render',
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
+                this.trueNode.parent = this.parent;
+                this.trueNode.nextSibling = this.nextSibling;
+                if (this.falseNode) {
+                    this.falseNode.parent = this.parent;
+                    this.falseNode.nextSibling = this.nextSibling;
+                }
                 this.current = this.use(context) ? this.trueNode : this.falseNode;
                 if (this.current) {
                     this.current.render(context, delay);
@@ -726,7 +801,7 @@
         createClass(UnlessBlock, [{
             key: 'use',
             value: function use(context) {
-                return !getValue(this.args[0], context);
+                return !getAttributeValue(this.args[0], context);
             }
         }]);
         return UnlessBlock;
@@ -735,25 +810,15 @@
     var EqBlock = function (_IfBlock2) {
         inherits(EqBlock, _IfBlock2);
 
-        function EqBlock(args, trueNode, falseNode) {
+        function EqBlock() {
             classCallCheck(this, EqBlock);
-
-            var _this3 = possibleConstructorReturn(this, (EqBlock.__proto__ || Object.getPrototypeOf(EqBlock)).call(this, [], trueNode, falseNode));
-
-            _this3.args2 = args;
-            return _this3;
+            return possibleConstructorReturn(this, (EqBlock.__proto__ || Object.getPrototypeOf(EqBlock)).apply(this, arguments));
         }
 
         createClass(EqBlock, [{
-            key: 'getValue2',
-            value: function getValue2(arg, context) {
-                if (arg[0] === ValueType.STATIC) return arg[1];
-                return getValue(arg[1], context);
-            }
-        }, {
             key: 'use',
             value: function use(context) {
-                return this.use2(this.getValue2(this.args2[0], context), this.getValue2(this.args2[1], context));
+                return this.use2(getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context));
             }
         }, {
             key: 'use2',
@@ -764,8 +829,25 @@
         return EqBlock;
     }(IfBlock);
 
-    var GtBlock = function (_EqBlock) {
-        inherits(GtBlock, _EqBlock);
+    var NeBlock = function (_EqBlock) {
+        inherits(NeBlock, _EqBlock);
+
+        function NeBlock() {
+            classCallCheck(this, NeBlock);
+            return possibleConstructorReturn(this, (NeBlock.__proto__ || Object.getPrototypeOf(NeBlock)).apply(this, arguments));
+        }
+
+        createClass(NeBlock, [{
+            key: 'use2',
+            value: function use2(v1, v2) {
+                return v1 !== v2;
+            }
+        }]);
+        return NeBlock;
+    }(EqBlock);
+
+    var GtBlock = function (_EqBlock2) {
+        inherits(GtBlock, _EqBlock2);
 
         function GtBlock() {
             classCallCheck(this, GtBlock);
@@ -781,8 +863,8 @@
         return GtBlock;
     }(EqBlock);
 
-    var GteBlock = function (_EqBlock2) {
-        inherits(GteBlock, _EqBlock2);
+    var GteBlock = function (_EqBlock3) {
+        inherits(GteBlock, _EqBlock3);
 
         function GteBlock() {
             classCallCheck(this, GteBlock);
@@ -798,8 +880,8 @@
         return GteBlock;
     }(EqBlock);
 
-    var LtBlock = function (_EqBlock3) {
-        inherits(LtBlock, _EqBlock3);
+    var LtBlock = function (_EqBlock4) {
+        inherits(LtBlock, _EqBlock4);
 
         function LtBlock() {
             classCallCheck(this, LtBlock);
@@ -815,8 +897,8 @@
         return LtBlock;
     }(EqBlock);
 
-    var LteBlock = function (_EqBlock4) {
-        inherits(LteBlock, _EqBlock4);
+    var LteBlock = function (_EqBlock5) {
+        inherits(LteBlock, _EqBlock5);
 
         function LteBlock() {
             classCallCheck(this, LteBlock);
@@ -841,6 +923,8 @@
             var _this = possibleConstructorReturn(this, (EachBlock.__proto__ || Object.getPrototypeOf(EachBlock)).call(this));
 
             _this.currentSize = 0;
+            _this.nodes = [];
+            _this.args = args;
             _this.trueNode = trueNode;
             _this.falseNode = falseNode;
             return _this;
@@ -893,6 +977,7 @@
                 arr.forEach(function (it, i) {
                     var sub = _this2.sub(context, i);
                     _this2.nodes[i] = _this2.trueNode();
+                    _this2.nodes[i].parent = _this2.parent;
                     _this2.nodes[i].nextSibling = _this2.nextSibling;
                     _this2.nodes[i].init(_this2.root, delay);
                     _this2.nodes[i].render(sub, delay);
@@ -946,6 +1031,7 @@
                     var sub = _this3.sub(context, i);
                     if (_this3.nodes[i]) _this3.nodes[i].update(sub, delay);else {
                         _this3.nodes[i] = _this3.trueNode();
+                        _this3.nodes[i].parent = _this3.parent;
                         _this3.nodes[i].nextSibling = _this3.nextSibling;
                         _this3.nodes[i].init(_this3.root, delay);
                         _this3.nodes[i].render(sub, delay);
@@ -980,58 +1066,131 @@
         return EachBlock;
     }(Node);
 
-    var StaticNode = function (_Node) {
-        inherits(StaticNode, _Node);
+    var Loader = function () {
+        function Loader(app, path, args) {
+            classCallCheck(this, Loader);
 
-        function StaticNode(name) {
-            var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-            var id = arguments[2];
-            classCallCheck(this, StaticNode);
+            this._app = app;
+            this._path = path;
+            this._args = args;
+        }
 
-            var _this = possibleConstructorReturn(this, (StaticNode.__proto__ || Object.getPrototypeOf(StaticNode)).call(this, id));
+        createClass(Loader, [{
+            key: 'load',
+            value: function load(file) {
+                return this._app.options.getResource(this._app.options.scriptRoot + '/' + this._path + '/' + file);
+            }
+        }]);
+        return Loader;
+    }();
 
-            _this.name = name;
-            _this.attributes = attributes;
+    var ModuleTemplate = function (_Template) {
+        inherits(ModuleTemplate, _Template);
+
+        function ModuleTemplate(exportedModels) {
+            classCallCheck(this, ModuleTemplate);
+
+            var _this = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
+
+            _this.options = { exportedModels: exportedModels, items: {} };
+            var me = _this;
+            _this.life = {
+                stage: 'template',
+                init: function init() {
+                    var _this2 = this;
+
+                    Delay.also(function (d) {
+                        return me.init(_this2, d);
+                    });
+                },
+                beforeRender: function beforeRender() {
+                    var _this3 = this;
+
+                    Delay.also(function (d) {
+                        return me.render(_this3.get(), d);
+                    });
+                },
+                updated: function updated() {
+                    var _this4 = this;
+
+                    Delay.also(function (d) {
+                        return me.update(_this4.get(), d);
+                    });
+                },
+                beforeDestroy: function beforeDestroy() {
+                    Delay.also(function (d) {
+                        return me.destroy(d);
+                    });
+                }
+            };
             return _this;
         }
 
-        createClass(StaticNode, [{
-            key: 'render',
-            value: function render(context, delay) {
-                if (this.rendered) return;
-                this.rendered = true;
-                if (this.nextSibling && this.nextSibling.element) {
-                    this.parent.element.insertBefore(this.element, this.nextSibling.element);
-                } else {
-                    this.parent.element.appendChild(this.element);
+        createClass(ModuleTemplate, [{
+            key: 'views',
+            value: function views() {
+                var _this5 = this;
+
+                for (var _len = arguments.length, _views = Array(_len), _key = 0; _key < _len; _key++) {
+                    _views[_key] = arguments[_key];
                 }
-                this.children.forEach(function (it) {
-                    return it.render(context, delay);
+
+                _views.forEach(function (it) {
+                    return _this5.options.items[it] = { view: it };
                 });
             }
         }, {
-            key: 'update',
-            value: function update(context, delay) {}
-        }, {
-            key: 'destroy',
-            value: function destroy(delay) {
-                if (this.rendered) return;
-                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, delay);
-                this.parent.element.removeChild(this.element);
-                this.rendered = false;
-            }
-        }, {
-            key: 'create',
-            value: function create() {
-                var element = document.createElement(this.name);
-                this.attributes.forEach(function (it) {
-                    return element.setAttribute(it[0], it[1]);
-                });
-                return element;
+            key: 'modules',
+            value: function modules(name, path, loader, args) {
+                this.options.items[name] = loader ? { path: path, loader: { name: loader, args: args } } : { path: path };
             }
         }]);
-        return StaticNode;
-    }(Node);
+        return ModuleTemplate;
+    }(Template);
+
+    var ViewTemplate = function (_Template) {
+        inherits(ViewTemplate, _Template);
+
+        function ViewTemplate() {
+            classCallCheck(this, ViewTemplate);
+
+            var _this = possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).call(this));
+
+            var me = _this;
+            _this.life = {
+                stage: 'template',
+                init: function init() {
+                    var _this2 = this;
+
+                    Delay.also(function (d) {
+                        return me.init(_this2, d);
+                    });
+                },
+                beforeRender: function beforeRender() {
+                    var _this3 = this;
+
+                    Delay.also(function (d) {
+                        return me.render(_this3._state, d);
+                    });
+                },
+                updated: function updated() {
+                    var _this4 = this;
+
+                    Delay.also(function (d) {
+                        return me.update(_this4._state, d);
+                    });
+                },
+                beforeDestroy: function beforeDestroy() {
+                    Delay.also(function (d) {
+                        return me.destroy(d);
+                    });
+                }
+            };
+            return _this;
+        }
+
+        return ViewTemplate;
+    }(Template);
 
     var callIt = function callIt(ctx, cycles, method) {
         var reverse = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
@@ -1197,386 +1356,6 @@
         return Renderable;
     }(LifecycleContainer);
 
-    var View = function (_Renderable) {
-        inherits(View, _Renderable);
-
-        function View(mod, options) {
-            classCallCheck(this, View);
-
-            var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options));
-
-            _this._groups = {};
-            _this._state = {};
-            _this._module = mod;
-            return _this;
-        }
-
-        createClass(View, [{
-            key: 'set',
-            value: function set$$1(data) {
-                var _this2 = this;
-
-                var silent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
-                if (silent) {
-                    Object.assign(this._state, data);
-                    return Promise.resolve();
-                }
-                this._busy = this._busy.then(function () {
-                    return _this2._doBeforeUpdate();
-                }).then(function () {
-                    return Object.assign(_this2._state, data);
-                }).then(function () {
-                    return _this2._doUpdated();
-                });
-                return this._busy;
-            }
-        }, {
-            key: '_action',
-            value: function _action(name) {
-                var _this3 = this;
-
-                var actions = this._options.actions;
-
-                for (var _len = arguments.length, data = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-                    data[_key - 1] = arguments[_key];
-                }
-
-                if (actions && actions[name]) {
-                    var _actions$name;
-
-                    (_actions$name = actions[name]).call.apply(_actions$name, [this, function (d) {
-                        return _this3._module.dispatch(name, d);
-                    }].concat(data));
-                    return;
-                }
-                this._module.dispatch(name, data[0]);
-            }
-        }]);
-        return View;
-    }(Renderable);
-
-    var distruct = function distruct(obj, key) {
-        var ks = key.split('.');
-        var name = ks.pop();
-        var target = ks.reduce(function (acc, it) {
-            return acc[it];
-        }, obj);
-        return { name: name, target: target };
-    };
-    var bindIt = function bindIt(context, view, to, element, event, get, set) {
-        var busy = false; // necessary?
-        var current = void 0;
-        var obj = { context: context };
-        var cb = function cb() {
-            var _distruct = distruct(obj.context, to),
-                name = _distruct.name,
-                target = _distruct.target;
-
-            current = get(element);
-            // bind each key
-            if (name === to && context._each && context._each.some(function (it) {
-                return it.key === name;
-            })) {
-                var each = context._each.find(function (it) {
-                    return it.key === name;
-                });
-                each.list[each.index] = current;
-            } else {
-                target[name] = current;
-            }
-            busy = true;
-            view.set({});
-            busy = false;
-        };
-        element.addEventListener(event, cb, false);
-        return {
-            dispose: function dispose() {
-                element.removeEventListener(event, cb, false);
-            },
-            update: function update(ctx) {
-                obj.context = ctx;
-                if (!busy) {
-                    var v = getValue(to, ctx);
-                    if (v !== current) {
-                        set(element, v);
-                        current = v;
-                    }
-                }
-            }
-        };
-    };
-    var getSelectValue = function getSelectValue(el) {
-        var opt = el.options[el.selectedIndex || 0];
-        return opt && opt.value;
-    };
-    var setSelectOption = function setSelectOption(el, value) {
-        // tslint:disable-next-line:prefer-for-of
-        for (var i = 0; i < el.options.length; i++) {
-            var opt = el.options[i];
-            if (opt.value === value + '') {
-                opt.selected = true;
-                return;
-            }
-        }
-    };
-    var bindGroup = function bindGroup(context, view, group, to, element) {
-        var obj = { context: context };
-        var current = void 0;
-        var cb = function cb() {
-            if (group.busy) return;
-
-            var _distruct2 = distruct(obj.context, to),
-                name = _distruct2.name,
-                target = _distruct2.target;
-
-            current = group.type === 'radio' ? element.value : group.items.filter(function (it) {
-                return it.element.checked;
-            }).map(function (it) {
-                return it.element.value;
-            });
-            if (name === to && context._each && context._each.some(function (it) {
-                return it.key === name;
-            })) {
-                var each = context._each.find(function (it) {
-                    return it.key === name;
-                });
-                each.list[each.index] = current;
-            } else {
-                target[name] = current;
-            }
-            group.busy = true;
-            view.set({});
-            group.busy = false;
-        };
-        element.addEventListener('change', cb, false);
-        return {
-            dispose: function dispose() {
-                element.removeEventListener('change', cb, false);
-            },
-            update: function update(ctx) {
-                obj.context = ctx;
-                if (group.busy) return;
-                var v = getValue(to, ctx);
-                var its = group.items.map(function (it) {
-                    return it.element;
-                });
-                var changed = false;
-                if (group.type === 'radio' && v !== current) changed = true;
-                if (!changed && group.type === 'checkbox' && v.some(function (it, i) {
-                    return current[i] !== it;
-                })) changed = true;
-                if (!changed) return;
-                if (group.type === 'radio') {
-                    its.forEach(function (it) {
-                        return it.checked = it.value === v + '';
-                    });
-                    return;
-                }
-                its.forEach(function (it) {
-                    return it.checked = v.some(function (vv) {
-                        return vv + '' === it.value;
-                    });
-                });
-            }
-        };
-    };
-    var bind = function bind(node, context, from, to) {
-        var tag = node.name.toLowerCase();
-        var element = node.element;
-        var view = node.root;
-        if ((tag === 'input' || tag === 'textarea') && from === 'value') {
-            return bindIt(context, view, to, element, 'input', function (el) {
-                return el.value;
-            }, function (el, value) {
-                return el.value = value;
-            });
-        }
-        if (tag === 'input' && from === 'checked') {
-            return bindIt(context, view, to, element, 'change', function (el) {
-                return el.checked;
-            }, function (el, value) {
-                return el.checked = value;
-            });
-        }
-        if (tag === 'select' && from === 'value') {
-            return bindIt(context, view, to, element, 'change', getSelectValue, setSelectOption);
-        }
-        if (tag === 'input' && from === 'group') {
-            var type = element.type;
-            if (type !== 'checkbox' && type !== 'radio') return null;
-            return bindGroup(context, view, view._groups[to], to, element);
-        }
-        return null;
-    };
-
-    var DynamicNode = function (_StaticNode) {
-        inherits(DynamicNode, _StaticNode);
-
-        function DynamicNode() {
-            classCallCheck(this, DynamicNode);
-
-            var _this = possibleConstructorReturn(this, (DynamicNode.__proto__ || Object.getPrototypeOf(DynamicNode)).apply(this, arguments));
-
-            _this.dynamicAttributes = {};
-            _this.events = {};
-            _this.actions = {};
-            _this.bindings = [];
-            return _this;
-        }
-
-        createClass(DynamicNode, [{
-            key: 'attribute',
-            value: function attribute(name) {
-                for (var _len = arguments.length, helpers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-                    helpers[_key - 1] = arguments[_key];
-                }
-
-                this.dynamicAttributes[name] = helpers;
-            }
-        }, {
-            key: 'on',
-            value: function on(event, method, args) {
-                this.events[method] = { event: event, args: args };
-            }
-        }, {
-            key: 'action',
-            value: function action(event, method, args) {
-                this.actions[method] = { event: event, args: args };
-            }
-        }, {
-            key: 'bind',
-            value: function bind$$1(from, to) {
-                if (!(this.root instanceof View)) return;
-                this.bindings.push([from, to]);
-                if (from !== 'group' || this.name.toLowerCase() !== 'input') return;
-                var attr = this.attributes.find(function (it) {
-                    return it[0].toLowerCase() === 'type';
-                });
-                if (!attr) return;
-                var type = attr[1].toLowerCase();
-                if (type !== 'checkbox' && type !== 'radio') return;
-                var groups = this.root._groups;
-                if (!groups[to]) groups[to] = { type: type, items: [], busy: false };else if (groups[to].type !== type) {
-                    throw Error('binding group can not mix up checkbox and radio');
-                }
-                groups[to].items.push(this); // TODO if this item is hidden by if, should it works?
-            }
-        }, {
-            key: 'render',
-            value: function render(context, delay) {
-                var _this2 = this;
-
-                if (this.rendered) return;
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'render', this).call(this, context, delay);
-                this.updateAttributes(context);
-                this.context = context;
-                this.eventHooks = Object.keys(this.events).map(function (it) {
-                    return _this2.initEvent(_this2.events[it].event, it, _this2.events[it].args);
-                });
-                this.actionHooks = Object.keys(this.actions).map(function (it) {
-                    return _this2.initAction(_this2.actions[it].event, it, _this2.actions[it].args);
-                });
-                this.bindingHooks = this.bindings.map(function (it) {
-                    return bind(_this2, _this2, it[0], it[1]);
-                }).filter(function (it) {
-                    return !!it;
-                });
-            }
-        }, {
-            key: 'initEvent',
-            value: function initEvent(name, method, args) {
-                var me = this;
-                var cb = function cb(event) {
-                    var _me$root;
-
-                    var as = resolveEventArgument(this, me.context, args, event);
-                    (_me$root = me.root)._event.apply(_me$root, [method].concat(toConsumableArray(as)));
-                };
-                return this.bindEvent(name, cb);
-            }
-        }, {
-            key: 'initAction',
-            value: function initAction(name, action, args) {
-                if (!(this.root instanceof View)) return;
-                var me = this;
-                var cb = function cb(event) {
-                    var data = resolveEventArgument(this, me.context, args, event);
-                    var root = me.root;
-                    root._action.apply(root, [action].concat(toConsumableArray(data)));
-                };
-                return this.bindEvent(name, cb);
-            }
-        }, {
-            key: 'bindEvent',
-            value: function bindEvent(name, cb) {
-                var _this3 = this;
-
-                var ce = this.root._options.customEvents;
-                if (!ce || !ce[name]) ce = this.root.app.options.customEvents;
-                if (!ce || !ce[name]) ce = customEvents;
-                if (ce && ce[name]) {
-                    return ce[name](this.element, cb);
-                }
-                this.element.addEventListener(name, cb, false);
-                return {
-                    dispose: function dispose() {
-                        _this3.element.removeEventListener(name, cb, false);
-                    }
-                };
-            }
-        }, {
-            key: 'updateAttributes',
-            value: function updateAttributes(context) {
-                var _this4 = this;
-
-                Object.keys(this.dynamicAttributes).forEach(function (it) {
-                    var vs = _this4.dynamicAttributes[it].map(function (i) {
-                        return i.render(context);
-                    });
-                    if (vs.some(function (i) {
-                        return i[0] === ChangeType.CHANGED;
-                    })) {
-                        var vvs = vs.map(function (i) {
-                            return i[1];
-                        });
-                        var v = it === 'class' ? vvs.join(' ') : vvs.join(''); // TODO boolean attribute can be set to string?
-                        _this4.element.setAttribute(it, v);
-                    }
-                });
-            }
-        }, {
-            key: 'update',
-            value: function update(context) {
-                if (!this.rendered) return;
-                this.updateAttributes(context);
-                this.context = context;
-                this.bindingHooks.forEach(function (it) {
-                    return it.update(context);
-                });
-            }
-        }, {
-            key: 'destroy',
-            value: function destroy(delay) {
-                if (!this.rendered) return;
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'destroy', this).call(this, delay);
-                this.bindingHooks.forEach(function (it) {
-                    return it.dispose();
-                });
-                this.actionHooks.forEach(function (it) {
-                    return it.dispose();
-                });
-                this.eventHooks.forEach(function (it) {
-                    return it.dispose();
-                });
-                this.bindingHooks = [];
-                this.actionHooks = [];
-                this.eventHooks = [];
-            }
-        }]);
-        return DynamicNode;
-    }(StaticNode);
-
     var Model = function () {
         function Model(options) {
             classCallCheck(this, Model);
@@ -1666,6 +1445,65 @@
         }]);
         return Store;
     }();
+
+    var View = function (_Renderable) {
+        inherits(View, _Renderable);
+
+        function View(mod, options) {
+            classCallCheck(this, View);
+
+            var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options, options.template && options.template.life));
+
+            _this._groups = {};
+            _this._state = {};
+            _this._module = mod;
+            return _this;
+        }
+
+        createClass(View, [{
+            key: 'set',
+            value: function set$$1(data) {
+                var _this2 = this;
+
+                var silent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+                if (silent) {
+                    Object.assign(this._state, data);
+                    return Promise.resolve();
+                }
+                this._busy = this._busy.then(function () {
+                    return _this2._doBeforeUpdate();
+                }).then(function () {
+                    return Object.assign(_this2._state, data);
+                }).then(function () {
+                    return _this2._doUpdated();
+                });
+                return this._busy;
+            }
+        }, {
+            key: '_action',
+            value: function _action(name) {
+                var _this3 = this;
+
+                var actions = this._options.actions;
+
+                for (var _len = arguments.length, data = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+                    data[_key - 1] = arguments[_key];
+                }
+
+                if (actions && actions[name]) {
+                    var _actions$name;
+
+                    (_actions$name = actions[name]).call.apply(_actions$name, [this, function (d) {
+                        return _this3._module.dispatch(name, d);
+                    }].concat(data));
+                    return;
+                }
+                this._module.dispatch(name, data[0]);
+            }
+        }]);
+        return View;
+    }(Renderable);
 
     var UPDATE_ACTION = 'update' + +new Date();
 
@@ -1807,6 +1645,528 @@
         }]);
         return Module;
     }(Renderable);
+
+    var Application = function () {
+        function Application(options) {
+            classCallCheck(this, Application);
+
+            this.options = Object.assign({
+                stages: ['init', 'template', 'default'],
+                scriptRoot: 'app',
+                entry: 'viewport'
+            }, options);
+        }
+
+        createClass(Application, [{
+            key: 'createLoader',
+            value: function createLoader(path, loader) {
+                return new Loader(this, path, []);
+            }
+        }, {
+            key: 'start',
+            value: function start() {
+                var _this = this;
+
+                var loader = void 0;
+                var _options = this.options,
+                    entry = _options.entry,
+                    container = _options.container;
+
+                if (typeof entry === 'string') {
+                    loader = this.createLoader(entry);
+                } else {
+                    loader = this.createLoader(entry.path, entry.loader);
+                }
+                return loader.load('index').then(function (opt) {
+                    var v = new Module(_this, loader, opt);
+                    return v._init().then(function () {
+                        return v._render(container);
+                    });
+                });
+            }
+        }]);
+        return Application;
+    }();
+
+    var StaticNode = function (_Node) {
+        inherits(StaticNode, _Node);
+
+        function StaticNode(name) {
+            var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+            var id = arguments[2];
+            classCallCheck(this, StaticNode);
+
+            var _this = possibleConstructorReturn(this, (StaticNode.__proto__ || Object.getPrototypeOf(StaticNode)).call(this, id));
+
+            _this.name = name;
+            _this.attributes = attributes;
+            return _this;
+        }
+
+        createClass(StaticNode, [{
+            key: 'render',
+            value: function render(context, delay) {
+                if (this.rendered) return;
+                this.rendered = true;
+                /* FIXME
+                if (this.nextSibling && this.nextSibling.element) {
+                    this.parent.element.insertBefore(this.element, this.nextSibling.element)
+                } else {
+                    this.parent.element.appendChild(this.element)
+                }*/
+                this.parent.element.appendChild(this.element);
+                this.children.forEach(function (it) {
+                    return it.render(context, delay);
+                });
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                this.children.forEach(function (it) {
+                    return it.update(context, delay);
+                });
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                if (this.rendered) return;
+                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, delay);
+                this.parent.element.removeChild(this.element);
+                this.rendered = false;
+            }
+        }, {
+            key: 'create',
+            value: function create() {
+                var element = document.createElement(this.name);
+                this.attributes.forEach(function (it) {
+                    return element.setAttribute(it[0], it[1]);
+                });
+                return element;
+            }
+        }]);
+        return StaticNode;
+    }(Node);
+
+    var distruct = function distruct(obj, key) {
+        var ks = key.split('.');
+        var name = ks.pop();
+        var target = ks.reduce(function (acc, it) {
+            return acc[it];
+        }, obj);
+        return { name: name, target: target };
+    };
+    var bindIt = function bindIt(context, view, to, element, event, get, set) {
+        var busy = false; // necessary?
+        var current = void 0;
+        var obj = { context: context };
+        var cb = function cb() {
+            var _distruct = distruct(obj.context, to),
+                name = _distruct.name,
+                target = _distruct.target;
+
+            current = get(element);
+            // bind each key
+            if (name === to && context._each && context._each.some(function (it) {
+                return it.key === name;
+            })) {
+                var each = context._each.find(function (it) {
+                    return it.key === name;
+                });
+                each.list[each.index] = current;
+            } else {
+                target[name] = current;
+            }
+            busy = true;
+            view.set({});
+            busy = false;
+        };
+        element.addEventListener(event, cb, false);
+        var r = {
+            dispose: function dispose() {
+                element.removeEventListener(event, cb, false);
+            },
+            update: function update(ctx) {
+                obj.context = ctx;
+                if (!busy) {
+                    var v = getValue(to, ctx);
+                    console.log(to, v, current);
+                    if (v !== current) {
+                        set(element, v);
+                        current = v;
+                    }
+                }
+            }
+        };
+        r.update(context);
+        return r;
+    };
+    var getSelectValue = function getSelectValue(el) {
+        var opt = el.options[el.selectedIndex || 0];
+        return opt && opt.value;
+    };
+    var setSelectOption = function setSelectOption(el, value) {
+        // tslint:disable-next-line:prefer-for-of
+        for (var i = 0; i < el.options.length; i++) {
+            var opt = el.options[i];
+            if (opt.value === value + '') {
+                opt.selected = true;
+                return;
+            }
+        }
+    };
+    var bindGroup = function bindGroup(context, view, group, to, element) {
+        var obj = { context: context };
+        var current = void 0;
+        var cb = function cb() {
+            if (group.busy) return;
+
+            var _distruct2 = distruct(obj.context, to),
+                name = _distruct2.name,
+                target = _distruct2.target;
+
+            current = group.type === 'radio' ? element.value : group.items.filter(function (it) {
+                return it.element.checked;
+            }).map(function (it) {
+                return it.element.value;
+            });
+            if (name === to && context._each && context._each.some(function (it) {
+                return it.key === name;
+            })) {
+                var each = context._each.find(function (it) {
+                    return it.key === name;
+                });
+                each.list[each.index] = current;
+            } else {
+                target[name] = current;
+            }
+            group.busy = true;
+            view.set({});
+            group.busy = false;
+        };
+        element.addEventListener('change', cb, false);
+        var r = {
+            dispose: function dispose() {
+                element.removeEventListener('change', cb, false);
+            },
+            update: function update(ctx) {
+                obj.context = ctx;
+                if (group.busy) return;
+                var v = getValue(to, ctx);
+                var its = group.items.map(function (it) {
+                    return it.element;
+                });
+                var changed = false;
+                if (group.type === 'radio' && v !== current) changed = true;
+                if (!changed && group.type === 'checkbox' && v.some(function (it, i) {
+                    return current[i] !== it;
+                })) changed = true;
+                if (!changed) return;
+                if (group.type === 'radio') {
+                    its.forEach(function (it) {
+                        return it.checked = it.value === v + '';
+                    });
+                    return;
+                }
+                its.forEach(function (it) {
+                    return it.checked = v.some(function (vv) {
+                        return vv + '' === it.value;
+                    });
+                });
+            }
+        };
+        r.update(context);
+        return r;
+    };
+    var bind = function bind(node, context, from, to) {
+        var tag = node.name.toLowerCase();
+        var element = node.element;
+        var view = node.root;
+        if ((tag === 'input' || tag === 'textarea') && from === 'value') {
+            return bindIt(context, view, to, element, 'input', function (el) {
+                return el.value;
+            }, function (el, value) {
+                return el.value = value;
+            });
+        }
+        if (tag === 'input' && from === 'checked') {
+            return bindIt(context, view, to, element, 'change', function (el) {
+                return el.checked;
+            }, function (el, value) {
+                return el.checked = value;
+            });
+        }
+        if (tag === 'select' && from === 'value') {
+            return bindIt(context, view, to, element, 'change', getSelectValue, setSelectOption);
+        }
+        if (tag === 'input' && from === 'group') {
+            var type = element.type;
+            if (type !== 'checkbox' && type !== 'radio') return null;
+            return bindGroup(context, view, view._groups[to], to, element);
+        }
+        return null;
+    };
+
+    var DynamicNode = function (_StaticNode) {
+        inherits(DynamicNode, _StaticNode);
+
+        function DynamicNode() {
+            classCallCheck(this, DynamicNode);
+
+            var _this = possibleConstructorReturn(this, (DynamicNode.__proto__ || Object.getPrototypeOf(DynamicNode)).apply(this, arguments));
+
+            _this.dynamicAttributes = {};
+            _this.events = {};
+            _this.actions = {};
+            _this.bindings = [];
+            return _this;
+        }
+
+        createClass(DynamicNode, [{
+            key: 'attribute',
+            value: function attribute(name) {
+                for (var _len = arguments.length, helpers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+                    helpers[_key - 1] = arguments[_key];
+                }
+
+                this.dynamicAttributes[name] = helpers;
+            }
+        }, {
+            key: 'on',
+            value: function on(event, method) {
+                var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
+                this.events[method] = { event: event, args: args };
+            }
+        }, {
+            key: 'action',
+            value: function action(event, method) {
+                var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
+                this.actions[method] = { event: event, args: args };
+            }
+        }, {
+            key: 'bind',
+            value: function bind$$1(from, to) {
+                this.bindings.push([from, to]);
+            }
+        }, {
+            key: 'init',
+            value: function init(root, delay) {
+                var _this2 = this;
+
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'init', this).call(this, root, delay);
+                if (!(this.root instanceof View)) return;
+                var view = this.root;
+                this.bindings.forEach(function (_ref) {
+                    var _ref2 = slicedToArray(_ref, 2),
+                        from = _ref2[0],
+                        to = _ref2[1];
+
+                    if (from !== 'group' || _this2.name.toLowerCase() !== 'input') return;
+                    var attr = _this2.attributes.find(function (it) {
+                        return it[0].toLowerCase() === 'type';
+                    });
+                    if (!attr) return;
+                    var type = attr[1].toLowerCase();
+                    if (type !== 'checkbox' && type !== 'radio') return;
+                    var groups = view._groups;
+                    if (!groups[to]) groups[to] = { type: type, items: [], busy: false };else if (groups[to].type !== type) {
+                        throw Error('binding group can not mix up checkbox and radio');
+                    }
+                    groups[to].items.push(_this2); // TODO if this item is hidden by if, should it works?
+                });
+                Object.keys(this.dynamicAttributes).forEach(function (k) {
+                    _this2.dynamicAttributes[k].forEach(function (it) {
+                        if (it instanceof DelayTransfomer) {
+                            it.init(view);
+                        }
+                    });
+                });
+            }
+        }, {
+            key: 'render',
+            value: function render(context, delay) {
+                var _this3 = this;
+
+                if (this.rendered) return;
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'render', this).call(this, context, delay);
+                this.updateAttributes(context);
+                this.context = context;
+                this.eventHooks = Object.keys(this.events).map(function (it) {
+                    return _this3.initEvent(_this3.events[it].event, it, _this3.events[it].args);
+                });
+                this.actionHooks = Object.keys(this.actions).map(function (it) {
+                    return _this3.initAction(_this3.actions[it].event, it, _this3.actions[it].args);
+                });
+                this.bindingHooks = this.bindings.map(function (it) {
+                    return bind(_this3, context, it[0], it[1]);
+                }).filter(function (it) {
+                    return !!it;
+                });
+            }
+        }, {
+            key: 'initEvent',
+            value: function initEvent(name, method, args) {
+                var me = this;
+                var cb = function cb(event) {
+                    var _me$root;
+
+                    var as = resolveEventArgument(this, me.context, args, event);
+                    (_me$root = me.root)._event.apply(_me$root, [method].concat(toConsumableArray(as)));
+                };
+                return this.bindEvent(name, cb);
+            }
+        }, {
+            key: 'initAction',
+            value: function initAction(name, action, args) {
+                if (!(this.root instanceof View)) return;
+                var me = this;
+                var cb = function cb(event) {
+                    var data = resolveEventArgument(this, me.context, args, event);
+                    var root = me.root;
+                    root._action.apply(root, [action].concat(toConsumableArray(data)));
+                };
+                return this.bindEvent(name, cb);
+            }
+        }, {
+            key: 'bindEvent',
+            value: function bindEvent(name, cb) {
+                var _this4 = this;
+
+                var ce = this.root._options.customEvents;
+                if (!ce || !ce[name]) ce = this.root.app.options.customEvents;
+                if (!ce || !ce[name]) ce = customEvents;
+                if (ce && ce[name]) {
+                    return ce[name](this.element, cb);
+                }
+                this.element.addEventListener(name, cb, false);
+                return {
+                    dispose: function dispose() {
+                        _this4.element.removeEventListener(name, cb, false);
+                    }
+                };
+            }
+        }, {
+            key: 'updateAttributes',
+            value: function updateAttributes(context) {
+                var _this5 = this;
+
+                Object.keys(this.dynamicAttributes).forEach(function (it) {
+                    var vs = _this5.dynamicAttributes[it].map(function (i) {
+                        return i.render(context);
+                    });
+                    if (vs.some(function (i) {
+                        return i[0] === ChangeType.CHANGED;
+                    })) {
+                        var vvs = vs.map(function (i) {
+                            return i[1];
+                        });
+                        var v = it === 'class' ? vvs.join(' ') : vvs.join(''); // TODO boolean attribute can be set to string?
+                        _this5.element.setAttribute(it, v);
+                    }
+                });
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                if (!this.rendered) return;
+                this.updateAttributes(context);
+                this.context = context;
+                this.bindingHooks.forEach(function (it) {
+                    return it.update(context);
+                });
+                this.children.forEach(function (it) {
+                    return it.update(context, delay);
+                });
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                if (!this.rendered) return;
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'destroy', this).call(this, delay);
+                this.bindingHooks.forEach(function (it) {
+                    return it.dispose();
+                });
+                this.actionHooks.forEach(function (it) {
+                    return it.dispose();
+                });
+                this.eventHooks.forEach(function (it) {
+                    return it.dispose();
+                });
+                this.bindingHooks = [];
+                this.actionHooks = [];
+                this.eventHooks = [];
+            }
+        }]);
+        return DynamicNode;
+    }(StaticNode);
+
+    var TextNode = function (_Node) {
+        inherits(TextNode, _Node);
+
+        function TextNode() {
+            var text = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+            classCallCheck(this, TextNode);
+
+            var _this = possibleConstructorReturn(this, (TextNode.__proto__ || Object.getPrototypeOf(TextNode)).call(this));
+
+            _this.helpers = text;
+            return _this;
+        }
+
+        createClass(TextNode, [{
+            key: 'init',
+            value: function init(root) {
+                this.node = document.createTextNode('');
+                if (root instanceof View) {
+                    this.helpers.forEach(function (it) {
+                        if (it instanceof DelayTransfomer) {
+                            it.init(root);
+                        }
+                    });
+                }
+            }
+        }, {
+            key: 'render',
+            value: function render(context, delay) {
+                if (this.rendered) return;
+                this.rendered = true;
+                if (this.nextSibling && this.nextSibling.element) {
+                    this.parent.element.insertBefore(this.node, this.nextSibling.element);
+                } else {
+                    this.parent.element.appendChild(this.node);
+                }
+                this.update(context, delay);
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                var r = this.helpers.map(function (h) {
+                    return h.render(context);
+                });
+                if (r.some(function (rr) {
+                    return rr[0] === ChangeType.CHANGED;
+                })) {
+                    this.node.data = r.map(function (rr) {
+                        return rr[1];
+                    }).join(' ');
+                }
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy() {
+                if (!this.rendered) return;
+                this.parent.element.removeChild(this.node);
+                this.rendered = false;
+            }
+        }, {
+            key: 'create',
+            value: function create() {
+                return null;
+            }
+        }]);
+        return TextNode;
+    }(Node);
 
     var ReferenceNode = function (_Node) {
         inherits(ReferenceNode, _Node);
@@ -2085,191 +2445,205 @@
         return RegionNode;
     }(Node);
 
-    var Loader = function () {
-        function Loader(app, path, args) {
-            classCallCheck(this, Loader);
-
-            this._app = app;
-            this._path = path;
-            this._args = args;
-        }
-
-        createClass(Loader, [{
-            key: 'load',
-            value: function load(file) {
-                return this._app.options.getResource(this._app.options.scriptRoot + '/' + this._path + '/' + file);
-            }
-        }]);
-        return Loader;
-    }();
-
-    var ModuleTemplate = function (_Template) {
-        inherits(ModuleTemplate, _Template);
-
-        function ModuleTemplate(exportedModels) {
-            classCallCheck(this, ModuleTemplate);
-
-            var _this = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
-
-            _this.options = { exportedModels: exportedModels, items: {} };
-            var me = _this;
-            _this.life = {
-                stage: 'template',
-                init: function init() {
-                    var _this2 = this;
-
-                    Delay.also(function (d) {
-                        return me.init(_this2, d);
-                    });
-                },
-                beforeRender: function beforeRender() {
-                    var _this3 = this;
-
-                    Delay.also(function (d) {
-                        return me.render(_this3.get(), d);
-                    });
-                },
-                updated: function updated() {
-                    var _this4 = this;
-
-                    Delay.also(function (d) {
-                        return me.update(_this4.get(), d);
-                    });
-                },
-                beforeDestroy: function beforeDestroy() {
-                    Delay.also(function (d) {
-                        return me.destroy(d);
-                    });
-                }
-            };
-            return _this;
-        }
-
-        createClass(ModuleTemplate, [{
-            key: 'views',
-            value: function views() {
-                var _this5 = this;
-
-                for (var _len = arguments.length, _views = Array(_len), _key = 0; _key < _len; _key++) {
-                    _views[_key] = arguments[_key];
-                }
-
-                _views.forEach(function (it) {
-                    return _this5.options.items[it] = { view: it };
-                });
-            }
-        }, {
-            key: 'modules',
-            value: function modules(name, path, loader, args) {
-                this.options.items[name] = loader ? { path: path, loader: { name: loader, args: args } } : { path: path };
-            }
-        }]);
-        return ModuleTemplate;
-    }(Template);
-
-    var ViewTemplate = function (_Template) {
-        inherits(ViewTemplate, _Template);
-
-        function ViewTemplate() {
-            classCallCheck(this, ViewTemplate);
-
-            var _this = possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).call(this));
-
-            var me = _this;
-            _this.life = {
-                stage: 'template',
-                init: function init() {
-                    var _this2 = this;
-
-                    Delay.also(function (d) {
-                        return me.init(_this2, d);
-                    });
-                },
-                beforeRender: function beforeRender() {
-                    var _this3 = this;
-
-                    Delay.also(function (d) {
-                        return me.render(_this3._state, d);
-                    });
-                },
-                updated: function updated() {
-                    var _this4 = this;
-
-                    Delay.also(function (d) {
-                        return me.update(_this4._state, d);
-                    });
-                },
-                beforeDestroy: function beforeDestroy() {
-                    Delay.also(function (d) {
-                        return me.destroy(d);
-                    });
-                }
-            };
-            return _this;
-        }
-
-        return ViewTemplate;
-    }(Template);
-
-    var Application = function () {
-        function Application(options) {
-            classCallCheck(this, Application);
-
-            this.options = Object.assign({
-                stages: ['init', 'template', 'default'],
-                scriptRoot: 'app',
-                entry: 'viewport'
-            }, options);
-        }
-
-        createClass(Application, [{
-            key: 'createLoader',
-            value: function createLoader(path, loader) {
-                return new Loader(this, path, []);
-            }
-        }, {
-            key: 'start',
-            value: function start() {
-                var _this = this;
-
-                var loader = void 0;
-                var _options = this.options,
-                    entry = _options.entry,
-                    container = _options.container;
-
-                if (typeof entry === 'string') {
-                    loader = this.createLoader(entry);
-                } else {
-                    loader = this.createLoader(entry.path, entry.loader);
-                }
-                return loader.load('index').then(function (opt) {
-                    var v = new Module(_this, loader, opt);
-                    return v._init().then(function () {
-                        return v._render(container);
-                    });
-                });
-            }
-        }]);
-        return Application;
-    }();
-
     var helpers = {
-        if: IfHelper, unless: UnlessHelper, eq: EqHelper, gt: GtHelper,
-        lt: LtHelper, gte: GteHelper, lte: LteHelper
+        echo: EchoHelper, if: IfHelper, unless: UnlessHelper, eq: EqHelper, gt: GtHelper,
+        lt: LtHelper, gte: GteHelper, lte: LteHelper, concat: ConcatHelper, ne: NeHelper
     };
     var blocks = {
         if: IfBlock, unless: UnlessBlock, each: EachBlock, gt: GtBlock,
-        lt: LtBlock, gte: GteBlock, lte: LteBlock, eq: EqBlock
+        lt: LtBlock, gte: GteBlock, lte: LteBlock, eq: EqBlock, ne: NeBlock
     };
     var loaders = {
         default: Loader
     };
+    var SN = function SN(name, id) {
+        for (var _len = arguments.length, attributes = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+            attributes[_key - 2] = arguments[_key];
+        }
+
+        return new StaticNode(name, attributes, id);
+    };
+    var DN = function DN(name, id) {
+        var attributes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+        var dynamics = arguments[3];
+        var binds = arguments[4];
+        var events = arguments[5];
+        var actions = arguments[6];
+
+        var d = new DynamicNode(name, attributes, id);
+        if (dynamics) dynamics.forEach(function (da) {
+            return d.attribute.apply(d, [da[0]].concat(toConsumableArray(da[1])));
+        });
+        if (binds) binds.forEach(function (b) {
+            return d.bind(b[0], b[1]);
+        });
+        if (events) events.forEach(function (e) {
+            return d.on(e[0], e[1], e[2]);
+        });
+        if (actions) actions.forEach(function (a) {
+            return d.action(a[0], a[1], a[2]);
+        });
+        return d;
+    };
+    var TN = function TN() {
+        for (var _len2 = arguments.length, text = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            text[_key2] = arguments[_key2];
+        }
+
+        return new TextNode(text);
+    };
+    var TX = function TX() {
+        for (var _len3 = arguments.length, ss = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+            ss[_key3] = arguments[_key3];
+        }
+
+        return new TextNode([new (Function.prototype.bind.apply(ConcatHelper, [null].concat(toConsumableArray(ss.map(function (it) {
+            return SV(it);
+        })))))()]);
+    };
+    var RG = function RG() {
+        var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
+        return new RegionNode(id);
+    };
+    var REF = function REF(name, id, binds, events, actions) {
+        var d = new ReferenceNode(name, id);
+        if (binds) binds.forEach(function (b) {
+            return d.bind(b[0], b[1]);
+        });
+        if (events) events.forEach(function (e) {
+            return d.on(e[0], e[1], e[2]);
+        });
+        if (actions) actions.forEach(function (a) {
+            return d.action(a[0], a[1], a[2]);
+        });
+        return d;
+    };
+    var E = function E(event, method) {
+        for (var _len4 = arguments.length, attrs = Array(_len4 > 2 ? _len4 - 2 : 0), _key4 = 2; _key4 < _len4; _key4++) {
+            attrs[_key4 - 2] = arguments[_key4];
+        }
+
+        return [event, method, attrs];
+    };
+    var NDA = function NDA(v) {
+        return [null, [1, v]];
+    };
+    var NSA = function NSA(v) {
+        return [null, [0, v]];
+    };
+    var DA = function DA(name) {
+        for (var _len5 = arguments.length, hs = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+            hs[_key5 - 1] = arguments[_key5];
+        }
+
+        return [name, hs];
+    };
+    var SV = function SV(v) {
+        return [0, v];
+    };
+    var DV = function DV(v) {
+        return [1, v];
+    };
+    var AT = function AT(n, v) {
+        return [n, v];
+    };
+    var KV = function KV(k, v) {
+        return [k, v || k];
+    };
+    var H = function H(n) {
+        return new EchoHelper(DV(n));
+    };
+    var TR = function TR(n) {
+        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+            args[_key6 - 1] = arguments[_key6];
+        }
+
+        return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
+    };
+    var HIF = function HIF(n, t, f) {
+        return f ? new IfHelper(DV(n), t, f) : new IfHelper(DV(n), t);
+    };
+    var HEQ = function HEQ() {
+        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+            args[_key7] = arguments[_key7];
+        }
+
+        return new (Function.prototype.bind.apply(EqHelper, [null].concat(args)))();
+    };
+    var HGT = function HGT() {
+        for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+            args[_key8] = arguments[_key8];
+        }
+
+        return new (Function.prototype.bind.apply(GtHelper, [null].concat(args)))();
+    };
+    var HLT = function HLT() {
+        for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+            args[_key9] = arguments[_key9];
+        }
+
+        return new (Function.prototype.bind.apply(LtHelper, [null].concat(args)))();
+    };
+    var HGTE = function HGTE() {
+        for (var _len10 = arguments.length, args = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
+            args[_key10] = arguments[_key10];
+        }
+
+        return new (Function.prototype.bind.apply(GteHelper, [null].concat(args)))();
+    };
+    var HLTE = function HLTE() {
+        for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
+            args[_key11] = arguments[_key11];
+        }
+
+        return new (Function.prototype.bind.apply(LteHelper, [null].concat(args)))();
+    };
+    var HNE = function HNE() {
+        for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
+            args[_key12] = arguments[_key12];
+        }
+
+        return new (Function.prototype.bind.apply(NeHelper, [null].concat(args)))();
+    };
+    var EACH = function EACH(args, trueNode, falseNode) {
+        return new EachBlock(args, trueNode, falseNode);
+    };
+    var IF = function IF(n, trueNode, falseNode) {
+        return new IfBlock([DV(n)], trueNode, falseNode);
+    };
+    var EQ = function EQ(l, r, trueNode, falseNode) {
+        return new EqBlock([l, r], trueNode, falseNode);
+    };
+    var GT = function GT(l, r, trueNode, falseNode) {
+        return new GtBlock([l, r], trueNode, falseNode);
+    };
+    var LT = function LT(l, r, trueNode, falseNode) {
+        return new LtBlock([l, r], trueNode, falseNode);
+    };
+    var GTE = function GTE(l, r, trueNode, falseNode) {
+        return new GteBlock([l, r], trueNode, falseNode);
+    };
+    var LTE = function LTE(l, r, trueNode, falseNode) {
+        return new LteBlock([l, r], trueNode, falseNode);
+    };
+    var NE = function NE(l, r, trueNode, falseNode) {
+        return new NeBlock([l, r], trueNode, falseNode);
+    };
+    var C = function C(parent) {
+        for (var _len13 = arguments.length, children = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
+            children[_key13 - 1] = arguments[_key13];
+        }
+
+        return parent.setChildren(children);
+    };
     var drizzle = {
         helpers: helpers, blocks: blocks, loaders: loaders, customEvents: customEvents,
         lifecycles: { module: [], view: [] },
-        ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate,
-        DynamicNode: DynamicNode, StaticNode: StaticNode, ReferenceNode: ReferenceNode, RegionNode: RegionNode,
-        Application: Application
+        ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application,
+        factory: {
+            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, TR: TR, HIF: HIF, HEQ: HEQ, HGT: HGT, HLT: HLT, HGTE: HGTE, HLTE: HLTE, HNE: HNE,
+            EACH: EACH, IF: IF, EQ: EQ, GT: GT, LT: LT, GTE: GTE, LTE: LTE, NE: NE, C: C, DA: DA, A: E, B: KV
+        }
     };
 
     return drizzle;

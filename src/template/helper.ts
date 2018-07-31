@@ -1,5 +1,6 @@
 import { HelperResult, ChangeType } from './template'
 import { getValue, AttributeValue, ValueType } from './template'
+import { View } from '../view'
 
 export abstract class Helper {
     name: string = ''
@@ -77,6 +78,27 @@ export class Transfromer extends Helper {
     }
 }
 
+export class DelayTransfomer extends Transfromer {
+    name: string
+
+    constructor(name: string, ...args: AttributeValue[]) {
+        super(null, ...args)
+        this.name = name
+    }
+
+    init (root: View) {
+        const {helpers} = root._options
+        if (helpers && helpers[this.name]) this.fn = helpers[this.name]
+        else throw new Error(`no helper found: ${name}`)
+    }
+}
+
+export class EchoHelper extends Helper {
+    doRender (context) {
+        return this.arg(0, context)
+    }
+}
+
 export class ConcatHelper extends Helper {
     name = 'concat'
 
@@ -127,6 +149,12 @@ export class EqHelper extends Helper {
 
     use (v1: any, v2: any): boolean {
         return v1 === v2
+    }
+}
+
+export class NeHelper extends EqHelper {
+    use (v1: any, v2: any): boolean {
+        return v1 !== v2
     }
 }
 

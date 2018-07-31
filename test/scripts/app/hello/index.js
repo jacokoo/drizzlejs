@@ -1,29 +1,45 @@
-const template = new drizzle.ModuleTemplate()
-template.views('abc')
-const a = new drizzle.DynamicNode('input')
-a.on('change', 'demo', [[null, [1, 'hello']]])
+(() => {
+    const {
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
+        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C
+    } = drizzle.factory
+    const {ModuleTemplate} = drizzle
 
-const b = new drizzle.ReferenceNode('abc')
-b.bind('hello')
+    const template = new ModuleTemplate()
+    template.views('create-todo', 'todo-list')
 
-template.nodes = [
-    new drizzle.StaticNode('input', [['type', 'text'], ['value', 'abc']]),
-    a, b
-]
+    const d1 = SN('section', null, KV('class', 'todoapp'))
+    const d2 = SN('header', null, KV('class', 'header'))
+    const d3 = SN('h1')
+    const d4 = TX('todos')
+    const d5 = REF('create-todo')
+    const d6 = REF('todo-list', null, [KV('todos')])
 
-MODULES['app/hello/index'] = {
-    template: template,
-    events: {
-        demo: function() {
-            console.log('args', arguments)
-        }
-    },
+    C(d1, d2)
+    C(d2, d3, d5, d6)
+    C(d3, d4)
+    template.nodes = [d1]
 
-    store: {
-        models: {
-            hello: {
-                data: function() { return 'world' }
+    MODULES['app/hello/index'] = {
+        template: template,
+        store: {
+            models: {
+                todos: {
+                    data: () => [{name: 'task 1', completed: true}, {name: ' task 2'}]
+                }
+            },
+
+            actions: {
+                newTodo (payload) {
+                    const {todos} = this.models
+                    todos.set(todos.get().concat([payload]))
+                },
+
+                toggleAll (payload) {
+                    const {todos} = this.models
+                    todos.set(todos.get().map(it => Object.assign(it, payload)))
+                }
             }
         }
     }
-}
+})()

@@ -43,6 +43,11 @@ export function getValue (key: string, context: object): any {
     }, context)
 }
 
+export function getAttributeValue(attr: AttributeValue, context: object): any {
+    if (attr[0] === ValueType.STATIC) return attr[1]
+    return getValue(attr[1] as string, context)
+}
+
 export function resolveEventArgument (me: any, context: object, args: Attribute[], event: any): any[] {
     const values = args.map(([name, v]) => {
         if (v[0] === ValueType.STATIC) return v[1]
@@ -77,10 +82,10 @@ export function resolveEventArgument (me: any, context: object, args: Attribute[
 
 export const customEvents = {
     enter (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = e => {
+        const ee = function (this: HTMLElement, e) {
             if (e.keyCode !== 13) return
             e.preventDefault()
-            cb(e)
+            cb.call(this, e)
         }
 
         node.addEventListener('keypress', ee, false)

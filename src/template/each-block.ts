@@ -7,10 +7,11 @@ export class EachBlock extends Node {
     trueNode: () => Node
     falseNode?: Node
     currentSize = 0
-    nodes: Node[]
+    nodes: Node[] = []
 
     constructor (args: string[], trueNode: () => Node, falseNode?: Node) {
         super()
+        this.args = args
         this.trueNode = trueNode
         this.falseNode = falseNode
     }
@@ -56,6 +57,7 @@ export class EachBlock extends Node {
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
             this.nodes[i] = this.trueNode()
+            this.nodes[i].parent = this.parent
             this.nodes[i].nextSibling = this.nextSibling
             this.nodes[i].init(this.root, delay)
             this.nodes[i].render(sub, delay)
@@ -106,6 +108,7 @@ export class EachBlock extends Node {
             if (this.nodes[i]) this.nodes[i].update(sub, delay)
             else {
                 this.nodes[i] = this.trueNode()
+                this.nodes[i].parent = this.parent
                 this.nodes[i].nextSibling = this.nextSibling
                 this.nodes[i].init(this.root, delay)
                 this.nodes[i].render(sub, delay)

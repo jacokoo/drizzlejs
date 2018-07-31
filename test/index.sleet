@@ -9,6 +9,7 @@ html
         meta(name='keywords' content='')
         meta(name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
         title demo
+        link(rel=stylesheet href='./styles/main.css')
         script(src='../dist/drizzle.js')
         script.
             window.MODULES = {}
@@ -17,5 +18,6 @@ html
         #content
 
         script(src='./scripts/app/hello/index.js')
-        script(src='./scripts/app/hello/abc.js')
+        script(src='./scripts/app/hello/create-todo.js')
+        script(src='./scripts/app/hello/todo-list.js')
         script(src='./scripts/main.js')

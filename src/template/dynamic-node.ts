@@ -1,9 +1,10 @@
 import { StaticNode } from './static-node'
-import { Helper } from './helper'
+import { Helper, DelayTransfomer } from './helper'
 import { Disposable } from '../drizzle'
 import { View } from '../view'
 import { bind } from './binding'
 import { Delay, Attribute, ChangeType, resolveEventArgument, Updatable, customEvents } from './template'
+import { Renderable } from '../renderable'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
@@ -21,30 +22,46 @@ export class DynamicNode extends StaticNode {
         this.dynamicAttributes[name] = helpers
     }
 
-    on (event: string, method: string, args: Attribute[]) {
+    on (event: string, method: string, args: Attribute[] = []) {
         this.events[method] = {event, args}
     }
 
-    action (event: string, method: string, args: Attribute[]) {
+    action (event: string, method: string, args: Attribute[] = []) {
         this.actions[method] = {event, args}
     }
 
     bind (from: string, to: string) {
+        this.bindings.push([from, to])
+    }
+
+    init (root: Renderable<any>, delay: Delay) {
+        super.init(root, delay)
         if (!(this.root instanceof View)) return
 
-        this.bindings.push([from, to])
-        if (from !== 'group' || this.name.toLowerCase() !== 'input') return
-        const attr = this.attributes.find(it => it[0].toLowerCase() === 'type')
-        if (!attr) return
-        const type = attr[1].toLowerCase()
-        if (type !== 'checkbox' && type !== 'radio') return
+        const view = this.root
 
-        const groups = this.root._groups
-        if (!groups[to]) groups[to] = {type, items: [], busy: false}
-        else if (groups[to].type !== type) {
-            throw Error('binding group can not mix up checkbox and radio')
-        }
-        groups[to].items.push(this) // TODO if this item is hidden by if, should it works?
+        this.bindings.forEach(([from, to]) => {
+            if (from !== 'group' || this.name.toLowerCase() !== 'input') return
+            const attr = this.attributes.find(it => it[0].toLowerCase() === 'type')
+            if (!attr) return
+            const type = attr[1].toLowerCase()
+            if (type !== 'checkbox' && type !== 'radio') return
+
+            const groups = view._groups
+            if (!groups[to]) groups[to] = {type, items: [], busy: false}
+            else if (groups[to].type !== type) {
+                throw Error('binding group can not mix up checkbox and radio')
+            }
+            groups[to].items.push(this) // TODO if this item is hidden by if, should it works?
+        })
+
+        Object.keys(this.dynamicAttributes).forEach(k => {
+            this.dynamicAttributes[k].forEach(it => {
+                if (it instanceof DelayTransfomer) {
+                    it.init(view)
+                }
+            })
+        })
     }
 
     render (context: object, delay: Delay) {
@@ -59,7 +76,7 @@ export class DynamicNode extends StaticNode {
         this.actionHooks = Object.keys(this.actions).map(it =>
             this.initAction(this.actions[it].event, it, this.actions[it].args)
         )
-        this.bindingHooks = this.bindings.map(it => bind(this, this, it[0], it[1])).filter(it => !!it)
+        this.bindingHooks = this.bindings.map(it => bind(this, context, it[0], it[1])).filter(it => !!it)
     }
 
     initEvent (name: string, method: string, args: Attribute[]): Disposable {
@@ -112,12 +129,13 @@ export class DynamicNode extends StaticNode {
         })
     }
 
-    update (context: object) {
+    update (context: object, delay: Delay) {
         if (!this.rendered) return
 
         this.updateAttributes(context)
         this.context = context
         this.bindingHooks.forEach(it => it.update(context))
+        this.children.forEach(it => it.update(context, delay))
     }
 
     destroy (delay: Delay) {

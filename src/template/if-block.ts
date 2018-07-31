@@ -1,14 +1,14 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, getValue, AttributeValue, ValueType } from './template'
+import { Delay, AttributeValue, ValueType, getAttributeValue } from './template'
 
 export class IfBlock extends Node {
-    args: string[]
+    args: AttributeValue[]
     trueNode: Node
     falseNode?: Node
     current: Node
 
-    constructor (args: string[], trueNode: Node, falseNode?: Node) {
+    constructor (args: AttributeValue[], trueNode: Node, falseNode?: Node) {
         super()
         this.trueNode = trueNode
         this.falseNode = falseNode
@@ -17,21 +17,31 @@ export class IfBlock extends Node {
 
     init (root: Renderable<any>, delay: Delay) {
         this.root = root
-        this.trueNode.nextSibling = this.nextSibling
         this.trueNode.init(root, delay)
         if (this.falseNode) {
-            this.falseNode.nextSibling = this.nextSibling
             this.falseNode.init(root, delay)
         }
     }
 
     use (context: object): boolean {
-        return !!getValue(this.args[0], context)
+        if (this.args[0][0] === ValueType.STATIC) {
+            // TODO throw
+            return false
+        }
+        return !!getAttributeValue(this.args[0], context)
     }
 
     render (context: object, delay: Delay) {
         if (this.rendered) return
         this.rendered = true
+
+        this.trueNode.parent = this.parent
+        this.trueNode.nextSibling = this.nextSibling
+        if (this.falseNode) {
+            this.falseNode.parent = this.parent
+            this.falseNode.nextSibling = this.nextSibling
+        }
+
         this.current = this.use(context) ? this.trueNode : this.falseNode
 
         if (this.current) {
@@ -66,29 +76,23 @@ export class IfBlock extends Node {
 
 export class UnlessBlock extends IfBlock {
     use (context: any): boolean {
-        return !getValue(this.args[0], context)
+        return !getAttributeValue(this.args[0], context)
     }
 }
 
 export class EqBlock extends IfBlock {
-    args2: AttributeValue[]
-
-    constructor (args: AttributeValue[], trueNode: Node, falseNode?: Node) {
-        super([], trueNode, falseNode)
-        this.args2 = args
-    }
-
-    getValue2 (arg: AttributeValue, context) {
-        if (arg[0] === ValueType.STATIC) return arg[1]
-        return getValue(arg[1] as string, context)
-    }
-
     use (context: object): boolean {
-        return this.use2(this.getValue2(this.args2[0], context), this.getValue2(this.args2[1], context))
+        return this.use2(getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context))
     }
 
     use2 (v1: any, v2: any): boolean {
         return v1 === v2
+    }
+}
+
+export class NeBlock extends EqBlock {
+    use2 (v1: any, v2: any): boolean {
+        return v1 !== v2
     }
 }
 

@@ -35,7 +35,7 @@ const bindIt = <T extends HTMLElement>(
 
     element.addEventListener(event, cb, false)
 
-    return {
+    const r = {
         dispose () {
             element.removeEventListener(event, cb, false)
         },
@@ -43,6 +43,7 @@ const bindIt = <T extends HTMLElement>(
             obj.context = ctx
             if (!busy) {
                 const v = getValue(to, ctx)
+                console.log(to, v, current)
                 if (v !== current) {
                     set(element, v)
                     current = v
@@ -50,6 +51,9 @@ const bindIt = <T extends HTMLElement>(
             }
         }
     }
+
+    r.update(context)
+    return r
 }
 
 const getSelectValue = (el: HTMLSelectElement) => {
@@ -91,9 +95,10 @@ const bindGroup = (
         view.set({})
         group.busy = false
     }
+
     element.addEventListener('change', cb, false)
 
-    return {
+    const r = {
         dispose () {
             element.removeEventListener('change', cb, false)
         },
@@ -116,6 +121,9 @@ const bindGroup = (
             its.forEach(it => it.checked = (v as any[]).some(vv => vv + '' === it.value))
         }
     }
+
+    r.update(context)
+    return r
 }
 
 export const bind = (node: DynamicNode, context: object, from: string, to: string): Updatable => {
