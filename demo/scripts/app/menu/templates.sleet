@@ -1,8 +1,0 @@
-#!handlebars
-
-module > .header
-    h1.brand-title Drizzle Demos
-    h2.brand-tagline Some demos to show how to use DrizzleJs
-    nav.nav
-        ul.nav-list
-            li.nav-item > a.pure-button(href='#todos') Todos

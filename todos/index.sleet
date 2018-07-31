@@ -1,0 +1,27 @@
+module(declare models can be passed in)
+    items(header content footer module='module/path' npmModule=npm('package-name') + 'module/path')
+    div.todoapp
+        ref#header
+        ref#content
+        ref#footer
+
+script.
+    export default {
+        store: {
+            models: {
+                todos: {
+                    data: () => [{text: 'todo 1'}, {text: 'todo 2', completed: true}]
+                },
+                filter: {
+                    data: () => 'all'
+                }
+            },
+
+            actions: {
+                newTodo (text) {
+                    const {todos} = this.models
+                    todos.set(todos.get().concat([{text}]))
+                }
+            }
+        }
+    }

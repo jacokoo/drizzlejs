@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "outDir": "build",
+    "diagnostics": true,
+    "noImplicitThis": true,
+    "noEmitOnError": true,
+    "lib": ["es5", "es6", "dom"],
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

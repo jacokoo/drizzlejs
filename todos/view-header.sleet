@@ -1,0 +1,20 @@
+view
+    h1 todos
+    input#inputId.new-todo(placeholder='What needs to be done?' autocomplete='off')(
+        action:enter=newTodo(this.value)
+    )
+
+script.
+    export default {
+        actions: {
+            newTodo (name) {
+                if (!name) {
+                    console.log('name is required')
+                    return false
+                }
+
+                this.ids.inputId.value = ''
+                return name
+            }
+        }
+    }

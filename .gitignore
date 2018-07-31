@@ -1,7 +1,4 @@
-.DS_Store
-npm-debug.log
-demo/build
+*.html
 node_modules
-starter-kit/**/dist
-bundle
-coverage
+src/*.js
+build

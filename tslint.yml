@@ -1,0 +1,39 @@
+extends: tslint:recommended
+rules:
+  no-console:
+    severity: warning
+  quotemark:
+    - true
+    - single
+  semicolon:
+    - true
+    - never
+  interface-name:
+    - false
+  member-access:
+    - true
+    - no-public
+  space-before-function-paren:
+    - true
+    - method: always
+  arrow-parens:
+    - false
+  curly:
+    - true
+    - ignore-same-line
+  ordered-imports:
+    - false
+  trailing-comma:
+    - false
+  no-empty-interface:
+    - false
+  no-empty:
+    - false
+  array-type:
+    - false
+  object-literal-sort-keys:
+    - false
+  variable-name:
+    - false
+  max-classes-per-file:
+    - false
