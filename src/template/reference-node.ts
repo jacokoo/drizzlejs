@@ -1,9 +1,15 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, Attribute, resolveEventArgument, Updatable } from './template'
+import { Delay, Attribute, resolveEventArgument } from './template'
 import { Module } from '../module'
 import { View } from '../view'
 import { StaticNode } from './static-node'
+import { Disposable } from '../drizzle'
+
+interface BindResult {
+    fn: (any) => void
+    event: string
+}
 
 export class ReferenceNode extends Node {
     name: string
@@ -13,7 +19,8 @@ export class ReferenceNode extends Node {
     bindings: [string, string][] = []
     grouped: {[name: string]: Node[]} = {}
 
-    hooks: Updatable[] = []
+    hooks: Disposable[] = []
+    context: object
 
     constructor(name: string, id?: string) {
         super(id)
@@ -67,38 +74,43 @@ export class ReferenceNode extends Node {
             }))
         }))
 
-        if ((this.root instanceof View) && (this.item instanceof Module)) {
-            this.hooks = this.bindEventsAndActions(this.root, this.item, context)
+        this.context = context
+        let cbs = []
+        if (this.item instanceof Module) {
+            const m = this.item
+            cbs = cbs.concat(this.bindEvents(this.root, m, context))
+
+            if (this.root instanceof View) {
+                cbs = cbs.concat(this.bindActions(this.root, m, context))
+            }
+
+            this.hooks = cbs.map(it => m.on(it.event, it.fn))
         }
     }
 
-    bindEventsAndActions (root: View, target: Module, context: object) {
-        const obj = {context}
-        const {events, actions} = root._options
+    bindEvents (root: Renderable<any>, target: Module, context: object): BindResult[] {
         const me = this
+        const obj = {context}
 
-        const ecbs = Object.keys(this.events).map(it => {
+        return Object.keys(this.events).map(it => {
             const cb = function (this: Module, event: any) {
                 const data = resolveEventArgument(this, obj.context, me.events[it].args, event)
-                events[it].apply(root, data)
+                root._event(it, ...data)
             }
-            return {fn: cb, event: me.events[it].event}
+            return {fn: cb, event: me.events[it].event, update: (ctx) => obj.context = ctx}
         })
+    }
 
-        const acbs = Object.keys(this.actions).map(it => {
+    bindActions (root: View, target: Module, context: object): BindResult[] {
+        const me = this
+
+        return Object.keys(this.actions).map(it => {
             const cb = function(this: Module, event: any) {
-                const data = resolveEventArgument(this, obj.context, me.actions[it].args, event)
-                const dispacher = (d) => root._module.dispatch(it, d)
-                actions && actions[it] ? actions[it].apply(root, [dispacher].concat(data)) : dispacher(data[0])
+                const data = resolveEventArgument(this, me.context, me.actions[it].args, event)
+                root._action(it, ...data)
             }
             return {fn: cb, event: me.actions[it].event}
         })
-
-        return ecbs.concat(acbs).map(it => Object.assign(target.on(it.event, it.fn), {
-            update (ctx: object) {
-                obj.context = ctx
-            }
-        }))
     }
 
     update (context: object, delay: Delay) {
@@ -107,7 +119,7 @@ export class ReferenceNode extends Node {
             return acc
         }, {})))
 
-        this.hooks.forEach(it => it.update(context))
+        this.context = context
         this.children.forEach(it => it.update(context, delay))
     }
 

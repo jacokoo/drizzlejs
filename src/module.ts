@@ -3,7 +3,7 @@ import { StoreOptions, Store } from './store'
 import { Application } from './application'
 import { Loader } from './loader'
 import { View, ViewOptions } from './view'
-import { Disposable, EmptyDisposable} from './drizzle'
+import { Disposable} from './drizzle'
 
 export interface ItemOptions {
     view?: string
@@ -68,7 +68,7 @@ export class Module extends Renderable<ModuleOptions> {
         if (!this._handlers[name]) this._handlers[name] = []
         const hs = this._handlers[name]
 
-        if (hs.indexOf(handler) !== -1) return EmptyDisposable
+        if (hs.indexOf(handler) !== -1) return {dispose: () => {}}
         hs.push(handler)
 
         return {

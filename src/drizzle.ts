@@ -6,32 +6,13 @@ import { StaticNode } from './template/static-node'
 import { ReferenceNode } from './template/reference-node'
 import { RegionNode } from './template/region-node'
 import { Loader } from './loader'
-import { ModuleTemplate } from './template/module'
+import { ModuleTemplate } from './template/module-template'
+import { ViewTemplate } from './template/view-template'
+import { customEvents } from './template/template'
+import { Application } from './application'
 
 export interface Disposable {
     dispose (): void
-}
-
-export const EmptyDisposable: Disposable = {
-    dispose () {}
-}
-
-const customEvents = {
-    enter (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = e => {
-            if (e.keyCode !== 13) return
-            e.preventDefault()
-            cb(e)
-        }
-
-        node.addEventListener('keypress', ee, false)
-
-        return {
-            dispose () {
-                node.removeEventListener('keypress', ee, false)
-            }
-        }
-    }
 }
 
 const helpers = {
@@ -49,7 +30,9 @@ const loaders = {
 }
 
 export default {
-    customEvents, helpers, blocks, loaders,
-    ModuleTemplate, DynamicNode, StaticNode, ReferenceNode, RegionNode,
-    lifecycles: {module: [], view: []}
+    helpers, blocks, loaders, customEvents,
+    lifecycles: {module: [], view: []},
+    ModuleTemplate, ViewTemplate,
+    DynamicNode, StaticNode, ReferenceNode, RegionNode,
+    Application
 }

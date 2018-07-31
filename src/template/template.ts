@@ -1,4 +1,7 @@
 import { Disposable } from '../drizzle'
+import { Node, FakeNode } from './node'
+import { Renderable } from '../renderable'
+import { Lifecycle } from '../lifecycle'
 
 type StaticValue = string | number | boolean
 type DynamicValue = string
@@ -70,4 +73,55 @@ export function resolveEventArgument (me: any, context: object, args: Attribute[
     })
 
     return result
+}
+
+export const customEvents = {
+    enter (node: HTMLElement, cb: (any) => void): Disposable {
+        const ee = e => {
+            if (e.keyCode !== 13) return
+            e.preventDefault()
+            cb(e)
+        }
+
+        node.addEventListener('keypress', ee, false)
+
+        return {
+            dispose () {
+                node.removeEventListener('keypress', ee, false)
+            }
+        }
+    }
+}
+
+export abstract class Template<T extends Renderable<any>> {
+    life: Lifecycle
+    nodes: Node[]
+    root: T
+
+    init (root: T, delay: Delay) {
+        this.root = root
+        this.nodes.forEach(it => it.init(root, delay))
+    }
+
+    render (context: object, delay: Delay) {
+        const container = new FakeNode(this.root._element)
+        const next = this.root._nextSibling && new FakeNode(this.root._nextSibling)
+        this.nodes.forEach(it => {
+            it.parent = container
+            it.nextSibling = next
+            it.render(context, delay)
+        })
+    }
+
+    update (context: object, delay: Delay) {
+        this.nodes.forEach(it => it.update(context, delay))
+    }
+
+    destroy (delay: Delay) {
+        this.nodes.forEach(it => {
+            it.destroy(delay)
+            it.nextSibling = null
+            it.parent = null
+        })
+    }
 }

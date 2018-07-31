@@ -1,9 +1,9 @@
 import { StaticNode } from './static-node'
 import { Helper } from './helper'
-import Drizzle from '../drizzle'
+import { Disposable } from '../drizzle'
 import { View } from '../view'
 import { bind } from './binding'
-import { Delay, Attribute, ChangeType, Updatable, resolveEventArgument } from './template'
+import { Delay, Attribute, ChangeType, resolveEventArgument, Updatable, customEvents } from './template'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
@@ -11,9 +11,11 @@ export class DynamicNode extends StaticNode {
     actions: {[method: string]: {event: string, args: Attribute[]}} = {}
     bindings: [string, string][] = []
 
-    eventHooks: Updatable[]
-    actionHooks: Updatable[]
+    eventHooks: Disposable[]
+    actionHooks: Disposable[]
     bindingHooks: Updatable[]
+
+    context: object
 
     attribute (name: string, ...helpers: Helper[]) {
         this.dynamicAttributes[name] = helpers
@@ -50,62 +52,51 @@ export class DynamicNode extends StaticNode {
         super.render(context, delay)
         this.updateAttributes(context)
 
+        this.context = context
         this.eventHooks = Object.keys(this.events).map(it =>
-            this.initEvent(context, this.events[it].event, it, this.events[it].args)
+            this.initEvent(this.events[it].event, it, this.events[it].args)
         )
         this.actionHooks = Object.keys(this.actions).map(it =>
-            this.initAction(context, this.actions[it].event, it, this.actions[it].args)
+            this.initAction(this.actions[it].event, it, this.actions[it].args)
         )
         this.bindingHooks = this.bindings.map(it => bind(this, this, it[0], it[1])).filter(it => !!it)
     }
 
-    initEvent (context: object, name: string, method: string, args: Attribute[]): Updatable {
-        const {events} = this.root._options
+    initEvent (name: string, method: string, args: Attribute[]): Disposable {
         const me = this
-        const obj = {context}
         const cb = function(this: HTMLElement, event) {
-            const as = resolveEventArgument(this, obj.context, args, event)
-            events[method].apply(me, as)
+            const as = resolveEventArgument(this, me.context, args, event)
+            me.root._event(method, ...as)
         }
 
-        return this.bindEvent(name, cb, obj)
+        return this.bindEvent(name, cb)
     }
 
-    initAction (context: object, name: string, action: string, args: Attribute[]): Updatable {
-        const obj = {context}
+    initAction (name: string, action: string, args: Attribute[]): Disposable {
         if (!(this.root instanceof View)) return
         const me = this
-        const {actions} = this.root._options
 
         const cb = function(this: HTMLElement, event) {
-            const data = resolveEventArgument(this, obj.context, args, event)
-
-            const dispatcher = (d) => (me.root as View)._module.dispatch(action, d)
-            actions && actions[action] ? actions[action].apply(me, [dispatcher].concat(data)) : dispatcher(data[0])
+            const data = resolveEventArgument(this, me.context, args, event)
+            const root = (me.root as View)
+            root._action(action, ...data)
         }
 
-        return this.bindEvent(name, cb, obj)
+        return this.bindEvent(name, cb)
     }
 
-    bindEvent (name: string, cb: (event: any) => void, obj: {context: object}): Updatable {
+    bindEvent (name: string, cb: (event: any) => void): Disposable {
         let ce = this.root._options.customEvents
         if (!ce || !ce[name]) ce = this.root.app.options.customEvents
-        if (!ce || !ce[name]) ce = Drizzle.customEvents
+        if (!ce || !ce[name]) ce = customEvents
         if (ce && ce[name]) {
-            return Object.assign(ce[name](this.element, cb), {
-                update (context: object) {
-                    obj.context = context
-                }
-            })
+            return ce[name](this.element, cb)
         }
 
         this.element.addEventListener(name, cb, false)
         return {
             dispose: () => {
                 this.element.removeEventListener(name, cb, false)
-            },
-            update (context: object) {
-                obj.context = context
             }
         }
     }
@@ -125,9 +116,8 @@ export class DynamicNode extends StaticNode {
         if (!this.rendered) return
 
         this.updateAttributes(context)
+        this.context = context
         this.bindingHooks.forEach(it => it.update(context))
-        this.actionHooks.forEach(it => it.update(context))
-        this.eventHooks.forEach(it => it.update(context))
     }
 
     destroy (delay: Delay) {

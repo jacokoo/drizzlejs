@@ -20,6 +20,8 @@ const bindIt = <T extends HTMLElement>(
     const cb = function(this: T) {
         const {name, target} = distruct(obj.context, to)
         current = get(element)
+
+        // bind each key
         if (name === to && context._each && context._each.some(it => it.key === name)) {
             const each = context._each.find(it => it.key === name)
             each.list[each.index] = current

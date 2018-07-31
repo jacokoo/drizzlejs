@@ -64,4 +64,9 @@ export class Renderable<T extends RenderOptions> extends LifecycleContainer {
             .then(() => this._status = ComponentState.INITED)
     }
 
+    _event (name, ...args: any[]) {
+        const {events} = this._options
+        if (events && events[name]) events[name].apply(this, args)
+    }
+
 }

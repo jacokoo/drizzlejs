@@ -15,7 +15,7 @@ export interface BindingGroup {
 export class View extends Renderable<ViewOptions> {
     _module: Module
     _groups: {[name: string]: BindingGroup} = {}
-    private _state: object = {}
+    _state: object = {}
 
     constructor(mod: Module, options: ViewOptions) {
         super(mod.app, options)
@@ -36,7 +36,7 @@ export class View extends Renderable<ViewOptions> {
         return this._busy
     }
 
-    _action (name, ...data) {
+    _action (name: string, ...data: any[]) {
         const {actions} = this._options
         if (actions && actions[name]) {
             actions[name].call(this, (d: any) => {
