@@ -40,8 +40,6 @@ const bindIt = <T extends HTMLElement>(
             obj.context = ctx
             const v = getValue(to, ctx)
             if (v !== current) {
-                console.log(to, v, current)
-
                 set(element, v)
                 current = v
             }

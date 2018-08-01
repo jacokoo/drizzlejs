@@ -59,8 +59,7 @@
 
         computed: {
             allDone ({todos}) {
-                console.log(!todos.some(it => !it.computed))
-                return !todos.some(it => !it.computed)
+                return !todos.some(it => !it.completed)
             }
         },
 

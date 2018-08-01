@@ -1,5 +1,6 @@
 import { Node } from './node'
 import { Delay } from './template'
+import { setAttribute } from './attributes'
 
 export class StaticNode extends Node {
     name: string
@@ -38,7 +39,7 @@ export class StaticNode extends Node {
 
     create () {
         const element = document.createElement(this.name)
-        this.attributes.forEach(it => element.setAttribute(it[0], it[1]))
+        this.attributes.forEach(it =>  setAttribute(element, it[0], it[1]))
         return element
     }
 }

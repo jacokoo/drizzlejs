@@ -36,11 +36,24 @@ export class Delay {
     }
 }
 
-export function getValue (key: string, context: object): any {
-    return key.split('.').reduce((acc, item) => {
-        if (acc == null) return null
-        return acc[item]
-    }, context)
+export function getValue (key: string, context: any): any {
+    const ks = key.split('.')
+    const first = ks.shift()
+    let ctx
+    if (context._computed && first in context._computed) {
+        ctx = context._computed[first](context)
+    } else {
+        ctx = context[first]
+    }
+
+    if (ks.length) {
+        ctx = ks.reduce((acc, item) => {
+            if (acc == null) return null
+            return acc[item]
+        }, ctx)
+    }
+
+    return ctx
 }
 
 export function getAttributeValue(attr: AttributeValue, context: object): any {

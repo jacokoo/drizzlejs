@@ -5,6 +5,7 @@ import { View } from '../view'
 import { bind } from './binding'
 import { Delay, Attribute, ChangeType, resolveEventArgument, Updatable, customEvents } from './template'
 import { Renderable } from '../renderable'
+import { setAttribute } from './attributes'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
@@ -123,8 +124,12 @@ export class DynamicNode extends StaticNode {
             const vs = this.dynamicAttributes[it].map(i => i.render(context))
             if (vs.some(i => i[0] === ChangeType.CHANGED)) {
                 const vvs = vs.map(i => i[1])
-                const v = it === 'class' ? vvs.join(' ') : vvs.join('') // TODO boolean attribute can be set to string?
-                this.element.setAttribute(it, v)
+                if (vvs.length === 1) {
+                    setAttribute(this.element, it, vvs[0])
+                } else {
+                    const v = it === 'class' ? vvs.join(' ') : vvs.join('')
+                    setAttribute(this.element, it, v)
+                }
             }
         })
     }

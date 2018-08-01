@@ -4,7 +4,8 @@ import { DynamicNode } from './template/dynamic-node'
 
 export interface ViewOptions extends RenderOptions {
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
-    helpers?: {[name: string]: (...any) => any}
+    helpers?: {[name: string]: (...any) => any},
+    computed?: {[name: string]: (any) => any}
 }
 
 export interface BindingGroup {
