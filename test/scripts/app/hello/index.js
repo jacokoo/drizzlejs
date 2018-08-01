@@ -15,8 +15,8 @@
     const d5 = REF('create-todo')
     const d6 = REF('todo-list', null, [KV('todos')])
 
-    C(d1, d2)
-    C(d2, d3, d5, d6)
+    C(d1, d2, d6)
+    C(d2, d3, d5)
     C(d3, d4)
     template.nodes = [d1]
 
@@ -38,6 +38,23 @@
                 toggleAll (payload) {
                     const {todos} = this.models
                     todos.set(todos.get().map(it => Object.assign(it, payload)))
+                },
+
+                remove (item) {
+                    const {todos} = this.models
+                    todos.set(todos.get().filter(it => it !== item))
+                },
+
+                commitEdit({todo, name}) {
+                    const todos = this.models.todos.get()
+                    todos.find(it => it === todo).name = name
+                    this.models.todos.set(todos)
+                },
+
+                revertEdit ({todo, cached}) {
+                    const todos = this.models.todos.get()
+                    todos.find(it => it === todo).name = cached
+                    this.models.todos.set(todos)
                 }
             }
         }

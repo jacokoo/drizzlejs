@@ -35,7 +35,7 @@ const loaders = {
 }
 
 const SN = (name: string, id: string, ...attributes: [string, string][]) => {
-    return new StaticNode(name, attributes, id)
+    return new StaticNode(name, attributes || [], id)
 }
 const DN = (
     name: string, id: string, attributes: [string, string][] = [],

@@ -9,6 +9,8 @@ export abstract class Helper {
     currentKeys: string[]
     currentValues: string[]
 
+    current: any
+
     constructor (...args: AttributeValue[]) {
         this.args = args
         this.dynamicKeys = args.filter(it => it[0] === ValueType.DYNAMIC).map(it => it[1] as string)
@@ -23,7 +25,7 @@ export abstract class Helper {
             return [ChangeType.CHANGED, this.renderIt(context)]
         }
 
-        return [ChangeType.NOT_CHANGED, undefined]
+        return [ChangeType.NOT_CHANGED, this.current]
     }
 
     arg (idx: number, context: object): any {
@@ -61,7 +63,8 @@ export abstract class Helper {
     private renderIt (context: object): any {
         this.currentKeys = []
         this.currentValues = []
-        return this.doRender(context)
+        this.current = this.doRender(context)
+        return this.current
     }
 }
 

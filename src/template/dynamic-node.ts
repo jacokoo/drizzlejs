@@ -8,8 +8,8 @@ import { Renderable } from '../renderable'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
-    events: {[method: string]: {event: string, args: Attribute[]}} = {}
-    actions: {[method: string]: {event: string, args: Attribute[]}} = {}
+    events: {[event: string]: {method: string, args: Attribute[]}} = {}
+    actions: {[event: string]: {method: string, args: Attribute[]}} = {}
     bindings: [string, string][] = []
 
     eventHooks: Disposable[]
@@ -23,11 +23,11 @@ export class DynamicNode extends StaticNode {
     }
 
     on (event: string, method: string, args: Attribute[] = []) {
-        this.events[method] = {event, args}
+        this.events[event] = {method, args}
     }
 
     action (event: string, method: string, args: Attribute[] = []) {
-        this.actions[method] = {event, args}
+        this.actions[event] = {method, args}
     }
 
     bind (from: string, to: string) {
@@ -58,7 +58,7 @@ export class DynamicNode extends StaticNode {
         Object.keys(this.dynamicAttributes).forEach(k => {
             this.dynamicAttributes[k].forEach(it => {
                 if (it instanceof DelayTransfomer) {
-                    it.init(view)
+                    (it as DelayTransfomer).init(view)
                 }
             })
         })
@@ -71,10 +71,10 @@ export class DynamicNode extends StaticNode {
 
         this.context = context
         this.eventHooks = Object.keys(this.events).map(it =>
-            this.initEvent(this.events[it].event, it, this.events[it].args)
+            this.initEvent(it, this.events[it].method, this.events[it].args)
         )
         this.actionHooks = Object.keys(this.actions).map(it =>
-            this.initAction(this.actions[it].event, it, this.actions[it].args)
+            this.initAction(it, this.actions[it].method, this.actions[it].args)
         )
         this.bindingHooks = this.bindings.map(it => bind(this, context, it[0], it[1])).filter(it => !!it)
     }

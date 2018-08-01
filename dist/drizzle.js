@@ -268,22 +268,20 @@
         });
         var obj = {};
         var result = [obj];
+        var keys = 0;
         args.forEach(function (_ref3, i) {
             var _ref4 = slicedToArray(_ref3, 2),
                 name = _ref4[0],
                 v = _ref4[1];
 
             if (name) {
+                keys++;
                 obj[name] = values[i];
                 return;
             }
-            if (v[0] === ValueType.STATIC) {
-                result.push(values[i]);
-                return;
-            }
-            var ns = v[1].split('.');
-            obj[ns[ns.length - 1]] = values[i];
+            result.push(values[i]);
         });
+        if (keys === 0) result.shift();
         return result;
     }
     var customEvents = {
@@ -297,6 +295,18 @@
             return {
                 dispose: function dispose() {
                     node.removeEventListener('keypress', ee, false);
+                }
+            };
+        },
+        escape: function escape(node, cb) {
+            var ee = function ee(e) {
+                if (e.keyCode !== 27) return;
+                cb.call(this, e);
+            };
+            node.addEventListener('keyup', ee, false);
+            return {
+                dispose: function dispose() {
+                    node.removeEventListener('keyup', ee, false);
                 }
             };
         }
@@ -379,7 +389,7 @@
                 })) {
                     return [ChangeType.CHANGED, this.renderIt(context)];
                 }
-                return [ChangeType.NOT_CHANGED, undefined];
+                return [ChangeType.NOT_CHANGED, this.current];
             }
         }, {
             key: 'arg',
@@ -435,7 +445,8 @@
             value: function renderIt(context) {
                 this.currentKeys = [];
                 this.currentValues = [];
-                return this.doRender(context);
+                this.current = this.doRender(context);
+                return this.current;
             }
         }]);
         return Helper;
@@ -770,8 +781,8 @@
                     if (use) use.update(context, delay);
                     return;
                 }
+                if (this.current) this.current.destroy(delay);
                 this.current = use === this.trueNode ? this.trueNode : this.falseNode;
-                use.destroy(delay);
                 if (this.current) this.current.render(context, delay);
             }
         }, {
@@ -1729,7 +1740,7 @@
         }, {
             key: 'destroy',
             value: function destroy(delay) {
-                if (this.rendered) return;
+                if (!this.rendered) return;
                 get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, delay);
                 this.parent.element.removeChild(this.element);
                 this.rendered = false;
@@ -1756,7 +1767,6 @@
         return { name: name, target: target };
     };
     var bindIt = function bindIt(context, view, to, element, event, get, set) {
-        var busy = false; // necessary?
         var current = void 0;
         var obj = { context: context };
         var cb = function cb() {
@@ -1776,9 +1786,7 @@
             } else {
                 target[name] = current;
             }
-            busy = true;
             view.set({});
-            busy = false;
         };
         element.addEventListener(event, cb, false);
         var r = {
@@ -1787,13 +1795,11 @@
             },
             update: function update(ctx) {
                 obj.context = ctx;
-                if (!busy) {
-                    var v = getValue(to, ctx);
+                var v = getValue(to, ctx);
+                if (v !== current) {
                     console.log(to, v, current);
-                    if (v !== current) {
-                        set(element, v);
-                        current = v;
-                    }
+                    set(element, v);
+                    current = v;
                 }
             }
         };
@@ -1935,14 +1941,14 @@
             value: function on(event, method) {
                 var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
 
-                this.events[method] = { event: event, args: args };
+                this.events[event] = { method: method, args: args };
             }
         }, {
             key: 'action',
             value: function action(event, method) {
                 var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
 
-                this.actions[method] = { event: event, args: args };
+                this.actions[event] = { method: method, args: args };
             }
         }, {
             key: 'bind',
@@ -1993,10 +1999,10 @@
                 this.updateAttributes(context);
                 this.context = context;
                 this.eventHooks = Object.keys(this.events).map(function (it) {
-                    return _this3.initEvent(_this3.events[it].event, it, _this3.events[it].args);
+                    return _this3.initEvent(it, _this3.events[it].method, _this3.events[it].args);
                 });
                 this.actionHooks = Object.keys(this.actions).map(function (it) {
-                    return _this3.initAction(_this3.actions[it].event, it, _this3.actions[it].args);
+                    return _this3.initAction(it, _this3.actions[it].method, _this3.actions[it].args);
                 });
                 this.bindingHooks = this.bindings.map(function (it) {
                     return bind(_this3, context, it[0], it[1]);
@@ -2193,12 +2199,12 @@
         }, {
             key: 'on',
             value: function on(event, method, args) {
-                this.events[method] = { event: event, args: args };
+                this.events[event] = { method: method, args: args };
             }
         }, {
             key: 'action',
             value: function action(event, method, args) {
-                this.actions[method] = { event: event, args: args };
+                this.actions[event] = { method: method, args: args };
             }
         }, {
             key: 'init',
@@ -2262,9 +2268,9 @@
                 return Object.keys(this.events).map(function (it) {
                     var cb = function cb(event) {
                         var data = resolveEventArgument(this, obj.context, me.events[it].args, event);
-                        root._event.apply(root, [it].concat(toConsumableArray(data)));
+                        root._event.apply(root, [me.events[it].method].concat(toConsumableArray(data)));
                     };
-                    return { fn: cb, event: me.events[it].event, update: function update(ctx) {
+                    return { fn: cb, event: it, update: function update(ctx) {
                             return obj.context = ctx;
                         } };
                 });
@@ -2276,9 +2282,9 @@
                 return Object.keys(this.actions).map(function (it) {
                     var cb = function cb(event) {
                         var data = resolveEventArgument(this, me.context, me.actions[it].args, event);
-                        root._action.apply(root, [it].concat(toConsumableArray(data)));
+                        root._action.apply(root, [me.actions[it].method].concat(toConsumableArray(data)));
                     };
-                    return { fn: cb, event: me.actions[it].event };
+                    return { fn: cb, event: it };
                 });
             }
         }, {
@@ -2461,7 +2467,7 @@
             attributes[_key - 2] = arguments[_key];
         }
 
-        return new StaticNode(name, attributes, id);
+        return new StaticNode(name, attributes || [], id);
     };
     var DN = function DN(name, id) {
         var attributes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];

@@ -14,8 +14,8 @@ interface BindResult {
 export class ReferenceNode extends Node {
     name: string
     item: Module | View
-    events: {[method: string]: {event: string, args: Attribute[]}} = {}
-    actions: {[method: string]: {event: string, args: Attribute[]}} = {}
+    events: {[event: string]: {method: string, args: Attribute[]}} = {}
+    actions: {[event: string]: {method: string, args: Attribute[]}} = {}
     bindings: [string, string][] = []
     grouped: {[name: string]: Node[]} = {}
 
@@ -32,11 +32,11 @@ export class ReferenceNode extends Node {
     }
 
     on (event: string, method: string, args: Attribute[]) {
-        this.events[method] = {event, args}
+        this.events[event] = {method, args}
     }
 
     action (event: string, method: string, args: Attribute[]) {
-        this.actions[method] = {event, args}
+        this.actions[event] = {method, args}
     }
 
     init (root: Renderable<any>, delay: Delay) {
@@ -95,9 +95,9 @@ export class ReferenceNode extends Node {
         return Object.keys(this.events).map(it => {
             const cb = function (this: Module, event: any) {
                 const data = resolveEventArgument(this, obj.context, me.events[it].args, event)
-                root._event(it, ...data)
+                root._event(me.events[it].method, ...data)
             }
-            return {fn: cb, event: me.events[it].event, update: (ctx) => obj.context = ctx}
+            return {fn: cb, event: it, update: (ctx) => obj.context = ctx}
         })
     }
 
@@ -107,9 +107,9 @@ export class ReferenceNode extends Node {
         return Object.keys(this.actions).map(it => {
             const cb = function(this: Module, event: any) {
                 const data = resolveEventArgument(this, me.context, me.actions[it].args, event)
-                root._action(it, ...data)
+                root._action(me.actions[it].method, ...data)
             }
-            return {fn: cb, event: me.actions[it].event}
+            return {fn: cb, event: it}
         })
     }
 

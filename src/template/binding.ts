@@ -14,7 +14,6 @@ const bindIt = <T extends HTMLElement>(
     context: {[name: string]: any}, view: View, to: string, element: T,
     event: string, get: (T) => any, set: (T, any) => void
 ): Updatable => {
-    let busy = false  // necessary?
     let current
     const obj = {context}
     const cb = function(this: T) {
@@ -28,9 +27,7 @@ const bindIt = <T extends HTMLElement>(
         } else {
             target[name] = current
         }
-        busy = true
         view.set({})
-        busy = false
     }
 
     element.addEventListener(event, cb, false)
@@ -41,13 +38,12 @@ const bindIt = <T extends HTMLElement>(
         },
         update (ctx: object) {
             obj.context = ctx
-            if (!busy) {
-                const v = getValue(to, ctx)
+            const v = getValue(to, ctx)
+            if (v !== current) {
                 console.log(to, v, current)
-                if (v !== current) {
-                    set(element, v)
-                    current = v
-                }
+
+                set(element, v)
+                current = v
             }
         }
     }

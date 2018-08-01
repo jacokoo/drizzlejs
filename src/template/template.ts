@@ -61,22 +61,18 @@ export function resolveEventArgument (me: any, context: object, args: Attribute[
 
     const obj = {}
     const result = [obj]
+    let keys = 0
 
     args.forEach(([name, v], i) => {
         if (name) {
+            keys ++
             obj[name] = values[i]
             return
         }
-
-        if (v[0] === ValueType.STATIC) {
-            result.push(values[i])
-            return
-        }
-
-        const ns = (v[1] as string).split('.')
-        obj[ns[ns.length - 1]] = values[i]
+        result.push(values[i])
     })
 
+    if (keys === 0) result.shift()
     return result
 }
 
@@ -87,12 +83,23 @@ export const customEvents = {
             e.preventDefault()
             cb.call(this, e)
         }
-
         node.addEventListener('keypress', ee, false)
-
         return {
             dispose () {
                 node.removeEventListener('keypress', ee, false)
+            }
+        }
+    },
+
+    escape (node: HTMLElement, cb: (any) => void): Disposable {
+        const ee = function (this: HTMLElement, e) {
+            if (e.keyCode !== 27) return
+            cb.call(this, e)
+        }
+        node.addEventListener('keyup', ee, false)
+        return {
+            dispose () {
+                node.removeEventListener('keyup', ee, false)
             }
         }
     }

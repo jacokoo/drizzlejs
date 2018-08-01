@@ -58,8 +58,8 @@ export class IfBlock extends Node {
             return
         }
 
+        if (this.current) this.current.destroy(delay)
         this.current = use === this.trueNode ? this.trueNode : this.falseNode
-        use.destroy(delay)
         if (this.current) this.current.render(context, delay)
     }
 

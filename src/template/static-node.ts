@@ -29,7 +29,7 @@ export class StaticNode extends Node {
     }
 
     destroy (delay: Delay) {
-        if (this.rendered) return
+        if (!this.rendered) return
         super.destroy(delay)
 
         this.parent.element.removeChild(this.element)

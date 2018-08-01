@@ -7,7 +7,7 @@
 
     const template = new ViewTemplate()
 
-    const d1 = SN('section', [KV('class', 'main')])
+    const d1 = SN('section', null, KV('class', 'main'))
     const d2 = DN(
         'input', null, [KV('class', 'toggle-all'), KV('type', 'checkbox'), KV('id', 'toggle-all')],
         [DA('checked', H('allDone'))], [], [],
@@ -18,27 +18,34 @@
 
     const d5 = () => {
         const d6 = DN(
-            'li', [], null,
-            [DA('class', HIF('todo.completed', SV('completed')))]
+            'li', null, [],
+            [DA('class', HIF('todo.completed', SV('completed')), HEQ(DV('todo'), DV('editing'), SV('editing')))]
         )
-        const d7 = SN('div', KV('class', 'view'))
+        const d7 = SN('div', null, KV('class', 'view'))
         const d8 = DN(
-            'input', null, [KV('type', 'checkbox'), KV('class', 'toggle')], null,
+            'input', null, [KV('type', 'checkbox'), KV('class', 'toggle')],
             [], [B('checked', 'todo.completed')]
         )
-        const d9 = DN('label')
+        const d9 = DN('label', null, [], [], [], [E('dblclick', 'edit', NDA('todo'))])
         const d10 = TN(H('todo.name'))
-        const d11 = DN('button', [KV('class', 'destroy')])
+        const d11 = DN(
+            'button', null, [KV('class', 'destroy')], [], [], [],
+            [A('click', 'remove', NDA('todo'))]
+        )
+        const d12 = DN(
+            'input', null, [KV('class', 'edit')], [], [B('value', 'todo.name')], [],
+            [
+                A('blur', 'commitEdit', NDA('todo')),
+                A('enter', 'commitEdit', NDA('todo')),
+                A('escape', 'revertEdit', NDA('todo'), NDA('nameCache'))
+            ]
+        )
 
         C(d9, d10)
         C(d7, d8, d9, d11)
-        C(d6, d7)
+        C(d6, d7, d12)
         return d6
     }
-
-    const d12 = DN(
-        'input', [KV('class', 'edit')], null
-    )
 
     const b0 = IF('todos.length', d1)
     const b1 = EACH(['todos', 'as', 'todo'], d5)
@@ -54,6 +61,25 @@
             allDone ({todos}) {
                 console.log(!todos.some(it => !it.computed))
                 return !todos.some(it => !it.computed)
+            }
+        },
+
+        events: {
+            edit (todo) {
+                this.set({nameCache: todo.name, editing: todo})
+                console.log(todo)
+            }
+        },
+
+        actions: {
+            revertEdit (cb, todo, cached) {
+                this.set({editing: false})
+                cb({todo, cached})
+            },
+
+            commitEdit (cb, todo) {
+                this.set({nameCache: false, editing: false})
+                cb({todo, name: todo.name})
             }
         }
     }
