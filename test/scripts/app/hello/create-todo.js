@@ -21,9 +21,7 @@
             newTodo (cb, payload) {
                 if (!payload.name) return
                 this.ids.create.value = ''
-                cb(payload).then(() => {
-                    console.log(this._module.get())
-                })
+                cb(payload)
             }
         }
     }

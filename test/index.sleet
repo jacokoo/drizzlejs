@@ -20,4 +20,5 @@ html
         script(src='./scripts/app/hello/index.js')
         script(src='./scripts/app/hello/create-todo.js')
         script(src='./scripts/app/hello/todo-list.js')
+        script(src='./scripts/app/hello/todo-footer.js')
         script(src='./scripts/main.js')

@@ -1538,6 +1538,20 @@
     }(Renderable);
 
     var UPDATE_ACTION = 'update' + +new Date();
+    var clone = function clone(target) {
+        if (Array.isArray(target)) {
+            return target.map(function (it) {
+                return clone(it);
+            });
+        }
+        if ((typeof target === 'undefined' ? 'undefined' : _typeof(target)) === 'object') {
+            return Object.keys(target).reduce(function (acc, it) {
+                acc[it] = clone(target[it]);
+                return acc;
+            }, {});
+        }
+        return target;
+    };
 
     var Module = function (_Renderable) {
         inherits(Module, _Renderable);
@@ -1568,7 +1582,9 @@
         }, {
             key: 'get',
             value: function get$$1(name) {
-                return this._store.get(name);
+                var obj = this._store.get(name);
+                // TODO only works in dev mode
+                return clone(obj);
             }
         }, {
             key: 'dispatch',
@@ -1731,7 +1747,7 @@
         };
         return acc;
     }, {});
-    // TODO set style
+    // TODO set style, data set
     function setAttribute(el, name, value) {
         var n = name.toLowerCase();
         var t = el.tagName.toLowerCase();

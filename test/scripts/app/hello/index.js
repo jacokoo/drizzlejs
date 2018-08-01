@@ -6,7 +6,7 @@
     const {ModuleTemplate} = drizzle
 
     const template = new ModuleTemplate()
-    template.views('create-todo', 'todo-list')
+    template.views('create-todo', 'todo-list', 'todo-footer')
 
     const d1 = SN('section', null, KV('class', 'todoapp'))
     const d2 = SN('header', null, KV('class', 'header'))
@@ -14,48 +14,56 @@
     const d4 = TX('todos')
     const d5 = REF('create-todo')
     const d6 = REF('todo-list', null, [KV('todos')])
+    const d7 = REF('todo-footer', null, [KV('todos')])
 
-    C(d1, d2, d6)
+    C(d1, d2, d6, d7)
     C(d2, d3, d5)
     C(d3, d4)
     template.nodes = [d1]
+
+    let id = 0
 
     MODULES['app/hello/index'] = {
         template: template,
         store: {
             models: {
                 todos: {
-                    data: () => [{name: 'task 1', completed: true}, {name: ' task 2'}]
+                    data: () => [{name: 'task 1', completed: true, id: id++}, {name: ' task 2', id: id++}]
                 }
             },
 
             actions: {
                 newTodo (payload) {
-                    const {todos} = this.models
-                    todos.set(todos.get().concat([payload]))
+                    this.set({todos: this.get('todos').concat([Object.assign(payload, {id: id++})])})
                 },
 
                 toggleAll (payload) {
-                    const {todos} = this.models
-                    todos.set(todos.get().map(it => Object.assign(it, payload)))
+                    this.set({todos: this.get('todos').map(it => Object.assign(it, payload))})
+                },
+
+                toggle ({id, checked}) {
+                    const todos = this.get('todos')
+                    todos.find(it => it.id === id).completed = checked
+                    this.set({ todos })
                 },
 
                 remove (item) {
-                    const {todos} = this.models
-                    todos.set(todos.get().filter(it => it !== item))
+                    this.set({todos: this.get('todos').filter(it => it.id !== item.id)})
                 },
 
-                commitEdit({todo, name}) {
-                    const todos = this.models.todos.get()
-                    todos.find(it => it === todo).name = name
-                    this.models.todos.set(todos)
+                update ({id, name}) {
+                    const todos = this.get('todos')
+                    todos.find(it => it.id === id).name = name
+                    this.set({ todos })
                 },
 
-                revertEdit ({todo, cached}) {
-                    const todos = this.models.todos.get()
-                    todos.find(it => it === todo).name = cached
-                    this.models.todos.set(todos)
-                }
+                commitEdit (payload) {
+                    this.dispatch('update', payload)
+                },
+
+                revertEdit (payload) {
+                    this.dispatch('update', payload)
+                },
             }
         }
     }

@@ -24,13 +24,14 @@
         const d7 = SN('div', null, KV('class', 'view'))
         const d8 = DN(
             'input', null, [KV('type', 'checkbox'), KV('class', 'toggle')],
-            [], [B('checked', 'todo.completed')]
+            [DA('checked', H('todo.completed'))], [], [],
+            [A('change', 'toggle', AT('id', DV('todo.id')), AT('checked', DV('this.checked')))]
         )
         const d9 = DN('label', null, [], [], [], [E('dblclick', 'edit', NDA('todo'))])
         const d10 = TN(H('todo.name'))
         const d11 = DN(
             'button', null, [KV('class', 'destroy')], [], [], [],
-            [A('click', 'remove', NDA('todo'))]
+            [A('click', 'remove', AT('id', DV('todo.id')))]
         )
         const d12 = DN(
             'input', null, [KV('class', 'edit')], [], [B('value', 'todo.name')], [],
@@ -66,19 +67,19 @@
         events: {
             edit (todo) {
                 this.set({nameCache: todo.name, editing: todo})
-                console.log(todo)
             }
         },
 
         actions: {
             revertEdit (cb, todo, cached) {
-                this.set({editing: false})
-                cb({todo, cached})
+                console.log(todo, cached)
+                this.set({editing: false, nameCache: false})
+                cb({id: todo.id, name: cached})
             },
 
             commitEdit (cb, todo) {
                 this.set({nameCache: false, editing: false})
-                cb({todo, name: todo.name})
+                cb({id: todo.id, name: todo.name})
             }
         }
     }

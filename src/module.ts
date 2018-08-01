@@ -21,6 +21,19 @@ interface ModuleOptions extends RenderOptions {
 
 const UPDATE_ACTION = `update${+new Date()}`
 
+const clone = (target: any) => {
+    if (Array.isArray(target)) {
+        return target.map(it => clone(it))
+    }
+    if (typeof target === 'object') {
+        return Object.keys(target).reduce((acc: any, it) => {
+            acc[it] = clone(target[it])
+            return acc
+        }, {})
+    }
+    return target
+}
+
 export class Module extends Renderable<ModuleOptions> {
     items: {[key: string]: {
         type: 'view' | 'module'
@@ -50,7 +63,10 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     get (name?: string) {
-        return this._store.get(name)
+        const obj = this._store.get(name)
+
+        // TODO only works in dev mode
+        return clone(obj)
     }
 
     dispatch (name: string, payload?: any) {

@@ -138,7 +138,7 @@ const attributes: Attr = ps.reduce((acc: Attr, item) => {
     return acc
 }, {})
 
-// TODO set style
+// TODO set style, data set
 export function setAttribute(el: HTMLElement, name: string, value: any) {
     const n = name.toLowerCase()
     const t = el.tagName.toLowerCase()
