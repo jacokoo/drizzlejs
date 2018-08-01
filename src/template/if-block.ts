@@ -2,6 +2,15 @@ import { Node } from './node'
 import { Renderable } from '../renderable'
 import { Delay, AttributeValue, ValueType, getAttributeValue } from './template'
 
+export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
+    eq: (v1, v2) => v1 === v2,
+    ne: (v1, v2) => v1 !== v2,
+    gt: (v1, v2) => v1 > v2,
+    lt: (v1, v2) => v1 < v2,
+    gte: (v1, v2) => v1 >= v2,
+    lte: (v1, v2) => v1 <= v2
+}
+
 export class IfBlock extends Node {
     args: AttributeValue[]
     trueNode: Node
@@ -24,6 +33,20 @@ export class IfBlock extends Node {
     }
 
     use (context: object): boolean {
+        if (this.args.length === 1) return this.useSingle(context)
+        if (this.args.length === 3) return this.useCompare(context)
+        throw new Error('if block should have 1 or 3 arguments')
+    }
+
+    useCompare (context: object): boolean {
+        const op = this.args[1][1] as string
+        if (!Compare[op]) {
+            throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
+        }
+        return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context))
+    }
+
+    useSingle (context: object): boolean {
         if (this.args[0][0] === ValueType.STATIC) {
             // TODO throw
             return false
@@ -77,45 +100,5 @@ export class IfBlock extends Node {
 export class UnlessBlock extends IfBlock {
     use (context: any): boolean {
         return !getAttributeValue(this.args[0], context)
-    }
-}
-
-export class EqBlock extends IfBlock {
-    use (context: object): boolean {
-        return this.use2(getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context))
-    }
-
-    use2 (v1: any, v2: any): boolean {
-        return v1 === v2
-    }
-}
-
-export class NeBlock extends EqBlock {
-    use2 (v1: any, v2: any): boolean {
-        return v1 !== v2
-    }
-}
-
-export class GtBlock extends EqBlock {
-    use2 (v1: any, v2: any): boolean {
-        return v1 > v2
-    }
-}
-
-export class GteBlock extends EqBlock {
-    use2 (v1: any, v2: any): boolean {
-        return v1 >= v2
-    }
-}
-
-export class LtBlock extends EqBlock {
-    use2 (v1: any, v2: any): boolean {
-        return v1 < v2
-    }
-}
-
-export class LteBlock extends EqBlock {
-    use2 (v1: any, v2: any): boolean {
-        return v1 <= v2
     }
 }

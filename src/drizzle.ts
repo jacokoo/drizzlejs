@@ -1,8 +1,7 @@
 import {
-    IfHelper, EqHelper, UnlessHelper, GtHelper, LtHelper,
-    GteHelper, LteHelper, Helper, DelayTransfomer, ConcatHelper, EchoHelper, NeHelper
+    IfHelper, UnlessHelper, Helper, DelayTransfomer, ConcatHelper, EchoHelper
 } from './template/helper'
-import { IfBlock, UnlessBlock, GtBlock, LtBlock, GteBlock, LteBlock, EqBlock, NeBlock } from './template/if-block'
+import { IfBlock, UnlessBlock } from './template/if-block'
 import { EachBlock } from './template/each-block'
 import { Loader } from './loader'
 import { ModuleTemplate } from './template/module-template'
@@ -21,13 +20,11 @@ export interface Disposable {
 }
 
 const helpers = {
-    echo: EchoHelper, if: IfHelper, unless: UnlessHelper, eq: EqHelper, gt: GtHelper,
-    lt: LtHelper, gte: GteHelper, lte: LteHelper, concat: ConcatHelper, ne: NeHelper
+    echo: EchoHelper, if: IfHelper, unless: UnlessHelper, concat: ConcatHelper
 }
 
 const blocks = {
-    if: IfBlock, unless: UnlessBlock, each: EachBlock, gt: GtBlock,
-    lt: LtBlock, gte: GteBlock, lte: LteBlock, eq: EqBlock, ne: NeBlock
+    if: IfBlock, unless: UnlessBlock, each: EachBlock
 }
 
 const loaders = {
@@ -78,41 +75,15 @@ const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
 const KV = (k: string, v?: string) => [k, v || k]
 
 const H = (n: string) => new EchoHelper(DV(n))
+const HC = (...args: AttributeValue[]) => new IfHelper(...args)
 const TR = (n: string, ...args: AttributeValue[]) => new DelayTransfomer(n, ...args)
 const HIF = (n: string, t: AttributeValue, f: AttributeValue) => f ? new IfHelper(DV(n), t, f) : new IfHelper(DV(n), t)
-const HEQ = (...args: AttributeValue[]) => new EqHelper(...args)
-const HGT = (...args: AttributeValue[]) => new GtHelper(...args)
-const HLT = (...args: AttributeValue[]) => new LtHelper(...args)
-const HGTE = (...args: AttributeValue[]) => new GteHelper(...args)
-const HLTE = (...args: AttributeValue[]) => new LteHelper(...args)
-const HNE = (...args: AttributeValue[]) => new NeHelper(...args)
+const HU = (n: string, t: AttributeValue, f: AttributeValue) =>
+    f ? new UnlessHelper(DV(n), t, f) : new UnlessHelper(DV(n), t)
 
 const EACH = (args: string[], trueNode: () => Node, falseNode?: Node) => new EachBlock(args, trueNode, falseNode)
 const IF = (n: string, trueNode: Node, falseNode?: Node) => new IfBlock([DV(n)], trueNode, falseNode)
-const EQ = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new EqBlock([l, r], trueNode, falseNode)
-
-const GT = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new GtBlock([l, r], trueNode, falseNode)
-
-const LT = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new LtBlock([l, r], trueNode, falseNode)
-
-const GTE = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new GteBlock([l, r], trueNode, falseNode)
-
-const LTE = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new LteBlock([l, r], trueNode, falseNode)
-
-const NE = (
-    l: AttributeValue, r: AttributeValue, trueNode: Node, falseNode?: Node
-) => new NeBlock([l, r], trueNode, falseNode)
-
+const UN = (n: string, trueNode: Node, falseNode?: Node) => new UnlessBlock([DV(n)], trueNode, falseNode)
 const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 
 export default {
@@ -120,7 +91,7 @@ export default {
     lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application,
     factory: {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
-        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C, DA, A: E, B: KV
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HC, TR, HIF, HU,
+        EACH, IF, UN, C, DA, A: E, B: KV
     }
 }

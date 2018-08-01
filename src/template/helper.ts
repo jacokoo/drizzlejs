@@ -1,6 +1,7 @@
 import { HelperResult, ChangeType } from './template'
 import { getValue, AttributeValue, ValueType } from './template'
 import { View } from '../view'
+import { Compare } from './if-block'
 
 export abstract class Helper {
     name: string = ''
@@ -118,7 +119,7 @@ export class IfHelper extends Helper {
     name = 'if'
 
     check () {
-        this.assertCount(2, 3)
+        this.assertCount(2, 5)
         this.assertDynamic(0)
     }
 
@@ -127,7 +128,21 @@ export class IfHelper extends Helper {
     }
 
     use (context: object): number {
+        if (this.args.length <= 3) return this.useSingle(context)
+        return this.useMultiple(context)
+    }
+
+    useSingle (context): number {
         return this.key(this.dynamicKeys[0], context) ? 1 : 2
+    }
+
+    useMultiple (context): number {
+        const op = this.args[1][1] as string
+        if (Compare[op]) {
+            throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
+        }
+
+        return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4
     }
 }
 
@@ -136,51 +151,5 @@ export class UnlessHelper extends IfHelper {
 
     use (context: object): number {
         return this.key(this.dynamicKeys[0], context) ? 2 : 1
-    }
-}
-
-export class EqHelper extends Helper {
-    name: 'eq'
-
-    check () {
-        this.assertCount(3, 4)
-    }
-
-    doRender (context: object): any {
-        return this.arg(this.use(this.arg(0, context), this.arg(1, context)) ? 2 : 3, context)
-    }
-
-    use (v1: any, v2: any): boolean {
-        return v1 === v2
-    }
-}
-
-export class NeHelper extends EqHelper {
-    use (v1: any, v2: any): boolean {
-        return v1 !== v2
-    }
-}
-
-export class GtHelper extends EqHelper {
-    use (v1: any, v2: any): boolean {
-        return v1 > v2
-    }
-}
-
-export class GteHelper extends EqHelper {
-    use (v1: any, v2: any): boolean {
-        return v1 >= v2
-    }
-}
-
-export class LtHelper extends EqHelper {
-    use (v1: any, v2: any): boolean {
-        return v1 < v2
-    }
-}
-
-export class LteHelper extends EqHelper {
-    use (v1: any, v2: any): boolean {
-        return v1 <= v2
     }
 }

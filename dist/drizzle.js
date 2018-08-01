@@ -367,6 +367,137 @@
         return Template;
     }();
 
+    var Compare = {
+        eq: function eq(v1, v2) {
+            return v1 === v2;
+        },
+        ne: function ne(v1, v2) {
+            return v1 !== v2;
+        },
+        gt: function gt(v1, v2) {
+            return v1 > v2;
+        },
+        lt: function lt(v1, v2) {
+            return v1 < v2;
+        },
+        gte: function gte(v1, v2) {
+            return v1 >= v2;
+        },
+        lte: function lte(v1, v2) {
+            return v1 <= v2;
+        }
+    };
+
+    var IfBlock = function (_Node) {
+        inherits(IfBlock, _Node);
+
+        function IfBlock(args, trueNode, falseNode) {
+            classCallCheck(this, IfBlock);
+
+            var _this = possibleConstructorReturn(this, (IfBlock.__proto__ || Object.getPrototypeOf(IfBlock)).call(this));
+
+            _this.trueNode = trueNode;
+            _this.falseNode = falseNode;
+            _this.args = args;
+            return _this;
+        }
+
+        createClass(IfBlock, [{
+            key: 'init',
+            value: function init(root, delay) {
+                this.root = root;
+                this.trueNode.init(root, delay);
+                if (this.falseNode) {
+                    this.falseNode.init(root, delay);
+                }
+            }
+        }, {
+            key: 'use',
+            value: function use(context) {
+                if (this.args.length === 1) return this.useSingle(context);
+                if (this.args.length === 3) return this.useCompare(context);
+                throw new Error('if block should have 1 or 3 arguments');
+            }
+        }, {
+            key: 'useCompare',
+            value: function useCompare(context) {
+                var op = this.args[1][1];
+                if (!Compare[op]) {
+                    throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
+                }
+                return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context));
+            }
+        }, {
+            key: 'useSingle',
+            value: function useSingle(context) {
+                if (this.args[0][0] === ValueType.STATIC) {
+                    // TODO throw
+                    return false;
+                }
+                return !!getAttributeValue(this.args[0], context);
+            }
+        }, {
+            key: 'render',
+            value: function render(context, delay) {
+                if (this.rendered) return;
+                this.rendered = true;
+                this.trueNode.parent = this.parent;
+                this.trueNode.nextSibling = this.nextSibling;
+                if (this.falseNode) {
+                    this.falseNode.parent = this.parent;
+                    this.falseNode.nextSibling = this.nextSibling;
+                }
+                this.current = this.use(context) ? this.trueNode : this.falseNode;
+                if (this.current) {
+                    this.current.render(context, delay);
+                }
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                if (!this.rendered) return;
+                var use = this.use(context) ? this.trueNode : this.falseNode;
+                if (use === this.current) {
+                    if (use) use.update(context, delay);
+                    return;
+                }
+                if (this.current) this.current.destroy(delay);
+                this.current = use === this.trueNode ? this.trueNode : this.falseNode;
+                if (this.current) this.current.render(context, delay);
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                if (!this.rendered) return;
+                if (this.current) this.current.destroy(delay);
+                this.rendered = false;
+            }
+        }, {
+            key: 'create',
+            value: function create() {
+                return null;
+            }
+        }]);
+        return IfBlock;
+    }(Node);
+
+    var UnlessBlock = function (_IfBlock) {
+        inherits(UnlessBlock, _IfBlock);
+
+        function UnlessBlock() {
+            classCallCheck(this, UnlessBlock);
+            return possibleConstructorReturn(this, (UnlessBlock.__proto__ || Object.getPrototypeOf(UnlessBlock)).apply(this, arguments));
+        }
+
+        createClass(UnlessBlock, [{
+            key: 'use',
+            value: function use(context) {
+                return !getAttributeValue(this.args[0], context);
+            }
+        }]);
+        return UnlessBlock;
+    }(IfBlock);
+
     var Helper = function () {
         function Helper() {
             classCallCheck(this, Helper);
@@ -585,7 +716,7 @@
         createClass(IfHelper, [{
             key: 'check',
             value: function check() {
-                this.assertCount(2, 3);
+                this.assertCount(2, 5);
                 this.assertDynamic(0);
             }
         }, {
@@ -596,7 +727,22 @@
         }, {
             key: 'use',
             value: function use(context) {
+                if (this.args.length <= 3) return this.useSingle(context);
+                return this.useMultiple(context);
+            }
+        }, {
+            key: 'useSingle',
+            value: function useSingle(context) {
                 return this.key(this.dynamicKeys[0], context) ? 1 : 2;
+            }
+        }, {
+            key: 'useMultiple',
+            value: function useMultiple(context) {
+                var op = this.args[1][1];
+                if (Compare[op]) {
+                    throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
+                }
+                return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4;
             }
         }]);
         return IfHelper;
@@ -622,319 +768,6 @@
         }]);
         return UnlessHelper;
     }(IfHelper);
-
-    var EqHelper = function (_Helper5) {
-        inherits(EqHelper, _Helper5);
-
-        function EqHelper() {
-            classCallCheck(this, EqHelper);
-            return possibleConstructorReturn(this, (EqHelper.__proto__ || Object.getPrototypeOf(EqHelper)).apply(this, arguments));
-        }
-
-        createClass(EqHelper, [{
-            key: 'check',
-            value: function check() {
-                this.assertCount(3, 4);
-            }
-        }, {
-            key: 'doRender',
-            value: function doRender(context) {
-                return this.arg(this.use(this.arg(0, context), this.arg(1, context)) ? 2 : 3, context);
-            }
-        }, {
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 === v2;
-            }
-        }]);
-        return EqHelper;
-    }(Helper);
-
-    var NeHelper = function (_EqHelper) {
-        inherits(NeHelper, _EqHelper);
-
-        function NeHelper() {
-            classCallCheck(this, NeHelper);
-            return possibleConstructorReturn(this, (NeHelper.__proto__ || Object.getPrototypeOf(NeHelper)).apply(this, arguments));
-        }
-
-        createClass(NeHelper, [{
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 !== v2;
-            }
-        }]);
-        return NeHelper;
-    }(EqHelper);
-
-    var GtHelper = function (_EqHelper2) {
-        inherits(GtHelper, _EqHelper2);
-
-        function GtHelper() {
-            classCallCheck(this, GtHelper);
-            return possibleConstructorReturn(this, (GtHelper.__proto__ || Object.getPrototypeOf(GtHelper)).apply(this, arguments));
-        }
-
-        createClass(GtHelper, [{
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 > v2;
-            }
-        }]);
-        return GtHelper;
-    }(EqHelper);
-
-    var GteHelper = function (_EqHelper3) {
-        inherits(GteHelper, _EqHelper3);
-
-        function GteHelper() {
-            classCallCheck(this, GteHelper);
-            return possibleConstructorReturn(this, (GteHelper.__proto__ || Object.getPrototypeOf(GteHelper)).apply(this, arguments));
-        }
-
-        createClass(GteHelper, [{
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 >= v2;
-            }
-        }]);
-        return GteHelper;
-    }(EqHelper);
-
-    var LtHelper = function (_EqHelper4) {
-        inherits(LtHelper, _EqHelper4);
-
-        function LtHelper() {
-            classCallCheck(this, LtHelper);
-            return possibleConstructorReturn(this, (LtHelper.__proto__ || Object.getPrototypeOf(LtHelper)).apply(this, arguments));
-        }
-
-        createClass(LtHelper, [{
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 < v2;
-            }
-        }]);
-        return LtHelper;
-    }(EqHelper);
-
-    var LteHelper = function (_EqHelper5) {
-        inherits(LteHelper, _EqHelper5);
-
-        function LteHelper() {
-            classCallCheck(this, LteHelper);
-            return possibleConstructorReturn(this, (LteHelper.__proto__ || Object.getPrototypeOf(LteHelper)).apply(this, arguments));
-        }
-
-        createClass(LteHelper, [{
-            key: 'use',
-            value: function use(v1, v2) {
-                return v1 <= v2;
-            }
-        }]);
-        return LteHelper;
-    }(EqHelper);
-
-    var IfBlock = function (_Node) {
-        inherits(IfBlock, _Node);
-
-        function IfBlock(args, trueNode, falseNode) {
-            classCallCheck(this, IfBlock);
-
-            var _this = possibleConstructorReturn(this, (IfBlock.__proto__ || Object.getPrototypeOf(IfBlock)).call(this));
-
-            _this.trueNode = trueNode;
-            _this.falseNode = falseNode;
-            _this.args = args;
-            return _this;
-        }
-
-        createClass(IfBlock, [{
-            key: 'init',
-            value: function init(root, delay) {
-                this.root = root;
-                this.trueNode.init(root, delay);
-                if (this.falseNode) {
-                    this.falseNode.init(root, delay);
-                }
-            }
-        }, {
-            key: 'use',
-            value: function use(context) {
-                if (this.args[0][0] === ValueType.STATIC) {
-                    // TODO throw
-                    return false;
-                }
-                return !!getAttributeValue(this.args[0], context);
-            }
-        }, {
-            key: 'render',
-            value: function render(context, delay) {
-                if (this.rendered) return;
-                this.rendered = true;
-                this.trueNode.parent = this.parent;
-                this.trueNode.nextSibling = this.nextSibling;
-                if (this.falseNode) {
-                    this.falseNode.parent = this.parent;
-                    this.falseNode.nextSibling = this.nextSibling;
-                }
-                this.current = this.use(context) ? this.trueNode : this.falseNode;
-                if (this.current) {
-                    this.current.render(context, delay);
-                }
-            }
-        }, {
-            key: 'update',
-            value: function update(context, delay) {
-                if (!this.rendered) return;
-                var use = this.use(context) ? this.trueNode : this.falseNode;
-                if (use === this.current) {
-                    if (use) use.update(context, delay);
-                    return;
-                }
-                if (this.current) this.current.destroy(delay);
-                this.current = use === this.trueNode ? this.trueNode : this.falseNode;
-                if (this.current) this.current.render(context, delay);
-            }
-        }, {
-            key: 'destroy',
-            value: function destroy(delay) {
-                if (!this.rendered) return;
-                if (this.current) this.current.destroy(delay);
-                this.rendered = false;
-            }
-        }, {
-            key: 'create',
-            value: function create() {
-                return null;
-            }
-        }]);
-        return IfBlock;
-    }(Node);
-
-    var UnlessBlock = function (_IfBlock) {
-        inherits(UnlessBlock, _IfBlock);
-
-        function UnlessBlock() {
-            classCallCheck(this, UnlessBlock);
-            return possibleConstructorReturn(this, (UnlessBlock.__proto__ || Object.getPrototypeOf(UnlessBlock)).apply(this, arguments));
-        }
-
-        createClass(UnlessBlock, [{
-            key: 'use',
-            value: function use(context) {
-                return !getAttributeValue(this.args[0], context);
-            }
-        }]);
-        return UnlessBlock;
-    }(IfBlock);
-
-    var EqBlock = function (_IfBlock2) {
-        inherits(EqBlock, _IfBlock2);
-
-        function EqBlock() {
-            classCallCheck(this, EqBlock);
-            return possibleConstructorReturn(this, (EqBlock.__proto__ || Object.getPrototypeOf(EqBlock)).apply(this, arguments));
-        }
-
-        createClass(EqBlock, [{
-            key: 'use',
-            value: function use(context) {
-                return this.use2(getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context));
-            }
-        }, {
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 === v2;
-            }
-        }]);
-        return EqBlock;
-    }(IfBlock);
-
-    var NeBlock = function (_EqBlock) {
-        inherits(NeBlock, _EqBlock);
-
-        function NeBlock() {
-            classCallCheck(this, NeBlock);
-            return possibleConstructorReturn(this, (NeBlock.__proto__ || Object.getPrototypeOf(NeBlock)).apply(this, arguments));
-        }
-
-        createClass(NeBlock, [{
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 !== v2;
-            }
-        }]);
-        return NeBlock;
-    }(EqBlock);
-
-    var GtBlock = function (_EqBlock2) {
-        inherits(GtBlock, _EqBlock2);
-
-        function GtBlock() {
-            classCallCheck(this, GtBlock);
-            return possibleConstructorReturn(this, (GtBlock.__proto__ || Object.getPrototypeOf(GtBlock)).apply(this, arguments));
-        }
-
-        createClass(GtBlock, [{
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 > v2;
-            }
-        }]);
-        return GtBlock;
-    }(EqBlock);
-
-    var GteBlock = function (_EqBlock3) {
-        inherits(GteBlock, _EqBlock3);
-
-        function GteBlock() {
-            classCallCheck(this, GteBlock);
-            return possibleConstructorReturn(this, (GteBlock.__proto__ || Object.getPrototypeOf(GteBlock)).apply(this, arguments));
-        }
-
-        createClass(GteBlock, [{
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 >= v2;
-            }
-        }]);
-        return GteBlock;
-    }(EqBlock);
-
-    var LtBlock = function (_EqBlock4) {
-        inherits(LtBlock, _EqBlock4);
-
-        function LtBlock() {
-            classCallCheck(this, LtBlock);
-            return possibleConstructorReturn(this, (LtBlock.__proto__ || Object.getPrototypeOf(LtBlock)).apply(this, arguments));
-        }
-
-        createClass(LtBlock, [{
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 < v2;
-            }
-        }]);
-        return LtBlock;
-    }(EqBlock);
-
-    var LteBlock = function (_EqBlock5) {
-        inherits(LteBlock, _EqBlock5);
-
-        function LteBlock() {
-            classCallCheck(this, LteBlock);
-            return possibleConstructorReturn(this, (LteBlock.__proto__ || Object.getPrototypeOf(LteBlock)).apply(this, arguments));
-        }
-
-        createClass(LteBlock, [{
-            key: 'use2',
-            value: function use2(v1, v2) {
-                return v1 <= v2;
-            }
-        }]);
-        return LteBlock;
-    }(EqBlock);
 
     var EachBlock = function (_Node) {
         inherits(EachBlock, _Node);
@@ -2514,12 +2347,10 @@
     }(Node);
 
     var helpers = {
-        echo: EchoHelper, if: IfHelper, unless: UnlessHelper, eq: EqHelper, gt: GtHelper,
-        lt: LtHelper, gte: GteHelper, lte: LteHelper, concat: ConcatHelper, ne: NeHelper
+        echo: EchoHelper, if: IfHelper, unless: UnlessHelper, concat: ConcatHelper
     };
     var blocks = {
-        if: IfBlock, unless: UnlessBlock, each: EachBlock, gt: GtBlock,
-        lt: LtBlock, gte: GteBlock, lte: LteBlock, eq: EqBlock, ne: NeBlock
+        if: IfBlock, unless: UnlessBlock, each: EachBlock
     };
     var loaders = {
         default: Loader
@@ -2621,9 +2452,16 @@
     var H = function H(n) {
         return new EchoHelper(DV(n));
     };
+    var HC = function HC() {
+        for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+            args[_key6] = arguments[_key6];
+        }
+
+        return new (Function.prototype.bind.apply(IfHelper, [null].concat(args)))();
+    };
     var TR = function TR(n) {
-        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-            args[_key6 - 1] = arguments[_key6];
+        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+            args[_key7 - 1] = arguments[_key7];
         }
 
         return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
@@ -2631,47 +2469,8 @@
     var HIF = function HIF(n, t, f) {
         return f ? new IfHelper(DV(n), t, f) : new IfHelper(DV(n), t);
     };
-    var HEQ = function HEQ() {
-        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-            args[_key7] = arguments[_key7];
-        }
-
-        return new (Function.prototype.bind.apply(EqHelper, [null].concat(args)))();
-    };
-    var HGT = function HGT() {
-        for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
-            args[_key8] = arguments[_key8];
-        }
-
-        return new (Function.prototype.bind.apply(GtHelper, [null].concat(args)))();
-    };
-    var HLT = function HLT() {
-        for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
-            args[_key9] = arguments[_key9];
-        }
-
-        return new (Function.prototype.bind.apply(LtHelper, [null].concat(args)))();
-    };
-    var HGTE = function HGTE() {
-        for (var _len10 = arguments.length, args = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
-            args[_key10] = arguments[_key10];
-        }
-
-        return new (Function.prototype.bind.apply(GteHelper, [null].concat(args)))();
-    };
-    var HLTE = function HLTE() {
-        for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
-            args[_key11] = arguments[_key11];
-        }
-
-        return new (Function.prototype.bind.apply(LteHelper, [null].concat(args)))();
-    };
-    var HNE = function HNE() {
-        for (var _len12 = arguments.length, args = Array(_len12), _key12 = 0; _key12 < _len12; _key12++) {
-            args[_key12] = arguments[_key12];
-        }
-
-        return new (Function.prototype.bind.apply(NeHelper, [null].concat(args)))();
+    var HU = function HU(n, t, f) {
+        return f ? new UnlessHelper(DV(n), t, f) : new UnlessHelper(DV(n), t);
     };
     var EACH = function EACH(args, trueNode, falseNode) {
         return new EachBlock(args, trueNode, falseNode);
@@ -2679,27 +2478,12 @@
     var IF = function IF(n, trueNode, falseNode) {
         return new IfBlock([DV(n)], trueNode, falseNode);
     };
-    var EQ = function EQ(l, r, trueNode, falseNode) {
-        return new EqBlock([l, r], trueNode, falseNode);
-    };
-    var GT = function GT(l, r, trueNode, falseNode) {
-        return new GtBlock([l, r], trueNode, falseNode);
-    };
-    var LT = function LT(l, r, trueNode, falseNode) {
-        return new LtBlock([l, r], trueNode, falseNode);
-    };
-    var GTE = function GTE(l, r, trueNode, falseNode) {
-        return new GteBlock([l, r], trueNode, falseNode);
-    };
-    var LTE = function LTE(l, r, trueNode, falseNode) {
-        return new LteBlock([l, r], trueNode, falseNode);
-    };
-    var NE = function NE(l, r, trueNode, falseNode) {
-        return new NeBlock([l, r], trueNode, falseNode);
+    var UN = function UN(n, trueNode, falseNode) {
+        return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
     var C = function C(parent) {
-        for (var _len13 = arguments.length, children = Array(_len13 > 1 ? _len13 - 1 : 0), _key13 = 1; _key13 < _len13; _key13++) {
-            children[_key13 - 1] = arguments[_key13];
+        for (var _len8 = arguments.length, children = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
+            children[_key8 - 1] = arguments[_key8];
         }
 
         return parent.setChildren(children);
@@ -2709,8 +2493,8 @@
         lifecycles: { module: [], view: [] },
         ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application,
         factory: {
-            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, TR: TR, HIF: HIF, HEQ: HEQ, HGT: HGT, HLT: HLT, HGTE: HGTE, HLTE: HLTE, HNE: HNE,
-            EACH: EACH, IF: IF, EQ: EQ, GT: GT, LT: LT, GTE: GTE, LTE: LTE, NE: NE, C: C, DA: DA, A: E, B: KV
+            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HC: HC, TR: TR, HIF: HIF, HU: HU,
+            EACH: EACH, IF: IF, UN: UN, C: C, DA: DA, A: E, B: KV
         }
     };
 
