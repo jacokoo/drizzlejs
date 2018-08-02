@@ -2450,27 +2450,15 @@
         return [k, v || k];
     };
     var H = function H(n) {
-        return new EchoHelper(DV(n));
+        return Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n));
     };
-    var HC = function HC() {
-        for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
-            args[_key6] = arguments[_key6];
+    var HH = function HH(n) {
+        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+            args[_key6 - 1] = arguments[_key6];
         }
 
-        return new (Function.prototype.bind.apply(IfHelper, [null].concat(args)))();
-    };
-    var TR = function TR(n) {
-        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
-            args[_key7 - 1] = arguments[_key7];
-        }
-
+        if (helpers[n]) return new (Function.prototype.bind.apply(helpers[n], [null].concat(args)))();
         return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
-    };
-    var HIF = function HIF(n, t, f) {
-        return f ? new IfHelper(DV(n), t, f) : new IfHelper(DV(n), t);
-    };
-    var HU = function HU(n, t, f) {
-        return f ? new UnlessHelper(DV(n), t, f) : new UnlessHelper(DV(n), t);
     };
     var EACH = function EACH(args, trueNode, falseNode) {
         return new EachBlock(args, trueNode, falseNode);
@@ -2478,12 +2466,15 @@
     var IF = function IF(n, trueNode, falseNode) {
         return new IfBlock([DV(n)], trueNode, falseNode);
     };
+    var IFC = function IFC(args, trueNode, falseNode) {
+        return new IfBlock(args, trueNode, falseNode);
+    };
     var UN = function UN(n, trueNode, falseNode) {
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
     var C = function C(parent) {
-        for (var _len8 = arguments.length, children = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
-            children[_key8 - 1] = arguments[_key8];
+        for (var _len7 = arguments.length, children = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+            children[_key7 - 1] = arguments[_key7];
         }
 
         return parent.setChildren(children);
@@ -2493,8 +2484,8 @@
         lifecycles: { module: [], view: [] },
         ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application,
         factory: {
-            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HC: HC, TR: TR, HIF: HIF, HU: HU,
-            EACH: EACH, IF: IF, UN: UN, C: C, DA: DA, A: E, B: KV
+            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH,
+            EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, A: E, B: KV
         }
     };
 

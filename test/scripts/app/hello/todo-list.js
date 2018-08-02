@@ -19,7 +19,7 @@
     const d5 = () => {
         const d6 = DN(
             'li', null, [],
-            [DA('class', HIF('todo.completed', SV('completed')), HEQ(DV('todo'), DV('editing'), SV('editing')))]
+            [DA('class', HIF('todo.completed', SV('completed')), HC(DV('todo'), SV('eq'), DV('editing'), SV('editing')))]
         )
         const d7 = SN('div', null, KV('class', 'view'))
         const d8 = DN(

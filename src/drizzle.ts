@@ -74,15 +74,15 @@ const DV = (v: string) => [1, v] as AttributeValue
 const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
 const KV = (k: string, v?: string) => [k, v || k]
 
-const H = (n: string) => new EchoHelper(DV(n))
-const HC = (...args: AttributeValue[]) => new IfHelper(...args)
-const TR = (n: string, ...args: AttributeValue[]) => new DelayTransfomer(n, ...args)
-const HIF = (n: string, t: AttributeValue, f: AttributeValue) => f ? new IfHelper(DV(n), t, f) : new IfHelper(DV(n), t)
-const HU = (n: string, t: AttributeValue, f: AttributeValue) =>
-    f ? new UnlessHelper(DV(n), t, f) : new UnlessHelper(DV(n), t)
+const H = (n: string | AttributeValue) => Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n))
+const HH = (n: string, ...args: AttributeValue[]) => {
+    if (helpers[n]) return new helpers[n](...args)
+    return new DelayTransfomer(n, ...args)
+}
 
 const EACH = (args: string[], trueNode: () => Node, falseNode?: Node) => new EachBlock(args, trueNode, falseNode)
 const IF = (n: string, trueNode: Node, falseNode?: Node) => new IfBlock([DV(n)], trueNode, falseNode)
+const IFC = (args: AttributeValue[], trueNode: Node, falseNode?: Node) => new IfBlock(args, trueNode, falseNode)
 const UN = (n: string, trueNode: Node, falseNode?: Node) => new UnlessBlock([DV(n)], trueNode, falseNode)
 const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 
@@ -91,7 +91,7 @@ export default {
     lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application,
     factory: {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HC, TR, HIF, HU,
-        EACH, IF, UN, C, DA, A: E, B: KV
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH,
+        EACH, IF, IFC, UN, C, DA, A: E, B: KV
     }
 }
