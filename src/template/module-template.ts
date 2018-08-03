@@ -2,10 +2,14 @@ import {ItemOptions, Module} from '../module'
 import { Delay, Template } from './template'
 
 export class ModuleTemplate extends Template<Module> {
-    items: ItemOptions = {}
+    options: {
+        exportedModels: string[]
+        items: ItemOptions
+    }
 
-    constructor() {
+    constructor(exportedModels: string[]) {
         super()
+        this.options = {exportedModels, items: {}}
         const me = this
         this.life = {
             stage: 'template',
@@ -17,10 +21,10 @@ export class ModuleTemplate extends Template<Module> {
     }
 
     views (...views: string[]) {
-        views.forEach(it => this.items[it] = {view: it})
+        views.forEach(it => this.options.items[it] = {view: it})
     }
 
-    module (name: string, path: string, loader?: string, args?: string[]) {
-        this.items[name] = loader ? {path, loader: {name: loader, args}} : {path}
+    modules (name: string, path: string, loader?: string, args?: string[]) {
+        this.options.items[name] = loader ? {path, loader: {name: loader, args}} : {path}
     }
 }

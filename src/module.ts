@@ -15,6 +15,7 @@ export interface ItemOptions {
 
 interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
+    exportedModels?: string[]
     state?: object,
 }
 
@@ -50,7 +51,15 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     set (data: object) {
-        return (this._status === ComponentState.CREATED ? this._store : this).dispatch(UPDATE_ACTION, data)
+        const {exportedModels} = this._options
+        if (!exportedModels || !exportedModels.length) return
+
+        const d = exportedModels.reduce((acc, item) => {
+            if (data[item]) acc[item] = data[item]
+            return acc
+        }, {})
+
+        return (this._status === ComponentState.CREATED ? this._store : this).dispatch(UPDATE_ACTION, d)
     }
 
     get (name?: string) {
@@ -120,8 +129,8 @@ export class Module extends Renderable<ModuleOptions> {
 
     private _loadItems (): Promise<any> {
         const {template} = this._options
-        if (!template || !template.items) return Promise.resolve()
-        const {items} = template
+        if (!template || !template.options) return Promise.resolve()
+        const {items} = template.options
         if (!items) return Promise.resolve()
 
         const ks = Object.keys(items)
