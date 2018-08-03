@@ -1,7 +1,7 @@
 (() => {
     const {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
-        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C, DA, A, B
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
+        EACH, IF, IFC, UN, C, DA, A, B
     } = drizzle.factory
     const {ViewTemplate} = drizzle
 
@@ -9,17 +9,17 @@
     const d1 = SN('footer', null, KV('class', 'footer'))
     const d2 = SN('span', null, KV('class', 'todo-count'))
     const d3 = SN('strong')
-    const d4 = TN(H('remaining'), HEQ(DV('remaining'), SV(1), SV('item left'), SV('items left')))
+    const d4 = TN(H('remaining'), HIF(DV('remaining'), SV('eq'), SV(1), SV('item left'), SV('items left')))
 
     const d5 = SN('ul', null, KV('class', 'filters'))
     const d6 = SN('li')
-    const d7 = DN('a', null, [KV('href', '#/')], [DA('class', HEQ(DV('status'), SV(''), SV('selected')))])
+    const d7 = DN('a', null, [KV('href', '#/')], [DA('class', HIF(DV('status'), SV('eq'), SV(''), SV('selected')))])
 
     const d8 = SN('li')
-    const d9 = DN('a', null, [KV('href', '#/active')], [DA('class', HEQ(DV('status'), SV('active'), SV('selected')))])
+    const d9 = DN('a', null, [KV('href', '#/active')], [DA('class', HIF(DV('status'), SV('eq'), SV('active'), SV('selected')))])
 
     const d10 = SN('li')
-    const d11 = DN('a', null, [KV('href', '#/complated')], [DA('class', HEQ(DV('status'), SV('complated'), SV('selected')))])
+    const d11 = DN('a', null, [KV('href', '#/complated')], [DA('class', HIF(DV('status'), SV('eq'), SV('complated'), SV('selected')))])
 
     const d12 = DN('button', null, [KV('class', 'clear-completed')], [], [], [], [
         A('click', 'clearCompleted')

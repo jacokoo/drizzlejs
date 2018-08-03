@@ -79,6 +79,8 @@ const HH = (n: string, ...args: AttributeValue[]) => {
     if (helpers[n]) return new helpers[n](...args)
     return new DelayTransfomer(n, ...args)
 }
+const HIF = (...args: AttributeValue[]) => HH('if', ...args)
+const HUN = (...args: AttributeValue[]) => HH('unless', ...args)
 
 const EACH = (args: string[], trueNode: () => Node, falseNode?: Node) => new EachBlock(args, trueNode, falseNode)
 const IF = (n: string, trueNode: Node, falseNode?: Node) => new IfBlock([DV(n)], trueNode, falseNode)
@@ -91,7 +93,7 @@ export default {
     lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application,
     factory: {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH,
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
         EACH, IF, IFC, UN, C, DA, A: E, B: KV
     }
 }

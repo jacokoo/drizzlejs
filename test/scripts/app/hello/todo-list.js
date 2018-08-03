@@ -1,7 +1,7 @@
 (() => {
     const {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
-        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C, DA, A, B
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
+        EACH, IF, IFC, UN, C, DA, A, B
     } = drizzle.factory
     const {ViewTemplate} = drizzle
 
@@ -19,7 +19,7 @@
     const d5 = () => {
         const d6 = DN(
             'li', null, [],
-            [DA('class', HIF('todo.completed', SV('completed')), HC(DV('todo'), SV('eq'), DV('editing'), SV('editing')))]
+            [DA('class', HIF(DV('todo.completed'), SV('completed')), HIF(DV('todo'), SV('eq'), DV('editing'), SV('editing')))]
         )
         const d7 = SN('div', null, KV('class', 'view'))
         const d8 = DN(

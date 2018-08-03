@@ -1,0 +1,48 @@
+#! drizzle
+view
+    section(class='main')&if(todos.length)
+        input.toggle-all(type='checkbox' id='toggle-all' checked=allDone)(
+            action:change=toggleAll(completed=this.checked)
+        )
+        label(for='toggle-all')
+        ul.todo-list
+            li(class=if(todo.completed 'completed') + if(todo eq editing 'editing'))&each(todos as todo)
+                .view
+                    input.toggle(type='checkbox' checked=todo.completed)(
+                        action:change = toggle(id=todo.id changed=this.changed)
+                    )
+                    label(on:dblclick=edit(todo)) > echo(todo.name)
+                    button.destroy(action:click=remove(id=todo.id))
+                input.edit(value=todo.name)(
+                    action:blur = commitEdit(todo)
+                    action:endter = commitEdit(todo)
+                    action:escape = revertEdit(todo nameCache)
+                )
+
+script.
+    export default {
+        computed: {
+            allDone ({todos}) {
+                return !todos.some(it => !it.completed)
+            }
+        },
+
+        events: {
+            edit (todo) {
+                this.set({nameCache: todo.name, editing: todo})
+            }
+        },
+
+        actions: {
+            revertEdit (cb, todo, cached) {
+                console.log(todo, cached)
+                this.set({editing: false, nameCache: false})
+                cb({id: todo.id, name: cached})
+            },
+
+            commitEdit (cb, todo) {
+                this.set({nameCache: false, editing: false})
+                cb({id: todo.id, name: todo.name})
+            }
+        }
+    }

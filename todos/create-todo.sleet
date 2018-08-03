@@ -1,0 +1,16 @@
+#! drizzle
+view
+    input#create.new-todo(placeholder='What needs to be done?')(
+        action:enter=newTodo(name=this.value)
+    )
+
+script.
+    export default {
+        actions: {
+            newTodo (cb, payload) {
+                if (!payload.name) return
+                this.ids.create.value = ''
+                cb(payload)
+            }
+        }
+    }

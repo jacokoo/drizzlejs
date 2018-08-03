@@ -1,7 +1,7 @@
 (() => {
     const {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
-        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH,
+        EACH, IF, IFC, UN, C, DA, A, B
     } = drizzle.factory
     const {ViewTemplate} = drizzle
 

@@ -1,27 +1,55 @@
-module(declare models can be passed in)
-    items(header content footer module='module/path' npmModule=npm('package-name') + 'module/path')
-    div.todoapp
-        ref#header
-        ref#content
-        ref#footer
+#! drizzle
+module(todos)
+    section.todoapp
+        header.header
+            h1 todos
+            create-todo
+        todo-list(todos)
+        todo-footer(todos)
 
 script.
+    let id = 0
     export default {
+        items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
         store: {
             models: {
                 todos: {
-                    data: () => [{text: 'todo 1'}, {text: 'todo 2', completed: true}]
-                },
-                filter: {
-                    data: () => 'all'
+                    data: () => [{name: 'task 1', completed: true, id: id++}, {name: ' task 2', id: id++}]
                 }
             },
 
             actions: {
-                newTodo (text) {
-                    const {todos} = this.models
-                    todos.set(todos.get().concat([{text}]))
-                }
+                newTodo (payload) {
+                    this.set({todos: this.get('todos').concat([Object.assign(payload, {id: id++})])})
+                },
+
+                toggleAll (payload) {
+                    this.set({todos: this.get('todos').map(it => Object.assign(it, payload))})
+                },
+
+                toggle ({id, checked}) {
+                    const todos = this.get('todos')
+                    todos.find(it => it.id === id).completed = checked
+                    this.set({ todos })
+                },
+
+                remove (item) {
+                    this.set({todos: this.get('todos').filter(it => it.id !== item.id)})
+                },
+
+                update ({id, name}) {
+                    const todos = this.get('todos')
+                    todos.find(it => it.id === id).name = name
+                    this.set({ todos })
+                },
+
+                commitEdit (payload) {
+                    this.dispatch('update', payload)
+                },
+
+                revertEdit (payload) {
+                    this.dispatch('update', payload)
+                },
             }
         }
     }

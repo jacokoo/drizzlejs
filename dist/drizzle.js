@@ -716,7 +716,7 @@
         createClass(IfHelper, [{
             key: 'check',
             value: function check() {
-                this.assertCount(2, 5);
+                this.assertCount(2, 3, 4, 5);
                 this.assertDynamic(0);
             }
         }, {
@@ -739,7 +739,7 @@
             key: 'useMultiple',
             value: function useMultiple(context) {
                 var op = this.args[1][1];
-                if (Compare[op]) {
+                if (!Compare[op]) {
                     throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
                 }
                 return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4;
@@ -2451,6 +2451,20 @@
         if (helpers[n]) return new (Function.prototype.bind.apply(helpers[n], [null].concat(args)))();
         return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
     };
+    var HIF = function HIF() {
+        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+            args[_key7] = arguments[_key7];
+        }
+
+        return HH.apply(undefined, ['if'].concat(args));
+    };
+    var HUN = function HUN() {
+        for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+            args[_key8] = arguments[_key8];
+        }
+
+        return HH.apply(undefined, ['unless'].concat(args));
+    };
     var EACH = function EACH(args, trueNode, falseNode) {
         return new EachBlock(args, trueNode, falseNode);
     };
@@ -2464,8 +2478,8 @@
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
     var C = function C(parent) {
-        for (var _len7 = arguments.length, children = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
-            children[_key7 - 1] = arguments[_key7];
+        for (var _len9 = arguments.length, children = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+            children[_key9 - 1] = arguments[_key9];
         }
 
         return parent.setChildren(children);
@@ -2475,7 +2489,7 @@
         lifecycles: { module: [], view: [] },
         ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application,
         factory: {
-            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH,
+            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
             EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, A: E, B: KV
         }
     };

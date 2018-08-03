@@ -1,0 +1,24 @@
+#! drizzle
+view
+    footer.footer
+        span.todo-count
+            strong > echo(remaining)
+            echo(if(remaining eq 1 'item left' 'items left'))
+        ul.filters
+            li > a(href='#/' class=if(status eq '' 'selected')) All
+            li > a(href='#/active' class=if(status eq 'active' 'selected')) Active
+            li > a(href='#/completed' class=if(status eq 'completed' 'selected')) Completed
+        button.clear-completed(action:click=clearCompleted)&if(haveCompleted)
+
+script.
+    export default {
+        computed: {
+            remaining ({todos}) {
+                return todos.filter(it => !it.completed).length
+            },
+
+            haveCompleted ({todos}) {
+                return todos.some(it => !!it.completed)
+            }
+        }
+    }

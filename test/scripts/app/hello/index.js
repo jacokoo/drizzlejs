@@ -1,13 +1,11 @@
 (() => {
     const {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, TR, HIF, HEQ, HGT, HLT, HGTE, HLTE, HNE,
-        EACH, IF, EQ, GT, LT, GTE, LTE, NE, C
+        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH,
+        EACH, IF, IFC, UN, C, DA, A, B
     } = drizzle.factory
     const {ModuleTemplate} = drizzle
 
     const template = new ModuleTemplate()
-    template.views('create-todo', 'todo-list', 'todo-footer')
-
     const d1 = SN('section', null, KV('class', 'todoapp'))
     const d2 = SN('header', null, KV('class', 'header'))
     const d3 = SN('h1')
@@ -25,6 +23,7 @@
 
     MODULES['app/hello/index'] = {
         template: template,
+        items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
         store: {
             models: {
                 todos: {

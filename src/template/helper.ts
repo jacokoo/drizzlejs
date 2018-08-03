@@ -119,7 +119,7 @@ export class IfHelper extends Helper {
     name = 'if'
 
     check () {
-        this.assertCount(2, 5)
+        this.assertCount(2, 3, 4, 5)
         this.assertDynamic(0)
     }
 
@@ -138,7 +138,7 @@ export class IfHelper extends Helper {
 
     useMultiple (context): number {
         const op = this.args[1][1] as string
-        if (Compare[op]) {
+        if (!Compare[op]) {
             throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
         }
 
