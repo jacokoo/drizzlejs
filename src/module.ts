@@ -6,17 +6,19 @@ import { View, ViewOptions } from './view'
 import { Disposable} from './drizzle'
 
 export interface ItemOptions {
-    view?: string
-    module?: {
+    views?: string[]
+    refs?: string[]
+    modules?: {[name: string]: {
         path: string,
-        loader?: {name: string, args?: string[]}
-    }
+        loader?: {name: string, args?: any}
+    }}
 }
 
 interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
     exportedModels?: string[]
     state?: object,
+    items?: ItemOptions
 }
 
 const UPDATE_ACTION = `update${+new Date()}`
@@ -33,6 +35,16 @@ const clone = (target: any) => {
     }
     return target
 }
+
+interface ModuleRenference {
+    [name: string]: {
+        loader: string,
+        path: string
+        args?: any
+    }
+}
+
+export const moduleReferences: ModuleRenference = {}
 
 export class Module extends Renderable<ModuleOptions> {
     items: {[key: string]: {
@@ -128,22 +140,38 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     private _loadItems (): Promise<any> {
-        const {template} = this._options
-        if (!template || !template.options) return Promise.resolve()
-        const {items} = template.options
+        const {items} = this._options
         if (!items) return Promise.resolve()
 
-        const ks = Object.keys(items)
-        const loaders = ks.map(k => {
-            return items[k].view ? this._loader : this.app.createLoader(items[k].module.path, items[k].module.loader)
-        })
-        return Promise.all(ks.map((k, i) => loaders[i].load(items[k].view ? items[k].view : 'index')))
-            .then(data => Promise.all(ks.map((k, i) => {
-                this.items[k] = {
-                    type: items[k].view ? 'view' : 'module',
-                    options: data[i],
-                    loader: loaders[i]
-                }
-            })))
+        let ps: {name: string, type: string, loader: Loader}[] = []
+
+        if (items.views) {
+            ps = ps.concat(items.views.map(it => {
+                return {name: it, type: 'view', loader: this._loader}
+            }))
+        }
+
+        if (items.refs) {
+            ps = ps.concat(items.refs.map(it => {
+                const obj = moduleReferences[it]
+                const loader = this.app.createLoader(obj.path, {name: obj.loader, args: obj.args})
+                return {name: it, type: 'module', loader}
+            }))
+        }
+
+        if (items.modules) {
+            ps = ps.concat(Object.keys(items.modules).map(it => {
+                const obj = items.modules[it]
+                const loader = this.app.createLoader(obj.path, obj.loader)
+                return {name: it, type: 'module', loader}
+            }))
+        }
+
+        return Promise.all(ps.map((k, i) => ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index')))
+            .then(data => {
+                ps.forEach((p, i) => {
+                    this.items[p.name] = {type: p.type as ('view' | 'module'), loader: p.loader, options: data[i]}
+                })
+            })
     }
 }

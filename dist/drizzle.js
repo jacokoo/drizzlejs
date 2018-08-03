@@ -947,7 +947,7 @@
 
             var _this = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
 
-            _this.options = { exportedModels: exportedModels, items: {} };
+            _this.exportedModels = [];
             var me = _this;
             _this.life = {
                 stage: 'template',
@@ -981,25 +981,6 @@
             return _this;
         }
 
-        createClass(ModuleTemplate, [{
-            key: 'views',
-            value: function views() {
-                var _this5 = this;
-
-                for (var _len = arguments.length, _views = Array(_len), _key = 0; _key < _len; _key++) {
-                    _views[_key] = arguments[_key];
-                }
-
-                _views.forEach(function (it) {
-                    return _this5.options.items[it] = { view: it };
-                });
-            }
-        }, {
-            key: 'modules',
-            value: function modules(name, path, loader, args) {
-                this.options.items[name] = loader ? { path: path, loader: { name: loader, args: args } } : { path: path };
-            }
-        }]);
         return ModuleTemplate;
     }(Template);
 
@@ -1385,6 +1366,7 @@
         }
         return target;
     };
+    var moduleReferences = {};
 
     var Module = function (_Renderable) {
         inherits(Module, _Renderable);
@@ -1501,26 +1483,35 @@
             value: function _loadItems() {
                 var _this6 = this;
 
-                var template = this._options.template;
-
-                if (!template || !template.options) return Promise.resolve();
-                var items = template.options.items;
+                var items = this._options.items;
 
                 if (!items) return Promise.resolve();
-                var ks = Object.keys(items);
-                var loaders = ks.map(function (k) {
-                    return items[k].view ? _this6._loader : _this6.app.createLoader(items[k].module.path, items[k].module.loader);
-                });
-                return Promise.all(ks.map(function (k, i) {
-                    return loaders[i].load(items[k].view ? items[k].view : 'index');
-                })).then(function (data) {
-                    return Promise.all(ks.map(function (k, i) {
-                        _this6.items[k] = {
-                            type: items[k].view ? 'view' : 'module',
-                            options: data[i],
-                            loader: loaders[i]
-                        };
+                var ps = [];
+                if (items.views) {
+                    ps = ps.concat(items.views.map(function (it) {
+                        return { name: it, type: 'view', loader: _this6._loader };
                     }));
+                }
+                if (items.refs) {
+                    ps = ps.concat(items.refs.map(function (it) {
+                        var obj = moduleReferences[it];
+                        var loader = _this6.app.createLoader(obj.path, { name: obj.loader, args: obj.args });
+                        return { name: it, type: 'module', loader: loader };
+                    }));
+                }
+                if (items.modules) {
+                    ps = ps.concat(Object.keys(items.modules).map(function (it) {
+                        var obj = items.modules[it];
+                        var loader = _this6.app.createLoader(obj.path, obj.loader);
+                        return { name: it, type: 'module', loader: loader };
+                    }));
+                }
+                return Promise.all(ps.map(function (k, i) {
+                    return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index');
+                })).then(function (data) {
+                    ps.forEach(function (p, i) {
+                        _this6.items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
+                    });
                 });
             }
         }]);
@@ -1541,7 +1532,7 @@
         createClass(Application, [{
             key: 'createLoader',
             value: function createLoader(path, loader) {
-                return new Loader(this, path, []);
+                return new Loader(this, path, null); // TODO
             }
         }, {
             key: 'start',

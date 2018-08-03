@@ -3,9 +3,9 @@ import { Application } from './application'
 export class Loader {
     protected _app: Application
     protected _path: string
-    protected _args: string[]
+    protected _args: any
 
-    constructor(app: Application, path: string, args: string[]) {
+    constructor(app: Application, path: string, args: any) {
         this._app = app
         this._path = path
         this._args = args

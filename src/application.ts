@@ -22,8 +22,8 @@ export class Application {
         }, options)
     }
 
-    createLoader (path: string, loader?: {name: string, args?: string[]}): Loader {
-        return new Loader(this, path, [])
+    createLoader (path: string, loader?: {name: string, args?: any}): Loader {
+        return new Loader(this, path, null) // TODO
     }
 
     start (): Promise<any> {
