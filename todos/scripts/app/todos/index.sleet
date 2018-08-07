@@ -8,9 +8,11 @@ module(todos)
         todo-footer(todos)
 
 script.
+    import a from './todo-list'
     let id = 0
     export default {
-        items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
+        'items': { views: ['create-todo', 'todo-list', 'todo-footer'] },
+        a,
         store: {
             models: {
                 todos: {
