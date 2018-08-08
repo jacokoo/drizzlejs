@@ -2,12 +2,18 @@ import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
 import {compile} from 'sleet'
 import {generate} from 'escodegen'
+import walk from 'acorn/dist/walk'
+import path from 'path'
+import fs from 'fs'
 
 const sleet = {
     name: 'sleet',
     resolveId (a, b) {
-        if (a === 'drizzle') {
-            return '../dist/drizzle.js'
+        if (a.indexOf('.') === -1 && fs.existsSync(path.resolve('scripts/app', a, 'index.sleet'))) {
+            return path.resolve('scripts/app', a, 'index.sleet')
+        }
+        if (a === 'drizzlejs') {
+            return path.resolve('../dist/drizzle.js')
         }
         if (b && b.slice(-11) === 'index.sleet' && a && a.slice(0, 2) === './') {
             return b.slice(0, -11) + a.slice(2) + '.sleet'
@@ -21,6 +27,20 @@ const sleet = {
 }
 
 const key = (ast, key) => ast.key.name === key || ast.key.value === key
+
+const mainjs = function (source) {
+    const ast = this.parse(source)
+    walk.simple(ast, {
+        ImportDeclaration (node) {
+            if (!node.source.value === 'drizzlejs') return
+            console.log('import', JSON.stringify(node))
+
+        },
+        NewExpression (node) {
+            console.log(JSON.stringify(node))
+        }
+    })
+}
 
 const demo = () => {
     return {
@@ -37,6 +57,9 @@ const demo = () => {
         },
 
         transform (source, id) {
+            if (id.slice(-7) === 'main.js') {
+                mainjs.call(this, source)
+            }
             if (id.slice(-11) !== 'index.sleet') return
             const ast = this.parse(source)
             const obj = ast.body.find(it => it.type === 'ExportDefaultDeclaration')
@@ -80,12 +103,12 @@ const demo = () => {
 }
 
 export default {
-    input: 'scripts/app/todos/index.sleet',
+    input: 'scripts/main.js',
     plugins: [
         commonjs({
-            include: ['./dist/drizzle.js'],
+            include: ['../dist/drizzle.js'],
             namedExports: {
-                '../dist/drizzle.js': ['factory']
+                '../dist/drizzle.js': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application']
             }
         }),
         sleet,

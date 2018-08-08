@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global.drizzle = factory());
+    (global.drizzlejs = factory());
 }(this, (function () { 'use strict';
 
     var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
@@ -1547,7 +1547,7 @@
                 if (typeof entry === 'string') {
                     loader = this.createLoader(entry);
                 } else {
-                    loader = this.createLoader(entry.path, entry.loader);
+                    return Promise.resolve(new Module(this, entry.loader, entry.options));
                 }
                 return loader.load('index').then(function (opt) {
                     var v = new Module(_this, loader, opt);

@@ -13,6 +13,7 @@
     "dev": "rollup -c -w"
   },
   "devDependencies": {
+    "acorn": "^5.7.1",
     "babel-core": "^6.26.3",
     "babel-preset-es2015-rollup": "^3.0.0",
     "rollup": "^0.63.5",

@@ -14,7 +14,7 @@ export interface ItemOptions {
     }}
 }
 
-interface ModuleOptions extends RenderOptions {
+export interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
     exportedModels?: string[]
     state?: object,

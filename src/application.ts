@@ -1,13 +1,13 @@
 import { Loader } from './loader'
 import { Disposable } from './drizzle'
-import { Module } from './module'
+import { Module, ModuleOptions } from './module'
 
 interface ApplicationOptions {
     stages?: string[],
     scriptRoot?: string
     container: HTMLElement,
-    entry: string | {path: string, loader?: {name: string, args?: string[]}},
-    customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
+    entry: string | {options: ModuleOptions, loader: Loader}
+    customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable},
     getResource? (path): Promise<object>
 }
 
@@ -32,7 +32,7 @@ export class Application {
         if (typeof entry === 'string') {
             loader = this.createLoader(entry)
         } else {
-            loader = this.createLoader(entry.path, entry.loader)
+            return Promise.resolve(new Module(this, entry.loader, entry.options))
         }
 
         return loader.load('index').then(opt => {
