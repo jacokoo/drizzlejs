@@ -53,12 +53,46 @@ const findImport = (ast) => {
     return result
 }
 
+const findApplicationOptions = (ast, imports) => {
+    let obj
+    walk.simple(ast, {
+        NewExpression (node) {
+            const {callee} = node
+            if (callee.type === 'Identifier' && imports.app.includes(callee.name)) {
+                obj = node.arguments[0]
+                return
+            }
+
+            if (callee.type === 'MemberExpression'
+                && imports.drizzle.includes(callee.object.name)
+                && callee.property.name === 'Application') {
+
+                obj = node.arguments[0]
+            }
+        }
+    })
+
+    if (obj.type === 'ObjectExpression') return obj
+}
+
 export default function(options) {
     const { scriptRoot } = options
-    let basedir, entry
+    let basedir, input
 
-    const analyseEntry = (ast) => {
-        console.log(findImport(ast))
+    const transformInput = (ast) => {
+        const opt = findApplicationOptions(ast, findImport(ast))
+        if (!opt) return {code: generate(ast)}
+
+        let entry = opt.properties.find(it => key(it, 'entry'))
+        if (!entry) {
+            entry = property(identifier('entry'), literal('viewport'))
+            opt.properties.push(entry)
+        }
+
+        const name = entry.value.value
+        entry.value = identifier(`_${name}`)
+        ast.body.unshift((importDefault(`_${name}`, name)))
+        return {code: generate(ast)}
     }
 
     // transfrom items to import
@@ -67,14 +101,25 @@ export default function(options) {
         if (!obj || obj.declaration.type !== 'ObjectExpression') return source
         const items = obj.declaration.properties.find(it => key(it, 'items'))
         if (!items || items.value.type !== 'ObjectExpression') return source
-        const views = items.value.properties.find(it => key(it, 'views'))
 
         const mods = []
+        const views = items.value.properties.find(it => key(it, 'views'))
         if (views && views.value.type === 'ArrayExpression') {
             views.value.elements.map(it => it.value).forEach(it => {
                 const name = `_${it.replace(/-/g, '_')}`
                 ast.body.unshift(importDefault(name, `./${it}`))
                 mods.push(property(literal(it), identifier(name)))
+            })
+        }
+
+        const modules = items.value.properties.find(it => key(it, 'modules'))
+        if (modules && modules.value.type === 'ObjectExpression') {
+            modules.value.properties.forEach(it => {
+                const name = it.key.name || it.key.value
+                const key = `_${name.replace(/-/g, '_')}`
+                const source = it.value.value
+                ast.body.unshift(importDefault(key, source))
+                mods.push(property(literal(name), identifier(key)))
             })
         }
 
@@ -90,14 +135,14 @@ export default function(options) {
     return {
         name: 'drizzlejs',
 
-        options (input) {
-            entry = input.entry
+        options (opt) {
+            input = opt.entry
         },
 
         resolveId (importee, importer) {
-            if (!importer && importee === entry) {
+            if (!importer && importee === input) {
                 const resolved = path.resolve('.', importee)
-                entry = resolved
+                input = resolved
                 basedir = path.dirname(resolved)
                 return resolved
             }
@@ -112,9 +157,8 @@ export default function(options) {
         },
 
         transform (source, id) {
-            if (id === entry) {
-                analyseEntry(this.parse(source))
-                return
+            if (id === input) {
+                return transformInput(this.parse(source))
             }
 
             if (path.extname(id) === '.sleet') {

@@ -1,0 +1,11 @@
+#! drizzle
+module
+    div(style='width: 500px; margin: 0 auto')
+        todo-app
+
+script.
+    export default {
+        items: {
+            modules: { 'todo-app': 'todos' }
+        }
+    }

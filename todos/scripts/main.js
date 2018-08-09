@@ -1,6 +1,4 @@
-import {Application, Loader as l} from 'drizzlejs'
-import * as a from 'drizzlejs'
-import b from 'drizzlejs'
+import {Application, Loader} from 'drizzlejs'
 
 class MLoader extends Loader {
     load (file, mod) {
@@ -10,7 +8,6 @@ class MLoader extends Loader {
 }
 
 var app = new Application({
-    entry: 'todos',
     container: document.querySelector('#content')
 })
 
