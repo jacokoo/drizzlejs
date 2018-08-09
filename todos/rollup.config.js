@@ -1,5 +1,6 @@
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
+import drizzle from './rollup-plugin-drizzle'
 import {compile} from 'sleet'
 import {generate} from 'escodegen'
 import walk from 'acorn/dist/walk'
@@ -112,8 +113,7 @@ export default {
                 '../dist/drizzle.js': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application', 'Loader']
             }
         }),
-        sleet,
-        demo(),
+        drizzle({scriptRoot: 'app'}),
         babel({
             babelrc: false,
             presets: ['es2015-rollup']
