@@ -2,8 +2,8 @@
     const {
         SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH,
         EACH, IF, IFC, UN, C, DA, A, B
-    } = drizzle.factory
-    const {ModuleTemplate} = drizzle
+    } = drizzlejs.factory
+    const {ModuleTemplate} = drizzlejs
 
     const template = new ModuleTemplate()
     const d1 = SN('section', null, KV('class', 'todoapp'))

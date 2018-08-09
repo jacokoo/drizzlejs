@@ -932,7 +932,7 @@
 
         createClass(Loader, [{
             key: 'load',
-            value: function load(file) {
+            value: function load(file, mod) {
                 return this._app.options.getResource(this._app.options.scriptRoot + '/' + this._path + '/' + file);
             }
         }]);
@@ -1507,7 +1507,7 @@
                     }));
                 }
                 return Promise.all(ps.map(function (k, i) {
-                    return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index');
+                    return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', _this6);
                 })).then(function (data) {
                     ps.forEach(function (p, i) {
                         _this6.items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
@@ -1522,17 +1522,29 @@
         function Application(options) {
             classCallCheck(this, Application);
 
+            this.loaders = {};
             this.options = Object.assign({
                 stages: ['init', 'template', 'default'],
                 scriptRoot: 'app',
                 entry: 'viewport'
             }, options);
+            this.registerLoader(Loader);
         }
 
         createClass(Application, [{
+            key: 'registerLoader',
+            value: function registerLoader(loader) {
+                var name = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'default';
+
+                this.loaders[name] = loader;
+            }
+        }, {
             key: 'createLoader',
             value: function createLoader(path, loader) {
-                return new Loader(this, path, null); // TODO
+                if (loader) {
+                    return new this.loaders[loader.name](this, path, loader.args);
+                }
+                return new this.loaders.default(this, path);
             }
         }, {
             key: 'start',
@@ -1544,16 +1556,19 @@
                     entry = _options.entry,
                     container = _options.container;
 
-                if (typeof entry === 'string') {
-                    loader = this.createLoader(entry);
-                } else {
-                    return Promise.resolve(new Module(this, entry.loader, entry.options));
-                }
-                return loader.load('index').then(function (opt) {
-                    var v = new Module(_this, loader, opt);
+                var create = function create(lo, options) {
+                    var v = new Module(_this, lo, options);
                     return v._init().then(function () {
                         return v._render(container);
                     });
+                };
+                if (typeof entry === 'string') {
+                    loader = this.createLoader(entry);
+                } else {
+                    return create(this.createLoader(null), entry);
+                }
+                return loader.load('index', null).then(function (opt) {
+                    return create(loader, opt);
                 });
             }
         }]);
@@ -2487,7 +2502,7 @@
     var drizzle = {
         helpers: helpers, blocks: blocks, loaders: loaders, customEvents: customEvents,
         lifecycles: { module: [], view: [] },
-        ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application,
+        ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application, Loader: Loader,
         factory: {
             SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
             EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, A: E, B: KV

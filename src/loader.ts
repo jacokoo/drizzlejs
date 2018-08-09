@@ -1,4 +1,5 @@
 import { Application } from './application'
+import { Module } from './module'
 
 export class Loader {
     protected _app: Application
@@ -11,7 +12,7 @@ export class Loader {
         this._args = args
     }
 
-    load (file): Promise<object> {
+    load (file, mod: Module): Promise<object> {
         return this._app.options.getResource(`${this._app.options.scriptRoot}/${this._path}/${file}`)
     }
 }

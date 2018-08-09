@@ -167,7 +167,7 @@ export class Module extends Renderable<ModuleOptions> {
             }))
         }
 
-        return Promise.all(ps.map((k, i) => ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index')))
+        return Promise.all(ps.map((k, i) => ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', this)))
             .then(data => {
                 ps.forEach((p, i) => {
                     this.items[p.name] = {type: p.type as ('view' | 'module'), loader: p.loader, options: data[i]}

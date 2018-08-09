@@ -91,7 +91,7 @@ const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 export default {
     helpers, blocks, loaders, customEvents,
     lifecycles: {module: [], view: []},
-    ModuleTemplate, ViewTemplate, Application,
+    ModuleTemplate, ViewTemplate, Application, Loader,
     factory: {
         SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
         EACH, IF, IFC, UN, C, DA, A: E, B: KV

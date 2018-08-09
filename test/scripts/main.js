@@ -1,4 +1,4 @@
-var app = new drizzle.Application({
+var app = new drizzlejs.Application({
     entry: 'hello',
     container: document.querySelector('#content'),
     getResource: function (file) {

@@ -9,13 +9,13 @@ view
             li(class=if(todo.completed 'completed') + if(todo eq editing 'editing'))&each(todos as todo)
                 .view
                     input.toggle(type='checkbox' checked=todo.completed)(
-                        action:change = toggle(id=todo.id changed=this.changed)
+                        action:change = toggle(id=todo.id checked=this.checked)
                     )
                     label(on:dblclick=edit(todo)) > echo(todo.name)
                     button.destroy(action:click=remove(id=todo.id))
-                input.edit(value=todo.name)(
-                    action:blur = commitEdit(todo)
-                    action:endter = commitEdit(todo)
+                input.edit(bind:value=todo.name)(
+                    action:blur = commitEdit(todo.id this.value 'blur')
+                    action:enter = commitEdit(todo.id this.value 'enter')
                     action:escape = revertEdit(todo nameCache)
                 )
 
@@ -40,9 +40,10 @@ script.
                 cb({id: todo.id, name: cached})
             },
 
-            commitEdit (cb, todo) {
+            commitEdit (cb, id, name, type) {
+                console.log('commit', id, name, type)
                 this.set({nameCache: false, editing: false})
-                cb({id: todo.id, name: todo.name})
+                cb({id, name})
             }
         }
     }

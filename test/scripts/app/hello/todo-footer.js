@@ -2,8 +2,8 @@
     const {
         SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
         EACH, IF, IFC, UN, C, DA, A, B
-    } = drizzle.factory
-    const {ViewTemplate} = drizzle
+    } = drizzlejs.factory
+    const {ViewTemplate} = drizzlejs
 
     const template = new ViewTemplate()
     const d1 = SN('footer', null, KV('class', 'footer'))

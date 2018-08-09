@@ -8,11 +8,9 @@ module(todos)
         todo-footer(todos)
 
 script.
-    import a from './todo-list'
     let id = 0
     export default {
-        'items': { views: ['create-todo', 'todo-list', 'todo-footer'] },
-        a,
+        items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
         store: {
             models: {
                 todos: {
@@ -40,6 +38,7 @@ script.
                 },
 
                 update ({id, name}) {
+                    console.log('update', id, name)
                     const todos = this.get('todos')
                     todos.find(it => it.id === id).name = name
                     this.set({ todos })

@@ -3,7 +3,7 @@ view
     footer.footer
         span.todo-count
             strong > echo(remaining)
-            echo(if(remaining eq 1 'item left' 'items left'))
+            echo(if(remaining eq 1 ' item left' ' items left'))
         ul.filters
             li > a(href='#/' class=if(status eq '' 'selected')) All
             li > a(href='#/active' class=if(status eq 'active' 'selected')) Active

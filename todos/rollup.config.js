@@ -104,11 +104,12 @@ const demo = () => {
 
 export default {
     input: 'scripts/main.js',
+    external: ['drizzlejs'],
     plugins: [
         commonjs({
             include: ['../dist/drizzle.js'],
             namedExports: {
-                '../dist/drizzle.js': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application']
+                '../dist/drizzle.js': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application', 'Loader']
             }
         }),
         sleet,

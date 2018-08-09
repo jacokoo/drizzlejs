@@ -2,8 +2,8 @@
     const {
         SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
         EACH, IF, IFC, UN, C, DA, A, B
-    } = drizzle.factory
-    const {ViewTemplate} = drizzle
+    } = drizzlejs.factory
+    const {ViewTemplate} = drizzlejs
 
     const template = new ViewTemplate()
 
@@ -36,7 +36,7 @@
         const d12 = DN(
             'input', null, [KV('class', 'edit')], [], [B('value', 'todo.name')], [],
             [
-                A('blur', 'commitEdit', NDA('todo')),
+                A('blur', 'commitEdit', NDA('todo'), NSA('blur')),
                 A('enter', 'commitEdit', NDA('todo')),
                 A('escape', 'revertEdit', NDA('todo'), NDA('nameCache'))
             ]
@@ -72,12 +72,12 @@
 
         actions: {
             revertEdit (cb, todo, cached) {
-                console.log(todo, cached)
                 this.set({editing: false, nameCache: false})
                 cb({id: todo.id, name: cached})
             },
 
-            commitEdit (cb, todo) {
+            commitEdit (cb, todo, type) {
+                console.log(todo, type)
                 this.set({nameCache: false, editing: false})
                 cb({id: todo.id, name: todo.name})
             }
