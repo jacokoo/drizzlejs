@@ -3,7 +3,7 @@ import {Application, Loader} from 'drizzlejs'
 class MLoader extends Loader {
     load (file, mod) {
         if (!mod) return null
-        return Promise.resolve(mod._options._loadedItems[file])
+        return Promise.resolve(mod._options._loadedItems[file === 'index' ? this._path : file])
     }
 }
 

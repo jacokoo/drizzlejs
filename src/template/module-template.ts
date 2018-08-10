@@ -9,10 +9,10 @@ export class ModuleTemplate extends Template<Module> {
         const me = this
         this.life = {
             stage: 'template',
-            init (this: Module) { Delay.also(d => me.init(this, d)) },
-            beforeRender (this: Module) { Delay.also(d => me.render(this.get(), d)) },
-            updated (this: Module) { Delay.also(d => me.update(this.get(), d)) },
-            beforeDestroy () { Delay.also(d => me.destroy(d)) }
+            init (this: Module) { return Delay.also(d => me.init(this, d)) },
+            beforeRender (this: Module) { return Delay.also(d => me.render(this.get(), d)) },
+            updated (this: Module) { return Delay.also(d => me.update(this.get(), d)) },
+            beforeDestroy () { return Delay.also(d => me.destroy(d)) }
         }
     }
 }

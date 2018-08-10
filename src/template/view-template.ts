@@ -8,10 +8,10 @@ export class ViewTemplate extends Template<View> {
         const me = this
         this.life = {
             stage: 'template',
-            init (this: View) { Delay.also(d => me.init(this, d)) },
-            beforeRender (this: View) { Delay.also(d => me.render(me.getContext(this), d)) },
-            updated (this: View) { Delay.also(d => me.update(me.getContext(this), d)) },
-            beforeDestroy () { Delay.also(d => me.destroy(d)) }
+            init (this: View) { return Delay.also(d => me.init(this, d)) },
+            beforeRender (this: View) { return Delay.also(d => me.render(me.getContext(this), d)) },
+            updated (this: View) { return Delay.also(d => me.update(me.getContext(this), d)) },
+            beforeDestroy () { return Delay.also(d => me.destroy(d)) }
         }
     }
 

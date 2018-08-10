@@ -119,7 +119,7 @@ export default function(options) {
                 const key = `_${name.replace(/-/g, '_')}`
                 const source = it.value.value
                 ast.body.unshift(importDefault(key, source))
-                mods.push(property(literal(name), identifier(key)))
+                mods.push(property(literal(source), identifier(key)))
             })
         }
 

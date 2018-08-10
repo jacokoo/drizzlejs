@@ -1,6 +1,6 @@
 #! drizzle
 module
-    div(style='width: 500px; margin: 0 auto')
+    div
         todo-app
 
 script.

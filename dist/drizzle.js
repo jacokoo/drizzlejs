@@ -954,26 +954,26 @@
                 init: function init() {
                     var _this2 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.init(_this2, d);
                     });
                 },
                 beforeRender: function beforeRender() {
                     var _this3 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.render(_this3.get(), d);
                     });
                 },
                 updated: function updated() {
                     var _this4 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.update(_this4.get(), d);
                     });
                 },
                 beforeDestroy: function beforeDestroy() {
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.destroy(d);
                     });
                 }
@@ -998,26 +998,26 @@
                 init: function init() {
                     var _this2 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.init(_this2, d);
                     });
                 },
                 beforeRender: function beforeRender() {
                     var _this3 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.render(me.getContext(_this3), d);
                     });
                 },
                 updated: function updated() {
                     var _this4 = this;
 
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.update(me.getContext(_this4), d);
                     });
                 },
                 beforeDestroy: function beforeDestroy() {
-                    Delay.also(function (d) {
+                    return Delay.also(function (d) {
                         return me.destroy(d);
                     });
                 }
@@ -1501,8 +1501,8 @@
                 }
                 if (items.modules) {
                     ps = ps.concat(Object.keys(items.modules).map(function (it) {
-                        var obj = items.modules[it];
-                        var loader = _this6.app.createLoader(obj.path, obj.loader);
+                        var path = items.modules[it];
+                        var loader = _this6.app.createLoader(path);
                         return { name: it, type: 'module', loader: loader };
                     }));
                 }

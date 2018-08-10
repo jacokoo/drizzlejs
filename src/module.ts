@@ -8,10 +8,7 @@ import { Disposable} from './drizzle'
 export interface ItemOptions {
     views?: string[]
     refs?: string[]
-    modules?: {[name: string]: {
-        path: string,
-        loader?: {name: string, args?: any}
-    }}
+    modules?: {[name: string]: string}
 }
 
 export interface ModuleOptions extends RenderOptions {
@@ -161,8 +158,8 @@ export class Module extends Renderable<ModuleOptions> {
 
         if (items.modules) {
             ps = ps.concat(Object.keys(items.modules).map(it => {
-                const obj = items.modules[it]
-                const loader = this.app.createLoader(obj.path, obj.loader)
+                const path = items.modules[it]
+                const loader = this.app.createLoader(path)
                 return {name: it, type: 'module', loader}
             }))
         }
