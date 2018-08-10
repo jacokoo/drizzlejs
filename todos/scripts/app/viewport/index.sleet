@@ -7,5 +7,14 @@ script.
     export default {
         items: {
             modules: { 'todo-app': 'todos' }
+        },
+
+        routes: {
+            '/todos': {
+                ref: 'todo-app'
+                region: 'region-name'
+            },
+
+            '/todos': 'todo-app'   // use default region
         }
     }

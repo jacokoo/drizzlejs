@@ -1376,7 +1376,7 @@
 
             var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.life));
 
-            _this.items = {};
+            _this._items = {};
             _this._handlers = {};
             _this._loader = loader;
             return _this;
@@ -1443,7 +1443,7 @@
         }, {
             key: 'createItem',
             value: function createItem(name) {
-                var opt = this.items[name];
+                var opt = this._items[name];
                 var item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options);
                 return item._init().then(function () {
                     return item;
@@ -1510,7 +1510,7 @@
                     return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', _this6);
                 })).then(function (data) {
                     ps.forEach(function (p, i) {
-                        _this6.items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
+                        _this6._items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
                     });
                 });
             }

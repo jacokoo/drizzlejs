@@ -11,10 +11,17 @@ script.
     let id = 0
     export default {
         items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
+
+        routes: {
+            '/{filter}': {
+                action: 'updateFilter'
+            }
+        },
+
         store: {
             models: {
                 todos: {
-                    data: () => [{name: 'task 1', completed: true, id: id++}, {name: ' task 2', id: id++}]
+                    data: () => [{name: 'task 1', completed: true, id: id++}, {name: 'task 2', id: id++}]
                 }
             },
 

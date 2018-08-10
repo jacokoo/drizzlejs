@@ -44,7 +44,7 @@ interface ModuleRenference {
 export const moduleReferences: ModuleRenference = {}
 
 export class Module extends Renderable<ModuleOptions> {
-    items: {[key: string]: {
+    _items: {[key: string]: {
         type: 'view' | 'module'
         options: ModuleOptions | ViewOptions
         loader: Loader
@@ -109,7 +109,7 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     createItem (name: string) {
-        const opt = this.items[name]
+        const opt = this._items[name]
         const item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options)
         return item._init().then(() => item)
     }
@@ -167,7 +167,7 @@ export class Module extends Renderable<ModuleOptions> {
         return Promise.all(ps.map((k, i) => ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', this)))
             .then(data => {
                 ps.forEach((p, i) => {
-                    this.items[p.name] = {type: p.type as ('view' | 'module'), loader: p.loader, options: data[i]}
+                    this._items[p.name] = {type: p.type as ('view' | 'module'), loader: p.loader, options: data[i]}
                 })
             })
     }
