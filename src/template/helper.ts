@@ -18,10 +18,14 @@ export abstract class Helper {
         this.check()
     }
 
+    clear () {
+        this.currentValues = null
+    }
+
     render (context: object): HelperResult {
         if (!this.currentValues) return [ChangeType.CHANGED, this.renderIt(context)]
 
-        const vs = this.currentKeys.map(it => getValue(it, context))
+        const vs = this.currentKeys.map(it => getValue(it, context))  // TODO if changed, will it do get value twice?
         if (vs.some((it, i) => it !== this.currentValues[i])) {
             return [ChangeType.CHANGED, this.renderIt(context)]
         }

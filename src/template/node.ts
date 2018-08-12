@@ -40,6 +40,10 @@ export abstract class Node {
         })
     }
 
+    clearHelper () {
+        this.children.forEach(it => it.clearHelper())
+    }
+
     abstract create (): HTMLElement
 }
 

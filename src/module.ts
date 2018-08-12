@@ -4,6 +4,7 @@ import { Application } from './application'
 import { Loader } from './loader'
 import { View, ViewOptions } from './view'
 import { Disposable} from './drizzle'
+import { Router, RouteOptions } from './route'
 
 export interface ItemOptions {
     views?: string[]
@@ -16,6 +17,7 @@ export interface ModuleOptions extends RenderOptions {
     exportedModels?: string[]
     state?: object,
     items?: ItemOptions
+    routes?: RouteOptions
 }
 
 const UPDATE_ACTION = `update${+new Date()}`
@@ -49,14 +51,19 @@ export class Module extends Renderable<ModuleOptions> {
         options: ModuleOptions | ViewOptions
         loader: Loader
     }} = {}
+    _router: Router
 
     private _store: Store
     private _handlers: {[name: string]: ((data: any) => void)[]} = {}
     private _loader: Loader
+    private _extraState: object
 
-    constructor(app: Application, loader: Loader, options: ModuleOptions) {
+    constructor(app: Application, loader: Loader, options: ModuleOptions, extraState: object = {}) {
         super(app, options, options.template && options.template.life)
         this._loader = loader
+        this._extraState = extraState
+        this.regions = {}
+        if (options.routes) this._router = new Router(this, options.routes)
     }
 
     set (data: object) {
@@ -108,9 +115,11 @@ export class Module extends Renderable<ModuleOptions> {
         hs.forEach(it => it.call(this, data))
     }
 
-    createItem (name: string) {
+    createItem (name: string, state?: object) {
         const opt = this._items[name]
-        const item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options)
+        const item = opt.type === 'view' ?
+            new View(this, opt.options) :
+            new Module(this.app, opt.loader, opt.options, state)
         return item._init().then(() => item)
     }
 
@@ -132,7 +141,7 @@ export class Module extends Renderable<ModuleOptions> {
 
     _init () {
         this._store = new Store(this._options.store || {}, UPDATE_ACTION)
-        this.set(this._options.state || {})
+        this.set(Object.assign({}, this._options.state, this._extraState))
         return this._loadItems().then(() => super._init())
     }
 

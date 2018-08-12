@@ -34,6 +34,21 @@
       };
     }();
 
+    var defineProperty = function (obj, key, value) {
+      if (key in obj) {
+        Object.defineProperty(obj, key, {
+          value: value,
+          enumerable: true,
+          configurable: true,
+          writable: true
+        });
+      } else {
+        obj[key] = value;
+      }
+
+      return obj;
+    };
+
     var get = function get(object, property, receiver) {
       if (object === null) object = Function.prototype;
       var desc = Object.getOwnPropertyDescriptor(object, property);
@@ -173,6 +188,13 @@
                 children.forEach(function (it, i) {
                     it.nextSibling = children[i + 1];
                     it.parent = _this;
+                });
+            }
+        }, {
+            key: 'clearHelper',
+            value: function clearHelper() {
+                this.children.forEach(function (it) {
+                    return it.clearHelper();
                 });
             }
         }]);
@@ -518,6 +540,11 @@
         }
 
         createClass(Helper, [{
+            key: 'clear',
+            value: function clear() {
+                this.currentValues = null;
+            }
+        }, {
             key: 'render',
             value: function render(context) {
                 var _this = this;
@@ -525,7 +552,7 @@
                 if (!this.currentValues) return [ChangeType.CHANGED, this.renderIt(context)];
                 var vs = this.currentKeys.map(function (it) {
                     return getValue(it, context);
-                });
+                }); // TODO if changed, will it do get value twice?
                 if (vs.some(function (it, i) {
                     return it !== _this.currentValues[i];
                 })) {
@@ -801,8 +828,9 @@
             value: function sub(context, i) {
                 var o = Object.assign({}, context);
                 if (!o._each) o._each = [];
-                o._each.push({ list: context[this.args[0]], index: i, key: this.args[2] });
-                o[this.args[2]] = context[this.args[0]][i];
+                var v = getValue(this.args[0], context);
+                o._each.push({ list: v, index: i, key: this.args[2] });
+                o[this.args[2]] = v[i];
                 if (this.args[3]) o[this.args[3]] = i;
                 return o;
             }
@@ -884,7 +912,10 @@
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
                     var sub = _this3.sub(context, i);
-                    if (_this3.nodes[i]) _this3.nodes[i].update(sub, delay);else {
+                    if (_this3.nodes[i]) {
+                        _this3.nodes[i].clearHelper();
+                        _this3.nodes[i].update(sub, delay);
+                    } else {
                         _this3.nodes[i] = _this3.trueNode();
                         _this3.nodes[i].parent = _this3.parent;
                         _this3.nodes[i].nextSibling = _this3.nextSibling;
@@ -1347,9 +1378,242 @@
                 }
                 this._module.dispatch(name, data[0]);
             }
+        }, {
+            key: 'regions',
+            get: function get$$1() {
+                return this._module.regions;
+            }
         }]);
         return View;
     }(Renderable);
+
+    // /name
+
+    var Token = function () {
+        function Token(key, next) {
+            classCallCheck(this, Token);
+
+            this.v = 9;
+            this.key = key;
+            this.next = next;
+        }
+
+        createClass(Token, [{
+            key: 'match',
+            value: function match(keys) {
+                var c = keys[0];
+                if (!c) return false;
+                return this.doMatch(c, keys.slice(1));
+            }
+        }, {
+            key: 'value',
+            value: function value() {
+                var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+                var vv = v + this.v;
+                return this.next ? this.next.value(vv * 10) : vv;
+            }
+        }, {
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                if (key !== this.key) return false;
+                if (this.next) return this.next.match(keys);
+                return { remain: keys };
+            }
+        }]);
+        return Token;
+    }();
+    // /:name
+
+
+    var ArgToken = function (_Token) {
+        inherits(ArgToken, _Token);
+
+        function ArgToken() {
+            classCallCheck(this, ArgToken);
+
+            var _this = possibleConstructorReturn(this, (ArgToken.__proto__ || Object.getPrototypeOf(ArgToken)).apply(this, arguments));
+
+            _this.v = 8;
+            return _this;
+        }
+
+        createClass(ArgToken, [{
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                var oo = defineProperty({}, this.key, key);
+                if (!this.next) return { remain: keys, args: oo };
+                var o = this.next.match(keys);
+                if (o === false) return false;
+                o.args ? Object.assign(o.args, oo) : o.args = oo;
+                return o;
+            }
+        }]);
+        return ArgToken;
+    }(Token);
+    // /*name
+
+
+    var AllToken = function (_Token2) {
+        inherits(AllToken, _Token2);
+
+        function AllToken() {
+            classCallCheck(this, AllToken);
+
+            var _this2 = possibleConstructorReturn(this, (AllToken.__proto__ || Object.getPrototypeOf(AllToken)).apply(this, arguments));
+
+            _this2.v = 7;
+            return _this2;
+        }
+
+        createClass(AllToken, [{
+            key: 'match',
+            value: function match(keys) {
+                if (!keys.length) return false;
+                return { args: defineProperty({}, this.key, keys), remain: [] };
+            }
+        }]);
+        return AllToken;
+    }(Token);
+
+    var create = function create(path) {
+        var ts = path.trim().split('/').filter(function (it) {
+            return !!it;
+        });
+        return ts.reduceRight(function (acc, item) {
+            if (item.charAt(0) === '*') return new AllToken(item.slice(1), acc);
+            if (item.charAt(0) === ':') return new ArgToken(item.slice(1), acc);
+            return new Token(item, acc);
+        }, null);
+    };
+
+    var Router = function () {
+        function Router(module, routes) {
+            classCallCheck(this, Router);
+
+            this._keys = [];
+            this._defs = [];
+            this._currentKey = -1;
+            this._module = module;
+            this.initRoutes(routes);
+        }
+
+        createClass(Router, [{
+            key: 'route',
+            value: function route(keys) {
+                for (var i = 0; i < this._keys.length; i++) {
+                    var re = this._keys[i].match(keys);
+                    if (re) return this.doRoute(i, re);
+                }
+                return Promise.resolve(false);
+            }
+        }, {
+            key: 'leave',
+            value: function leave() {
+                var _this3 = this;
+
+                return Promise.resolve().then(function () {
+                    if (_this3._next) return _this3._next.leave();
+                }).then(function () {
+                    var h = _this3._defs[_this3._currentKey];
+                    if (h && h.leave) return h.leave();
+                });
+            }
+        }, {
+            key: 'enter',
+            value: function enter(idx, args, keys) {
+                var _this4 = this;
+
+                this._currentKey = idx;
+                return this._defs[idx].enter(args).then(function (it) {
+                    _this4._next = it;
+                    if (it && keys.length) return it.route(keys);
+                });
+            }
+        }, {
+            key: 'doRoute',
+            value: function doRoute(idx, result) {
+                var _this5 = this;
+
+                var h = this._defs[idx];
+                if (this._currentKey === -1) {
+                    return this.enter(idx, result.args, result.remain);
+                }
+                if (idx === this._currentKey) {
+                    return Promise.resolve().then(function () {
+                        if (h.update) return h.update(result.args);
+                    }).then(function () {
+                        if (_this5._next) return _this5._next.route(result.remain);
+                    });
+                }
+                return this.leave().then(function () {
+                    return _this5.enter(idx, result.args, result.remain);
+                });
+            }
+        }, {
+            key: 'initRoutes',
+            value: function initRoutes(routes) {
+                var _this6 = this;
+
+                Object.keys(routes).map(function (key) {
+                    return { key: key, token: create(key) };
+                }).sort(function (a, b) {
+                    return b.token.value() - a.token.value();
+                }).forEach(function (it) {
+                    _this6._keys.push(it.token);
+                    _this6._defs.push(_this6.createHandler(routes[it.key]));
+                });
+            }
+        }, {
+            key: 'createHandler',
+            value: function createHandler(h) {
+                if (typeof h === 'string') return this.createModuleHandler({ ref: h });
+                if ('enter' in h) return h;
+                if ('action' in h) return this.createActionHandler(h);
+                if ('ref' in h) return this.createModuleHandler(h);
+                throw new Error('unsupported router handler');
+            }
+        }, {
+            key: 'createActionHandler',
+            value: function createActionHandler(h) {
+                var _this7 = this;
+
+                return {
+                    enter: function enter(args) {
+                        return _this7._module.dispatch(h.action, args).then(function () {
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        return _this7._module.dispatch(h.action, args);
+                    }
+                };
+            }
+        }, {
+            key: 'createModuleHandler',
+            value: function createModuleHandler(h) {
+                var _this8 = this;
+
+                var item = void 0;
+                return {
+                    enter: function enter(args) {
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
+                            item = it;
+                            if (it instanceof Module) return it._router;
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        if (item && item instanceof Module) return item.set(o);
+                        return Promise.resolve();
+                    }
+                };
+            }
+        }]);
+        return Router;
+    }();
 
     var UPDATE_ACTION = 'update' + +new Date();
     var clone = function clone(target) {
@@ -1372,6 +1636,7 @@
         inherits(Module, _Renderable);
 
         function Module(app, loader, options) {
+            var extraState = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
             classCallCheck(this, Module);
 
             var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.life));
@@ -1379,6 +1644,9 @@
             _this._items = {};
             _this._handlers = {};
             _this._loader = loader;
+            _this._extraState = extraState;
+            _this.regions = {};
+            if (options.routes) _this._router = new Router(_this, options.routes);
             return _this;
         }
 
@@ -1442,9 +1710,9 @@
             }
         }, {
             key: 'createItem',
-            value: function createItem(name) {
+            value: function createItem(name, state) {
                 var opt = this._items[name];
-                var item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options);
+                var item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options, state);
                 return item._init().then(function () {
                     return item;
                 });
@@ -1473,7 +1741,7 @@
                 var _this5 = this;
 
                 this._store = new Store(this._options.store || {}, UPDATE_ACTION);
-                this.set(this._options.state || {});
+                this.set(Object.assign({}, this._options.state, this._extraState));
                 return this._loadItems().then(function () {
                     return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this5).call(_this5);
                 });
@@ -1551,15 +1819,27 @@
             value: function start() {
                 var _this = this;
 
+                return this.startViewport().then(function (item) {
+                    console.log(item);
+                    _this.startRouter(item);
+                });
+            }
+        }, {
+            key: 'startViewport',
+            value: function startViewport() {
+                var _this2 = this;
+
                 var loader = void 0;
                 var _options = this.options,
                     entry = _options.entry,
                     container = _options.container;
 
                 var create = function create(lo, options) {
-                    var v = new Module(_this, lo, options);
+                    var v = new Module(_this2, lo, options);
                     return v._init().then(function () {
                         return v._render(container);
+                    }).then(function () {
+                        return v;
                     });
                 };
                 if (typeof entry === 'string') {
@@ -1570,6 +1850,24 @@
                 return loader.load('index', null).then(function (opt) {
                     return create(loader, opt);
                 });
+            }
+        }, {
+            key: 'startRouter',
+            value: function startRouter(item) {
+                if (!item._router) return;
+                var doIt = function doIt() {
+                    var hash = window.location.hash;
+                    if (hash.slice(0, 2) !== '#/') return;
+                    var hs = hash.slice(2).split('/').filter(function (it) {
+                        return !!it;
+                    });
+                    if (!hs.length) return;
+                    item._router.route(hs).then(function (it) {
+                        console.log(it);
+                    });
+                };
+                window.addEventListener('popstate', doIt);
+                doIt();
             }
         }]);
         return Application;
@@ -2004,6 +2302,18 @@
                 this.actionHooks = [];
                 this.eventHooks = [];
             }
+        }, {
+            key: 'clearHelper',
+            value: function clearHelper() {
+                var _this6 = this;
+
+                Object.keys(this.dynamicAttributes).forEach(function (it) {
+                    return _this6.dynamicAttributes[it].forEach(function (h) {
+                        return h.clear();
+                    });
+                });
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'clearHelper', this).call(this);
+            }
         }]);
         return DynamicNode;
     }(StaticNode);
@@ -2243,15 +2553,16 @@
                 var _this2 = this;
 
                 this.root = root;
+                this.mod = root instanceof Module ? root : root._module;
                 this.children.forEach(function (it) {
                     it.parent = _this2.parent;
                     it.nextSibling = _this2.nextSibling;
                     it.init(root, delay);
                 });
                 var me = this;
-                root.regions[this.id] = {
-                    show: function show(item) {
-                        return me.show(item);
+                this.mod.regions[this.id] = {
+                    show: function show(name, state) {
+                        return me.show(name, state);
                     },
                     _showNode: function _showNode(nodes, context) {
                         return me.showNode(nodes, context);
@@ -2310,13 +2621,18 @@
             }
         }, {
             key: 'show',
-            value: function show(item) {
+            value: function show(name, state) {
                 var _this4 = this;
 
                 if (!this.rendered) return;
-                this.item = item;
                 return this.close().then(function () {
-                    return item._render(_this4.parent.element, _this4.nextSibling && _this4.nextSibling.element); // TODO
+                    return _this4.mod.createItem(name, state);
+                }).then(function (item) {
+                    _this4.item = item;
+                    // TODO
+                    return item._render(_this4.parent.element, _this4.nextSibling && _this4.nextSibling.element).then(function () {
+                        return item;
+                    });
                 });
             }
         }, {

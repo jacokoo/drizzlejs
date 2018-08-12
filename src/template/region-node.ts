@@ -1,11 +1,14 @@
 import { Node } from './node'
 import { Delay } from './template'
 import { Renderable } from '../renderable'
+import { Module } from '../module'
+import { View } from '../view'
 
 export class RegionNode extends Node {
     nodes: Node[]
     item: Renderable<any>
     context: object
+    mod: Module
 
     constructor(id: string = 'default') {
         super()
@@ -14,6 +17,7 @@ export class RegionNode extends Node {
 
     init (root: Renderable<any>, delay: Delay) {
         this.root = root
+        this.mod = (root instanceof Module) ? root : (root as View)._module
         this.children.forEach(it => {
             it.parent = this.parent
             it.nextSibling = this.nextSibling
@@ -21,9 +25,9 @@ export class RegionNode extends Node {
         })
 
         const me = this
-        root.regions[this.id] = {
-            show (item: Renderable<any>): Promise<any> {
-                return me.show(item)
+        this.mod.regions[this.id] = {
+            show (name: string, state: object): Promise<any> {
+                return me.show(name, state)
             },
             _showNode (nodes: Node[], context: object): Promise<any> {
                 return me.showNode(nodes, context)
@@ -64,11 +68,12 @@ export class RegionNode extends Node {
         })
     }
 
-    show (item: Renderable<any>) {
+    show (name: string, state: object) {
         if (!this.rendered) return
-        this.item = item
-        return this.close().then(() => {
-            return item._render(this.parent.element, this.nextSibling && this.nextSibling.element) // TODO
+        return this.close().then(() => this.mod.createItem(name, state)).then(item => {
+            this.item = item
+            // TODO
+            return item._render(this.parent.element, this.nextSibling && this.nextSibling.element).then(() => item)
         })
     }
 

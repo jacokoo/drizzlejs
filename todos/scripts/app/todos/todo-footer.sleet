@@ -5,9 +5,9 @@ view
             strong > echo(remaining)
             echo(if(remaining eq 1 ' item left' ' items left'))
         ul.filters
-            li > a(href='#/' class=if(status eq '' 'selected')) All
-            li > a(href='#/active' class=if(status eq 'active' 'selected')) Active
-            li > a(href='#/completed' class=if(status eq 'completed' 'selected')) Completed
+            li > a(href='#/todos/all' class=if(filter eq 'all' 'selected')) All
+            li > a(href='#/todos/active' class=if(filter eq 'active' 'selected')) Active
+            li > a(href='#/todos/completed' class=if(filter eq 'completed' 'selected')) Completed
         button.clear-completed(action:click=clearCompleted)&if(haveCompleted)
 
 script.

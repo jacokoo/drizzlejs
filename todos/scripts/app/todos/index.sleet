@@ -4,8 +4,8 @@ module(todos)
         header.header
             h1 todos
             create-todo
-        todo-list(todos)
-        todo-footer(todos)
+        todo-list(todos filter)
+        todo-footer(todos filter)
 
 script.
     let id = 0
@@ -13,7 +13,7 @@ script.
         items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
 
         routes: {
-            '/{filter}': {
+            '/:filter': {
                 action: 'updateFilter'
             }
         },
@@ -22,6 +22,9 @@ script.
             models: {
                 todos: {
                     data: () => [{name: 'task 1', completed: true, id: id++}, {name: 'task 2', id: id++}]
+                },
+                filter: {
+                    data: () => 'all'
                 }
             },
 
@@ -58,6 +61,11 @@ script.
                 revertEdit (payload) {
                     this.dispatch('update', payload)
                 },
+
+                updateFilter (payload) {
+                    if (payload.filter !== 'completed' && payload.filter !== 'active') payload.filter = 'all'
+                    this.set(payload)
+                }
             }
         }
     }

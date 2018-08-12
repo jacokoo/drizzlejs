@@ -28,9 +28,10 @@ export class EachBlock extends Node {
     sub (context: {[key: string]: any}, i: number | string) {
         const o = Object.assign({}, context)
         if (!o._each) o._each = []
-        o._each.push({list: context[this.args[0]], index: i, key: this.args[2]})
+        const v = getValue(this.args[0], context)
+        o._each.push({list: v, index: i, key: this.args[2]})
 
-        o[this.args[2]] = context[this.args[0]][i]
+        o[this.args[2]] = v[i]
         if (this.args[3]) o[this.args[3]] = i
         return o
     }
@@ -105,8 +106,10 @@ export class EachBlock extends Node {
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
 
-            if (this.nodes[i]) this.nodes[i].update(sub, delay)
-            else {
+            if (this.nodes[i]) {
+                this.nodes[i].clearHelper()
+                this.nodes[i].update(sub, delay)
+            } else {
                 this.nodes[i] = this.trueNode()
                 this.nodes[i].parent = this.parent
                 this.nodes[i].nextSibling = this.nextSibling

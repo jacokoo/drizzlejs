@@ -41,12 +41,19 @@ export class Application {
     }
 
     start (): Promise<any> {
-        let loader: Loader
-        const {entry, container} = this.options
+        return this.startViewport().then(item => {
+            console.log(item)
+            this.startRouter(item)
+        })
+    }
 
+    private startViewport () {
+        let loader: Loader
+
+        const {entry, container} = this.options
         const create = (lo, options) => {
             const v = new Module(this, lo, options)
-            return v._init().then(() => v._render(container))
+            return v._init().then(() => v._render(container)).then(() => v)
         }
         if (typeof entry === 'string') {
             loader = this.createLoader(entry)
@@ -55,5 +62,21 @@ export class Application {
         }
 
         return loader.load('index', null).then(opt => create(loader, opt))
+    }
+
+    private startRouter (item: Module) {
+        if (!item._router) return
+        const doIt = () => {
+            const hash = window.location.hash
+            if (hash.slice(0, 2) !== '#/') return
+            const hs = hash.slice(2).split('/').filter(it => !!it)
+            if (!hs.length) return
+            item._router.route(hs).then(it => {
+                console.log(it)
+            })
+        }
+
+        window.addEventListener('popstate', doIt)
+        doIt()
     }
 }

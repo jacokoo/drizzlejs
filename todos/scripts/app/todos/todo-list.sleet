@@ -6,7 +6,7 @@ view
         )
         label(for='toggle-all')
         ul.todo-list
-            li(class=if(todo.completed 'completed') + if(todo eq editing 'editing'))&each(todos as todo)
+            li(class=if(todo.completed 'completed') + if(todo eq editing 'editing'))&each(filtered as todo)
                 .view
                     input.toggle(type='checkbox' checked=todo.completed)(
                         action:change = toggle(id=todo.id checked=this.checked)
@@ -24,6 +24,11 @@ script.
         computed: {
             allDone ({todos}) {
                 return !todos.some(it => !it.completed)
+            },
+            filtered ({todos, filter}) {
+                if (filter === 'completed') return todos.filter(it => it.completed)
+                if (filter === 'active') return todos.filter(it => !it.completed)
+                return todos
             }
         },
 

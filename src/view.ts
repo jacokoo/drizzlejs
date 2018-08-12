@@ -24,6 +24,10 @@ export class View extends Renderable<ViewOptions> {
         this._module = mod
     }
 
+    get regions () {
+        return this._module.regions
+    }
+
     set (data: object, silent: boolean = false) {
         if (silent) {
             Object.assign(this._state, data)

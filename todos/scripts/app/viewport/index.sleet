@@ -1,7 +1,7 @@
 #! drizzle
 module
     div
-        todo-app
+        region
 
 script.
     export default {
@@ -10,8 +10,8 @@ script.
         },
 
         routes: {
-            '/todos': {
-                ref: 'todo-app'
+            '/todos1': {
+                ref: 'todo-app',
                 region: 'region-name'
             },
 
