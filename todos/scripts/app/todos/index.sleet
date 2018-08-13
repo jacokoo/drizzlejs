@@ -62,6 +62,10 @@ script.
                     this.dispatch('update', payload)
                 },
 
+                clearCompleted (payload) {
+                    this.set({todos: this.get('todos').filter(it => !it.completed)})
+                },
+
                 updateFilter (payload) {
                     if (payload.filter !== 'completed' && payload.filter !== 'active') payload.filter = 'all'
                     this.set(payload)

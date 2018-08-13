@@ -8,7 +8,7 @@ view
             li > a(href='#/todos/all' class=if(filter eq 'all' 'selected')) All
             li > a(href='#/todos/active' class=if(filter eq 'active' 'selected')) Active
             li > a(href='#/todos/completed' class=if(filter eq 'completed' 'selected')) Completed
-        button.clear-completed(action:click=clearCompleted)&if(haveCompleted)
+        button.clear-completed(action:click=clearCompleted)&if(haveCompleted) Clear completed
 
 script.
     export default {
