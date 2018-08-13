@@ -142,8 +142,4 @@ export class EachBlock extends AnchorNode {
         this.nodes = []
         this.rendered = false
     }
-
-    create () {
-        return null
-    }
 }

@@ -87,8 +87,4 @@ export class RegionNode extends Node {
             return Delay.also(d => this.children.forEach(it => it.render(this.context, d)))
         })
     }
-
-    create () {
-        return null
-    }
 }

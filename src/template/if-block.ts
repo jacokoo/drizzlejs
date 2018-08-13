@@ -94,9 +94,6 @@ export class IfBlock extends AnchorNode {
         this.rendered = false
     }
 
-    create () {
-        return null
-    }
 }
 
 export class UnlessBlock extends IfBlock {

@@ -133,7 +133,4 @@ export class ReferenceNode extends Node {
         this.rendered = false
     }
 
-    create () {
-        return null
-    }
 }

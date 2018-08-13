@@ -25,6 +25,7 @@ export interface Appendable {
 }
 
 export function createAppendable (target: Node): Appendable {
+    if (!target) return null
     const remove = (el: Node) => target.removeChild(el)
     const append = (el: Node) => target.appendChild(el)
     const before = (anchor: Node) => {

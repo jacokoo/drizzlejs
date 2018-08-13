@@ -16,7 +16,7 @@ export abstract class Node {
     init (root: Renderable<any>, delay: Delay) {
         this.root = root
         this.element = this.create()
-        if (this.id) root.ids[this.id] = this.element
+        if (this.id && this.element) root.ids[this.id] = this.element
         const a = createAppendable(this.element)
         this.children.forEach(it => {
             it.parent = a
@@ -43,5 +43,7 @@ export abstract class Node {
         this.children.forEach(it => it.clearHelper())
     }
 
-    abstract create (): HTMLElement
+    create () {
+        return null
+    }
 }

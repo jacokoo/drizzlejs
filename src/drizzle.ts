@@ -48,8 +48,7 @@ const DN = (
     if (actions) actions.forEach(a => d.action(a[0], a[1], a[2]))
     return d
 }
-const TN = (...text: Helper[]) => new TextNode(text)
-const TX = (...ss: string[]) => new TextNode([new ConcatHelper(...ss.map(it => SV(it)))])
+const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
 const RG = (id: string = 'default') => new RegionNode(id)
 const REF = (
     name: string, id: string,
@@ -93,7 +92,7 @@ export default {
     lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application, Loader,
     factory: {
-        SN, DN, TN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
+        SN, DN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
         EACH, IF, IFC, UN, C, DA, A: E, B: KV
     }
 }

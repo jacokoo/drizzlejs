@@ -157,6 +157,7 @@
         ChangeType[ChangeType["NOT_CHANGED"] = 1] = "NOT_CHANGED";
     })(ChangeType || (ChangeType = {}));
     function createAppendable(target) {
+        if (!target) return null;
         var remove = function remove(el) {
             return target.removeChild(el);
         };
@@ -336,7 +337,7 @@
             value: function init(root, delay) {
                 this.root = root;
                 this.element = this.create();
-                if (this.id) root.ids[this.id] = this.element;
+                if (this.id && this.element) root.ids[this.id] = this.element;
                 var a = createAppendable(this.element);
                 this.children.forEach(function (it) {
                     it.parent = a;
@@ -368,6 +369,11 @@
                 this.children.forEach(function (it) {
                     return it.clearHelper();
                 });
+            }
+        }, {
+            key: 'create',
+            value: function create() {
+                return null;
             }
         }]);
         return Node;
@@ -508,11 +514,6 @@
                 if (this.current) this.current.destroy(delay);
                 get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'destroy', this).call(this, delay);
                 this.rendered = false;
-            }
-        }, {
-            key: 'create',
-            value: function create() {
-                return null;
             }
         }]);
         return IfBlock;
@@ -961,11 +962,6 @@
                 });
                 this.nodes = [];
                 this.rendered = false;
-            }
-        }, {
-            key: 'create',
-            value: function create() {
-                return null;
             }
         }]);
         return EachBlock;
@@ -2330,69 +2326,141 @@
         return DynamicNode;
     }(StaticNode);
 
-    var TextNode = function (_AnchorNode) {
-        inherits(TextNode, _AnchorNode);
+    var StaticTextNode = function (_Node) {
+        inherits(StaticTextNode, _Node);
 
-        function TextNode() {
-            var text = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-            classCallCheck(this, TextNode);
+        function StaticTextNode() {
+            var data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+            classCallCheck(this, StaticTextNode);
 
-            var _this = possibleConstructorReturn(this, (TextNode.__proto__ || Object.getPrototypeOf(TextNode)).call(this));
+            var _this = possibleConstructorReturn(this, (StaticTextNode.__proto__ || Object.getPrototypeOf(StaticTextNode)).call(this));
 
-            _this.helpers = text;
+            _this.data = data;
+            _this.node = document.createTextNode(_this.data);
             return _this;
         }
 
-        createClass(TextNode, [{
-            key: 'init',
-            value: function init(root) {
-                this.node = document.createTextNode('');
-                if (root instanceof View) {
-                    this.helpers.forEach(function (it) {
-                        if (it instanceof DelayTransfomer) {
-                            it.init(root);
-                        }
-                    });
-                }
-            }
-        }, {
+        createClass(StaticTextNode, [{
             key: 'render',
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
-                get(TextNode.prototype.__proto__ || Object.getPrototypeOf(TextNode.prototype), 'render', this).call(this, context, delay);
-                this.newParent.append(this.node);
-                this.update(context, delay);
-            }
-        }, {
-            key: 'update',
-            value: function update(context, delay) {
-                var r = this.helpers.map(function (h) {
-                    return h.render(context);
-                });
-                if (r.some(function (rr) {
-                    return rr[0] === ChangeType.CHANGED;
-                })) {
-                    this.node.data = r.map(function (rr) {
-                        return rr[1];
-                    }).join(' ');
-                }
+                this.parent.append(this.node);
             }
         }, {
             key: 'destroy',
             value: function destroy(delay) {
                 if (!this.rendered) return;
-                get(TextNode.prototype.__proto__ || Object.getPrototypeOf(TextNode.prototype), 'destroy', this).call(this, delay);
+                get(StaticTextNode.prototype.__proto__ || Object.getPrototypeOf(StaticTextNode.prototype), 'destroy', this).call(this, delay);
+                this.parent.remove(this.node);
                 this.rendered = false;
             }
+        }]);
+        return StaticTextNode;
+    }(Node);
+
+    var DynamicTextNode = function (_StaticTextNode) {
+        inherits(DynamicTextNode, _StaticTextNode);
+
+        function DynamicTextNode(helper) {
+            classCallCheck(this, DynamicTextNode);
+
+            var _this2 = possibleConstructorReturn(this, (DynamicTextNode.__proto__ || Object.getPrototypeOf(DynamicTextNode)).call(this));
+
+            _this2.helper = helper;
+            return _this2;
+        }
+
+        createClass(DynamicTextNode, [{
+            key: 'init',
+            value: function init(root) {
+                if (root instanceof View && this.helper instanceof DelayTransfomer) {
+                    this.helper.init(root);
+                }
+            }
         }, {
-            key: 'create',
-            value: function create() {
-                return null;
+            key: 'render',
+            value: function render(context, delay) {
+                get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'render', this).call(this, context, delay);
+                this.update(context, delay);
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                var r = this.helper.render(context);
+                if (r[0] === ChangeType.CHANGED) {
+                    this.node.data = r[1];
+                }
+            }
+        }, {
+            key: 'clearHelper',
+            value: function clearHelper() {
+                this.helper.clear();
+                get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'clearHelper', this).call(this);
+            }
+        }]);
+        return DynamicTextNode;
+    }(StaticTextNode);
+
+    var TextNode = function (_Node2) {
+        inherits(TextNode, _Node2);
+
+        function TextNode() {
+            classCallCheck(this, TextNode);
+
+            var _this3 = possibleConstructorReturn(this, (TextNode.__proto__ || Object.getPrototypeOf(TextNode)).call(this));
+
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
+            }
+
+            _this3.nodes = args.map(function (it) {
+                return typeof it === 'string' ? new StaticTextNode(it) : new DynamicTextNode(it);
+            });
+            return _this3;
+        }
+
+        createClass(TextNode, [{
+            key: 'init',
+            value: function init(root, delay) {
+                var _this4 = this;
+
+                this.nodes.forEach(function (it) {
+                    it.parent = _this4.parent;
+                    it.init(root, delay);
+                });
+            }
+        }, {
+            key: 'render',
+            value: function render(context, delay) {
+                this.nodes.forEach(function (it) {
+                    return it.render(context, delay);
+                });
+            }
+        }, {
+            key: 'update',
+            value: function update(context, delay) {
+                this.nodes.forEach(function (it) {
+                    return it.update(context, delay);
+                });
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                this.nodes.forEach(function (it) {
+                    return it.destroy(delay);
+                });
+            }
+        }, {
+            key: 'clearHelper',
+            value: function clearHelper() {
+                this.nodes.forEach(function (it) {
+                    return it.clearHelper();
+                });
             }
         }]);
         return TextNode;
-    }(AnchorNode);
+    }(Node);
 
     var ReferenceNode = function (_Node) {
         inherits(ReferenceNode, _Node);
@@ -2534,11 +2602,6 @@
                 })));
                 this.rendered = false;
             }
-        }, {
-            key: 'create',
-            value: function create() {
-                return null;
-            }
         }]);
         return ReferenceNode;
     }(Node);
@@ -2666,11 +2729,6 @@
                     });
                 });
             }
-        }, {
-            key: 'create',
-            value: function create() {
-                return null;
-            }
         }]);
         return RegionNode;
     }(Node);
@@ -2713,21 +2771,12 @@
         });
         return d;
     };
-    var TN = function TN() {
-        for (var _len2 = arguments.length, text = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            text[_key2] = arguments[_key2];
-        }
-
-        return new TextNode(text);
-    };
     var TX = function TX() {
-        for (var _len3 = arguments.length, ss = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-            ss[_key3] = arguments[_key3];
+        for (var _len2 = arguments.length, ss = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            ss[_key2] = arguments[_key2];
         }
 
-        return new TextNode([new (Function.prototype.bind.apply(ConcatHelper, [null].concat(toConsumableArray(ss.map(function (it) {
-            return SV(it);
-        })))))()]);
+        return new (Function.prototype.bind.apply(TextNode, [null].concat(ss)))();
     };
     var RG = function RG() {
         var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
@@ -2747,8 +2796,8 @@
         return d;
     };
     var E = function E(event, method) {
-        for (var _len4 = arguments.length, attrs = Array(_len4 > 2 ? _len4 - 2 : 0), _key4 = 2; _key4 < _len4; _key4++) {
-            attrs[_key4 - 2] = arguments[_key4];
+        for (var _len3 = arguments.length, attrs = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+            attrs[_key3 - 2] = arguments[_key3];
         }
 
         return [event, method, attrs];
@@ -2760,8 +2809,8 @@
         return [null, [0, v]];
     };
     var DA = function DA(name) {
-        for (var _len5 = arguments.length, hs = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-            hs[_key5 - 1] = arguments[_key5];
+        for (var _len4 = arguments.length, hs = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+            hs[_key4 - 1] = arguments[_key4];
         }
 
         return [name, hs];
@@ -2782,23 +2831,23 @@
         return Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n));
     };
     var HH = function HH(n) {
-        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-            args[_key6 - 1] = arguments[_key6];
+        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+            args[_key5 - 1] = arguments[_key5];
         }
 
         if (helpers[n]) return new (Function.prototype.bind.apply(helpers[n], [null].concat(args)))();
         return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
     };
     var HIF = function HIF() {
-        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-            args[_key7] = arguments[_key7];
+        for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+            args[_key6] = arguments[_key6];
         }
 
         return HH.apply(undefined, ['if'].concat(args));
     };
     var HUN = function HUN() {
-        for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
-            args[_key8] = arguments[_key8];
+        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+            args[_key7] = arguments[_key7];
         }
 
         return HH.apply(undefined, ['unless'].concat(args));
@@ -2816,8 +2865,8 @@
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
     var C = function C(parent) {
-        for (var _len9 = arguments.length, children = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
-            children[_key9 - 1] = arguments[_key9];
+        for (var _len8 = arguments.length, children = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
+            children[_key8 - 1] = arguments[_key8];
         }
 
         return parent.setChildren(children);
@@ -2827,7 +2876,7 @@
         lifecycles: { module: [], view: [] },
         ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application, Loader: Loader,
         factory: {
-            SN: SN, DN: DN, TN: TN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
+            SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
             EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, A: E, B: KV
         }
     };
