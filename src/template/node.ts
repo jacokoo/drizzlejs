@@ -1,13 +1,12 @@
 import { Renderable, RenderOptions } from '../renderable'
-import { Delay } from './template'
+import { Delay, Appendable, createAppendable } from './template'
 
 export abstract class Node {
     root: Renderable<RenderOptions>
     id: string
     element: HTMLElement
-    parent: Node
+    parent: Appendable
     children: Node[] = []
-    nextSibling: Node
     rendered: boolean = false
 
     constructor(id?: string) {
@@ -18,7 +17,11 @@ export abstract class Node {
         this.root = root
         this.element = this.create()
         if (this.id) root.ids[this.id] = this.element
-        this.children.forEach(it => it.init(root, delay))
+        const a = createAppendable(this.element)
+        this.children.forEach(it => {
+            it.parent = a
+            it.init(root, delay)
+        })
     }
 
     render (context: object, delay: Delay) {
@@ -34,10 +37,6 @@ export abstract class Node {
 
     setChildren (children: Node[]) {
         this.children = children
-        children.forEach((it, i) => {
-            it.nextSibling = children[i + 1]
-            it.parent = this
-        })
     }
 
     clearHelper () {
@@ -45,18 +44,4 @@ export abstract class Node {
     }
 
     abstract create (): HTMLElement
-}
-
-export class FakeNode extends Node {
-    constructor(el: HTMLElement) {
-        super()
-        this.element = el
-    }
-
-    init () {
-    }
-
-    create () {
-        return this.element
-    }
 }

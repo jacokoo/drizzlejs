@@ -68,7 +68,7 @@ export class ReferenceNode extends Node {
             acc[item[1]] = context[item[0]]
             return acc
         }, {})))
-        delay.add(this.item._render(this.parent.element, this.nextSibling && this.nextSibling.element).then(() => {
+        delay.add(this.item._render(this.parent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 return this.item.regions[k]._showNode(this.grouped[k], context)
             }))

@@ -20,7 +20,6 @@ export class RegionNode extends Node {
         this.mod = (root instanceof Module) ? root : (root as View)._module
         this.children.forEach(it => {
             it.parent = this.parent
-            it.nextSibling = this.nextSibling
             it.init(root, delay)
         })
 
@@ -72,8 +71,7 @@ export class RegionNode extends Node {
         if (!this.rendered) return
         return this.close().then(() => this.mod.createItem(name, state)).then(item => {
             this.item = item
-            // TODO
-            return item._render(this.parent.element, this.nextSibling && this.nextSibling.element).then(() => item)
+            return item._render(this.parent).then(() => item)
         })
     }
 

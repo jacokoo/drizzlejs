@@ -146,85 +146,6 @@
       }
     };
 
-    var Node = function () {
-        function Node(id) {
-            classCallCheck(this, Node);
-
-            this.children = [];
-            this.rendered = false;
-            this.id = id;
-        }
-
-        createClass(Node, [{
-            key: 'init',
-            value: function init(root, delay) {
-                this.root = root;
-                this.element = this.create();
-                if (this.id) root.ids[this.id] = this.element;
-                this.children.forEach(function (it) {
-                    return it.init(root, delay);
-                });
-            }
-        }, {
-            key: 'render',
-            value: function render(context, delay) {}
-        }, {
-            key: 'update',
-            value: function update(context, delay) {}
-        }, {
-            key: 'destroy',
-            value: function destroy(delay) {
-                if (this.id) delete this.root.ids[this.id];
-                this.children.forEach(function (it) {
-                    return it.destroy(delay);
-                });
-            }
-        }, {
-            key: 'setChildren',
-            value: function setChildren(children) {
-                var _this = this;
-
-                this.children = children;
-                children.forEach(function (it, i) {
-                    it.nextSibling = children[i + 1];
-                    it.parent = _this;
-                });
-            }
-        }, {
-            key: 'clearHelper',
-            value: function clearHelper() {
-                this.children.forEach(function (it) {
-                    return it.clearHelper();
-                });
-            }
-        }]);
-        return Node;
-    }();
-
-    var FakeNode = function (_Node) {
-        inherits(FakeNode, _Node);
-
-        function FakeNode(el) {
-            classCallCheck(this, FakeNode);
-
-            var _this2 = possibleConstructorReturn(this, (FakeNode.__proto__ || Object.getPrototypeOf(FakeNode)).call(this));
-
-            _this2.element = el;
-            return _this2;
-        }
-
-        createClass(FakeNode, [{
-            key: 'init',
-            value: function init() {}
-        }, {
-            key: 'create',
-            value: function create() {
-                return this.element;
-            }
-        }]);
-        return FakeNode;
-    }(Node);
-
     var ValueType;
     (function (ValueType) {
         ValueType[ValueType["STATIC"] = 0] = "STATIC";
@@ -235,6 +156,20 @@
         ChangeType[ChangeType["CHANGED"] = 0] = "CHANGED";
         ChangeType[ChangeType["NOT_CHANGED"] = 1] = "NOT_CHANGED";
     })(ChangeType || (ChangeType = {}));
+    function createAppendable(target) {
+        var remove = function remove(el) {
+            return target.removeChild(el);
+        };
+        var append = function append(el) {
+            return target.appendChild(el);
+        };
+        var before = function before(anchor) {
+            return { remove: remove, before: before, append: function append(el) {
+                    return target.insertBefore(el, anchor);
+                } };
+        };
+        return { append: append, remove: remove, before: before };
+    }
 
     var Delay = function () {
         function Delay() {
@@ -361,11 +296,10 @@
         }, {
             key: "render",
             value: function render(context, delay) {
-                var container = new FakeNode(this.root._element);
-                var next = this.root._nextSibling && new FakeNode(this.root._nextSibling);
+                var _this = this;
+
                 this.nodes.forEach(function (it) {
-                    it.parent = container;
-                    it.nextSibling = next;
+                    it.parent = _this.root._target;
                     it.render(context, delay);
                 });
             }
@@ -381,13 +315,94 @@
             value: function destroy(delay) {
                 this.nodes.forEach(function (it) {
                     it.destroy(delay);
-                    it.nextSibling = null;
                     it.parent = null;
                 });
             }
         }]);
         return Template;
     }();
+
+    var Node = function () {
+        function Node(id) {
+            classCallCheck(this, Node);
+
+            this.children = [];
+            this.rendered = false;
+            this.id = id;
+        }
+
+        createClass(Node, [{
+            key: 'init',
+            value: function init(root, delay) {
+                this.root = root;
+                this.element = this.create();
+                if (this.id) root.ids[this.id] = this.element;
+                var a = createAppendable(this.element);
+                this.children.forEach(function (it) {
+                    it.parent = a;
+                    it.init(root, delay);
+                });
+            }
+        }, {
+            key: 'render',
+            value: function render(context, delay) {}
+        }, {
+            key: 'update',
+            value: function update(context, delay) {}
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                if (this.id) delete this.root.ids[this.id];
+                this.children.forEach(function (it) {
+                    return it.destroy(delay);
+                });
+            }
+        }, {
+            key: 'setChildren',
+            value: function setChildren(children) {
+                this.children = children;
+            }
+        }, {
+            key: 'clearHelper',
+            value: function clearHelper() {
+                this.children.forEach(function (it) {
+                    return it.clearHelper();
+                });
+            }
+        }]);
+        return Node;
+    }();
+
+    var AnchorNode = function (_MNode) {
+        inherits(AnchorNode, _MNode);
+
+        function AnchorNode(id) {
+            classCallCheck(this, AnchorNode);
+
+            var _this = possibleConstructorReturn(this, (AnchorNode.__proto__ || Object.getPrototypeOf(AnchorNode)).call(this, id));
+
+            _this.anchor = document.createComment('');
+            return _this;
+        }
+
+        createClass(AnchorNode, [{
+            key: 'render',
+            value: function render(context, delay) {
+                if (!this.newParent) {
+                    this.parent.append(this.anchor);
+                    this.newParent = this.parent.before(this.anchor);
+                }
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(delay) {
+                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'destroy', this).call(this, delay);
+                this.parent.remove(this.anchor);
+                this.newParent = null;
+            }
+        }]);
+        return AnchorNode;
+    }(Node);
 
     var Compare = {
         eq: function eq(v1, v2) {
@@ -410,8 +425,8 @@
         }
     };
 
-    var IfBlock = function (_Node) {
-        inherits(IfBlock, _Node);
+    var IfBlock = function (_AnchorNode) {
+        inherits(IfBlock, _AnchorNode);
 
         function IfBlock(args, trueNode, falseNode) {
             classCallCheck(this, IfBlock);
@@ -463,11 +478,10 @@
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
-                this.trueNode.parent = this.parent;
-                this.trueNode.nextSibling = this.nextSibling;
+                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'render', this).call(this, context, delay);
+                this.trueNode.parent = this.newParent;
                 if (this.falseNode) {
-                    this.falseNode.parent = this.parent;
-                    this.falseNode.nextSibling = this.nextSibling;
+                    this.falseNode.parent = this.newParent;
                 }
                 this.current = this.use(context) ? this.trueNode : this.falseNode;
                 if (this.current) {
@@ -492,6 +506,7 @@
             value: function destroy(delay) {
                 if (!this.rendered) return;
                 if (this.current) this.current.destroy(delay);
+                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'destroy', this).call(this, delay);
                 this.rendered = false;
             }
         }, {
@@ -501,7 +516,7 @@
             }
         }]);
         return IfBlock;
-    }(Node);
+    }(AnchorNode);
 
     var UnlessBlock = function (_IfBlock) {
         inherits(UnlessBlock, _IfBlock);
@@ -796,8 +811,8 @@
         return UnlessHelper;
     }(IfHelper);
 
-    var EachBlock = function (_Node) {
-        inherits(EachBlock, _Node);
+    var EachBlock = function (_AnchorNode) {
+        inherits(EachBlock, _AnchorNode);
 
         function EachBlock(args, trueNode, falseNode) {
             classCallCheck(this, EachBlock);
@@ -816,7 +831,6 @@
             key: 'init',
             value: function init(root, delay) {
                 this.root = root;
-                if (this.falseNode) this.falseNode.nextSibling = this.nextSibling;
             }
         }, {
             key: 'isEmpty',
@@ -839,6 +853,8 @@
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
+                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'render', this).call(this, context, delay);
+                if (this.falseNode) this.falseNode.parent = this.newParent;
                 var list = getValue(this.args[0], context);
                 if (this.isEmpty(list)) {
                     this.renderElse(context, delay);
@@ -852,6 +868,14 @@
                 this.renderKeyValue(kv, context, delay);
             }
         }, {
+            key: 'createTrueNode',
+            value: function createTrueNode(delay) {
+                var n = this.trueNode();
+                n.parent = this.newParent;
+                n.init(this.root, delay);
+                return n;
+            }
+        }, {
             key: 'renderKeyValue',
             value: function renderKeyValue(arr, context, delay) {
                 var _this2 = this;
@@ -859,10 +883,7 @@
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
                     var sub = _this2.sub(context, i);
-                    _this2.nodes[i] = _this2.trueNode();
-                    _this2.nodes[i].parent = _this2.parent;
-                    _this2.nodes[i].nextSibling = _this2.nextSibling;
-                    _this2.nodes[i].init(_this2.root, delay);
+                    _this2.nodes[i] = _this2.createTrueNode(delay);
                     _this2.nodes[i].render(sub, delay);
                 });
             }
@@ -916,10 +937,7 @@
                         _this3.nodes[i].clearHelper();
                         _this3.nodes[i].update(sub, delay);
                     } else {
-                        _this3.nodes[i] = _this3.trueNode();
-                        _this3.nodes[i].parent = _this3.parent;
-                        _this3.nodes[i].nextSibling = _this3.nextSibling;
-                        _this3.nodes[i].init(_this3.root, delay);
+                        _this3.nodes[i] = _this3.createTrueNode(delay);
                         _this3.nodes[i].render(sub, delay);
                     }
                 });
@@ -932,6 +950,7 @@
             key: 'destroy',
             value: function destroy(delay) {
                 if (!this.rendered) return;
+                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'destroy', this).call(this, delay);
                 if (!this.currentSize) {
                     if (this.falseNode) this.falseNode.destroy(delay);
                     return;
@@ -950,7 +969,7 @@
             }
         }]);
         return EachBlock;
-    }(Node);
+    }(AnchorNode);
 
     var Loader = function () {
         function Loader(app, path, args) {
@@ -1178,13 +1197,12 @@
 
         createClass(Renderable, [{
             key: "_render",
-            value: function _render(el, nextSibling) {
+            value: function _render(target) {
                 var _this2 = this;
 
                 if (this._status !== ComponentState.INITED) return Promise.resolve();
                 this._status = ComponentState.RENDERED;
-                this._element = el;
-                this._nextSibling = nextSibling;
+                this._target = target;
                 this._busy = this._busy.then(function () {
                     return _this2._doBeforeRender();
                 }).then(function () {
@@ -1719,10 +1737,10 @@
             }
         }, {
             key: '_render',
-            value: function _render(el, nextSibling) {
+            value: function _render(target) {
                 var _this4 = this;
 
-                var busy = get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_render', this).call(this, el, nextSibling);
+                var busy = get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_render', this).call(this, target);
                 if (busy === this._busy) {
                     this._busy = this._busy.then(function () {
                         var store = _this4._options.store;
@@ -1837,7 +1855,7 @@
                 var create = function create(lo, options) {
                     var v = new Module(_this2, lo, options);
                     return v._init().then(function () {
-                        return v._render(container);
+                        return v._render(createAppendable(container));
                     }).then(function () {
                         return v;
                     });
@@ -1915,13 +1933,7 @@
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
-                /* FIXME
-                if (this.nextSibling && this.nextSibling.element) {
-                    this.parent.element.insertBefore(this.element, this.nextSibling.element)
-                } else {
-                    this.parent.element.appendChild(this.element)
-                }*/
-                this.parent.element.appendChild(this.element);
+                this.parent.append(this.element);
                 this.children.forEach(function (it) {
                     return it.render(context, delay);
                 });
@@ -1938,7 +1950,7 @@
             value: function destroy(delay) {
                 if (!this.rendered) return;
                 get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, delay);
-                this.parent.element.removeChild(this.element);
+                this.parent.remove(this.element);
                 this.rendered = false;
             }
         }, {
@@ -2318,8 +2330,8 @@
         return DynamicNode;
     }(StaticNode);
 
-    var TextNode = function (_Node) {
-        inherits(TextNode, _Node);
+    var TextNode = function (_AnchorNode) {
+        inherits(TextNode, _AnchorNode);
 
         function TextNode() {
             var text = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
@@ -2348,11 +2360,8 @@
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
-                if (this.nextSibling && this.nextSibling.element) {
-                    this.parent.element.insertBefore(this.node, this.nextSibling.element);
-                } else {
-                    this.parent.element.appendChild(this.node);
-                }
+                get(TextNode.prototype.__proto__ || Object.getPrototypeOf(TextNode.prototype), 'render', this).call(this, context, delay);
+                this.newParent.append(this.node);
                 this.update(context, delay);
             }
         }, {
@@ -2371,9 +2380,9 @@
             }
         }, {
             key: 'destroy',
-            value: function destroy() {
+            value: function destroy(delay) {
                 if (!this.rendered) return;
-                this.parent.element.removeChild(this.node);
+                get(TextNode.prototype.__proto__ || Object.getPrototypeOf(TextNode.prototype), 'destroy', this).call(this, delay);
                 this.rendered = false;
             }
         }, {
@@ -2383,7 +2392,7 @@
             }
         }]);
         return TextNode;
-    }(Node);
+    }(AnchorNode);
 
     var ReferenceNode = function (_Node) {
         inherits(ReferenceNode, _Node);
@@ -2453,7 +2462,7 @@
                     acc[item[1]] = context[item[0]];
                     return acc;
                 }, {})));
-                delay.add(this.item._render(this.parent.element, this.nextSibling && this.nextSibling.element).then(function () {
+                delay.add(this.item._render(this.parent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
                     }));
@@ -2556,7 +2565,6 @@
                 this.mod = root instanceof Module ? root : root._module;
                 this.children.forEach(function (it) {
                     it.parent = _this2.parent;
-                    it.nextSibling = _this2.nextSibling;
                     it.init(root, delay);
                 });
                 var me = this;
@@ -2629,8 +2637,7 @@
                     return _this4.mod.createItem(name, state);
                 }).then(function (item) {
                     _this4.item = item;
-                    // TODO
-                    return item._render(_this4.parent.element, _this4.nextSibling && _this4.nextSibling.element).then(function () {
+                    return item._render(_this4.parent).then(function () {
                         return item;
                     });
                 });

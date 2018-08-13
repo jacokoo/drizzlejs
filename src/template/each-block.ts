@@ -1,8 +1,9 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { getValue, Delay } from './template'
+import { getValue, Delay, Appendable } from './template'
+import { AnchorNode } from './anchor-node'
 
-export class EachBlock extends Node {
+export class EachBlock extends AnchorNode {
     args: string[]
     trueNode: () => Node
     falseNode?: Node
@@ -18,7 +19,6 @@ export class EachBlock extends Node {
 
     init (root: Renderable<any>, delay: Delay) {
         this.root = root
-        if (this.falseNode) this.falseNode.nextSibling = this.nextSibling
     }
 
     isEmpty (list: any): boolean {
@@ -38,8 +38,11 @@ export class EachBlock extends Node {
 
     render (context: object, delay: Delay) {
         if (this.rendered) return
-
         this.rendered = true
+
+        super.render(context, delay)
+        if (this.falseNode) this.falseNode.parent = this.newParent
+
         const list = getValue(this.args[0], context)
         if (this.isEmpty(list)) {
             this.renderElse(context, delay)
@@ -53,14 +56,18 @@ export class EachBlock extends Node {
         this.renderKeyValue(kv, context, delay)
     }
 
+    createTrueNode (delay: Delay) {
+        const n = this.trueNode()
+        n.parent = this.newParent
+        n.init(this.root, delay)
+        return n
+    }
+
     renderKeyValue (arr: [any, any][], context: object, delay: Delay) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
-            this.nodes[i] = this.trueNode()
-            this.nodes[i].parent = this.parent
-            this.nodes[i].nextSibling = this.nextSibling
-            this.nodes[i].init(this.root, delay)
+            this.nodes[i] = this.createTrueNode(delay)
             this.nodes[i].render(sub, delay)
         })
     }
@@ -110,10 +117,7 @@ export class EachBlock extends Node {
                 this.nodes[i].clearHelper()
                 this.nodes[i].update(sub, delay)
             } else {
-                this.nodes[i] = this.trueNode()
-                this.nodes[i].parent = this.parent
-                this.nodes[i].nextSibling = this.nextSibling
-                this.nodes[i].init(this.root, delay)
+                this.nodes[i] = this.createTrueNode(delay)
                 this.nodes[i].render(sub, delay)
             }
         })
@@ -126,6 +130,7 @@ export class EachBlock extends Node {
 
     destroy (delay: Delay) {
         if (!this.rendered) return
+        super.destroy(delay)
 
         if (!this.currentSize) {
             if (this.falseNode) this.falseNode.destroy(delay)

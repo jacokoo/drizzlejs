@@ -3,6 +3,7 @@ import { Application } from './application'
 import { Disposable } from './drizzle'
 import { Node } from './template/node'
 import { ModuleTemplate } from './template/module-template'
+import { Appendable } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
@@ -22,8 +23,7 @@ interface Region {
 }
 
 export class Renderable<T extends RenderOptions> extends LifecycleContainer {
-    _element: HTMLElement
-    _nextSibling: HTMLElement
+    _target: Appendable
     _options: T
     ids: {[key: string]: HTMLElement | Renderable<T>} = {}
     regions: {[key: string]: Region}
@@ -36,12 +36,11 @@ export class Renderable<T extends RenderOptions> extends LifecycleContainer {
         this._options = options
     }
 
-    _render (el: HTMLElement, nextSibling?: HTMLElement) {
+    _render (target: Appendable) {
         if (this._status !== ComponentState.INITED) return Promise.resolve()
         this._status = ComponentState.RENDERED
 
-        this._element = el
-        this._nextSibling = nextSibling
+        this._target = target
         this._busy = this._busy
             .then(() => this._doBeforeRender())
             .then(() => this._doRendered())

@@ -15,13 +15,7 @@ export class StaticNode extends Node {
     render (context: object, delay: Delay) {
         if (this.rendered) return
         this.rendered = true
-        /* FIXME
-        if (this.nextSibling && this.nextSibling.element) {
-            this.parent.element.insertBefore(this.element, this.nextSibling.element)
-        } else {
-            this.parent.element.appendChild(this.element)
-        }*/
-        this.parent.element.appendChild(this.element)
+        this.parent.append(this.element)
         this.children.forEach(it => it.render(context, delay))
     }
 
@@ -33,7 +27,7 @@ export class StaticNode extends Node {
         if (!this.rendered) return
         super.destroy(delay)
 
-        this.parent.element.removeChild(this.element)
+        this.parent.remove(this.element)
         this.rendered = false
     }
 

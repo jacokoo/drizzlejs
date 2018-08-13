@@ -1,5 +1,5 @@
 import { Disposable } from '../drizzle'
-import { Node, FakeNode } from './node'
+import { Node as MNode } from './node'
 import { Renderable } from '../renderable'
 import { Lifecycle } from '../lifecycle'
 
@@ -16,6 +16,21 @@ export type HelperResult = [ChangeType, any]
 
 export interface Updatable extends Disposable {
     update (context: object): void
+}
+
+export interface Appendable {
+    append (el: Node)
+    remove (el: Node)
+    before (anchor: Node): Appendable
+}
+
+export function createAppendable (target: Node): Appendable {
+    const remove = (el: Node) => target.removeChild(el)
+    const append = (el: Node) => target.appendChild(el)
+    const before = (anchor: Node) => {
+        return {remove, before, append: (el: Node) => target.insertBefore(el, anchor)}
+    }
+    return {append, remove, before}
 }
 
 export class Delay {
@@ -120,7 +135,7 @@ export const customEvents = {
 
 export abstract class Template<T extends Renderable<any>> {
     life: Lifecycle
-    nodes: Node[]
+    nodes: MNode[]
     root: T
 
     init (root: T, delay: Delay) {
@@ -129,11 +144,8 @@ export abstract class Template<T extends Renderable<any>> {
     }
 
     render (context: object, delay: Delay) {
-        const container = new FakeNode(this.root._element)
-        const next = this.root._nextSibling && new FakeNode(this.root._nextSibling)
         this.nodes.forEach(it => {
-            it.parent = container
-            it.nextSibling = next
+            it.parent = this.root._target
             it.render(context, delay)
         })
     }
@@ -145,7 +157,6 @@ export abstract class Template<T extends Renderable<any>> {
     destroy (delay: Delay) {
         this.nodes.forEach(it => {
             it.destroy(delay)
-            it.nextSibling = null
             it.parent = null
         })
     }

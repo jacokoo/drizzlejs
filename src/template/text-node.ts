@@ -1,12 +1,13 @@
-import { Node } from './node'
-import { Delay, ChangeType } from './template'
+import { Delay, ChangeType, Appendable } from './template'
 import { Helper, DelayTransfomer } from './helper'
 import { Renderable } from '../renderable'
 import { View } from '../view'
+import { AnchorNode } from './anchor-node'
 
-export class TextNode extends Node {
+export class TextNode extends AnchorNode {
     helpers: Helper[]
     node: Text
+    newParent: Appendable
 
     constructor(text: Helper[] = []) {
         super()
@@ -27,11 +28,8 @@ export class TextNode extends Node {
     render (context: object, delay: Delay) {
         if (this.rendered) return
         this.rendered = true
-        if (this.nextSibling && this.nextSibling.element) {
-            this.parent.element.insertBefore(this.node, this.nextSibling.element)
-        } else {
-            this.parent.element.appendChild(this.node)
-        }
+        super.render(context, delay)
+        this.newParent.append(this.node)
 
         this.update(context, delay)
     }
@@ -43,9 +41,9 @@ export class TextNode extends Node {
         }
     }
 
-    destroy () {
+    destroy (delay: Delay) {
         if (!this.rendered) return
-        this.parent.element.removeChild(this.node)
+        super.destroy(delay)
         this.rendered = false
     }
 

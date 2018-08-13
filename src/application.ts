@@ -1,6 +1,7 @@
 import { Loader } from './loader'
 import { Disposable } from './drizzle'
 import { Module, ModuleOptions } from './module'
+import { createAppendable } from './template/template'
 
 interface ApplicationOptions {
     stages?: string[],
@@ -53,7 +54,7 @@ export class Application {
         const {entry, container} = this.options
         const create = (lo, options) => {
             const v = new Module(this, lo, options)
-            return v._init().then(() => v._render(container)).then(() => v)
+            return v._init().then(() => v._render(createAppendable(container))).then(() => v)
         }
         if (typeof entry === 'string') {
             loader = this.createLoader(entry)

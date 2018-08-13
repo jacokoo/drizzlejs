@@ -5,6 +5,7 @@ import { Loader } from './loader'
 import { View, ViewOptions } from './view'
 import { Disposable} from './drizzle'
 import { Router, RouteOptions } from './route'
+import { Appendable } from './template/template'
 
 export interface ItemOptions {
     views?: string[]
@@ -123,8 +124,8 @@ export class Module extends Renderable<ModuleOptions> {
         return item._init().then(() => item)
     }
 
-    _render (el: HTMLElement, nextSibling?: HTMLElement) {
-        const busy = super._render(el, nextSibling)
+    _render (target: Appendable) {
+        const busy = super._render(target)
 
         if (busy === this._busy) {
             this._busy = this._busy.then(() => {

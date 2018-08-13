@@ -1,6 +1,7 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, AttributeValue, ValueType, getAttributeValue } from './template'
+import { Delay, AttributeValue, ValueType, getAttributeValue, Appendable } from './template'
+import { AnchorNode } from './anchor-node'
 
 export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
     eq: (v1, v2) => v1 === v2,
@@ -11,7 +12,7 @@ export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
     lte: (v1, v2) => v1 <= v2
 }
 
-export class IfBlock extends Node {
+export class IfBlock extends AnchorNode {
     args: AttributeValue[]
     trueNode: Node
     falseNode?: Node
@@ -58,11 +59,11 @@ export class IfBlock extends Node {
         if (this.rendered) return
         this.rendered = true
 
-        this.trueNode.parent = this.parent
-        this.trueNode.nextSibling = this.nextSibling
+        super.render(context, delay)
+
+        this.trueNode.parent = this.newParent
         if (this.falseNode) {
-            this.falseNode.parent = this.parent
-            this.falseNode.nextSibling = this.nextSibling
+            this.falseNode.parent = this.newParent
         }
 
         this.current = this.use(context) ? this.trueNode : this.falseNode
@@ -89,6 +90,7 @@ export class IfBlock extends Node {
     destroy (delay: Delay) {
         if (!this.rendered) return
         if (this.current) this.current.destroy(delay)
+        super.destroy(delay)
         this.rendered = false
     }
 
