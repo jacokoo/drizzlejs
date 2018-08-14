@@ -1,5 +1,5 @@
 #! drizzle
-module(todos)
+module(todos) > .todoapp-container
     section.todoapp
         header.header
             h1 todos

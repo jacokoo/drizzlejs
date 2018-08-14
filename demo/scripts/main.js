@@ -8,7 +8,7 @@ class MLoader extends Loader {
 }
 
 var app = new Application({
-    container: document.querySelector('#content')
+    container: document.body
 })
 
 app.registerLoader(MLoader)

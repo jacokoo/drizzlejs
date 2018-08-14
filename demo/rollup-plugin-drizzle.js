@@ -98,9 +98,9 @@ export default function(options) {
     // transfrom items to import
     const transformIndex = (ast) => {
         const obj = ast.body.find(it => it.type === 'ExportDefaultDeclaration')
-        if (!obj || obj.declaration.type !== 'ObjectExpression') return source
+        if (!obj || obj.declaration.type !== 'ObjectExpression') return generate(ast)
         const items = obj.declaration.properties.find(it => key(it, 'items'))
-        if (!items || items.value.type !== 'ObjectExpression') return source
+        if (!items || items.value.type !== 'ObjectExpression') return generate(ast)
 
         const mods = []
         const views = items.value.properties.find(it => key(it, 'views'))
