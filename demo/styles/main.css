@@ -66,11 +66,11 @@ h3 {
 .header {
     text-align: center;
     top: auto;
-    margin: 3em auto;
+    margin: 3em 1em;
 }
 
 .sidebar {
-    background: rgb(61, 79, 93);
+    background: #404547;
     color: #fff;
 }
 
@@ -95,6 +95,7 @@ h3 {
     display: inline-block;
     *display: inline;
     zoom: 1;
+    margin-left: .5em;
 }
 .nav-item a {
     background: transparent;
@@ -194,11 +195,11 @@ h3 {
 @media (min-width: 48em) {
     .content {
         padding: 2em 3em 0;
-        margin-left: 25%;
+        margin-left: 20%;
     }
 
     .header {
-        margin: 80% 2em 0;
+        margin: 1em 1em 0;
         text-align: right;
     }
 
