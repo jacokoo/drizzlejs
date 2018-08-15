@@ -106,7 +106,6 @@
 
     var _view_editor = {
         rendered: function rendered() {
-            console.log(this.get('code'), this._status);
             this.editor = ace.edit(this.ids.editor, {
                 fontFamily: 'Inconsolata, monospace',
                 fontSize: '13px',
@@ -114,7 +113,7 @@
                 mode: 'ace/mode/sleet',
                 theme: 'ace/theme/xcode'
             });
-            this.editor.setValue('#! drizzle\n\nmodule\n    div\n\nscript.\n    export default {\n    }\n', -1);
+            this.editor.setValue(this.get('code'), -1);
         },
         updated: function updated() {
             console.log('updated', this._status);
@@ -189,7 +188,7 @@
                     return [];
                 },
                 current: function current() {
-                    return 1;
+                    return 0;
                 }
             }
         },
@@ -217,12 +216,14 @@
     var o7$2 = SN$5('div', null, KV$6('class', 'dropdown-item'));
     var o8$2 = SN$5('p', null);
     var o9$2 = TX$2('abc');
-    var o10$2 = REF$2('code-editor', null, [], [], []);
+    var o10$2 = REF$2('code-editor', null, [KV$6('code')], [], []);
     var o11$1 = SN$5('div', null, KV$6('class', 'tile is-6 is-vertical'));
     var o12$1 = SN$5('div', null, KV$6('class', 'tile is-parent'));
     var o13$1 = SN$5('div', null, KV$6('class', 'tile is-child'));
     var o14$1 = SN$5('div', null, KV$6('class', 'tile is-parent bt'));
     var o15$1 = SN$5('div', null, KV$6('class', 'tile is-child'));
+    var index = '#! drizzle\n\nmodule > view-a\n\nscript.\n    export default {\n        items: { views: [\'view-a\'] }\n    }\n';
+    var view = '#! drizzle\n\nview\n    input(bind:value=name)\n    echo(\'hello\' name)\n';
     C$5(o8$2, o9$2);
     C$5(o7$2, o8$2);
     C$5(o6$2, o7$2);
@@ -246,8 +247,8 @@
             models: {
                 files: function files() {
                     return {
-                        index: '',
-                        'view-a': ''
+                        index: index,
+                        'view-a': view
                     };
                 },
                 current: function current() {
@@ -256,8 +257,16 @@
             }
         },
         computed: {
-            tabs: function tabs(context) {
-                return Object.keys(context.files);
+            tabs: function tabs(_ref) {
+                var files = _ref.files;
+
+                return Object.keys(files);
+            },
+            code: function code(_ref2) {
+                var files = _ref2.files,
+                    current = _ref2.current;
+
+                return files[current];
             }
         },
         template: template$6,

@@ -5,7 +5,6 @@ view > #editor.code-editor
 script.
     export default {
         rendered () {
-            console.log(this.get('code'), this._status)
             this.editor = ace.edit(this.ids.editor, {
                 fontFamily: 'Inconsolata, monospace',
                 fontSize: '13px',
@@ -14,7 +13,7 @@ script.
                 theme: 'ace/theme/xcode'
             })
 
-            this.editor.setValue(`#! drizzle\n\nmodule\n    div\n\nscript.\n    export default {\n    }\n`, -1)
+            this.editor.setValue(this.get('code'), -1)
         },
 
         updated () {

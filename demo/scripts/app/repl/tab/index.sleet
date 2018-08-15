@@ -9,7 +9,7 @@ script.
         store: {
             models: {
                 tabs: () => [],
-                current: () => 1
+                current: () => 0
             }
         },
 

@@ -5,13 +5,29 @@ module > .main-content > .tile.is-ancestor.h100
         .tile.is-child.editor.is-12
             file-tab(tabs)
             c-dropdown > .dropdown-item > p abc
-            code-editor
+            code-editor(code)
 
     .tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child
         .tile.is-parent.bt > .tile.is-child
 
 script.
+    const index = `#! drizzle
+
+    module > view-a
+
+    script.
+        export default {
+            items: { views: ['view-a'] }
+        }
+    `
+
+    const view = `#! drizzle
+
+    view
+        input(bind:value=name)
+        echo('hello' name)
+    `
     export default {
         items: {
             modules: {
@@ -23,14 +39,17 @@ script.
 
         store: {
             models: {
-                files: () => { return {index: '', 'view-a': ''} },
+                files: () => { return {index, 'view-a': view} },
                 current: () => 'index'
             }
         },
 
         computed: {
-            tabs (context) {
-                return Object.keys(context.files)
+            tabs ({files}) {
+                return Object.keys(files)
+            },
+            code ({files, current}) {
+                return files[current]
             }
         }
     }
