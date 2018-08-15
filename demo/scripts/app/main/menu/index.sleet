@@ -1,0 +1,11 @@
+#! drizzle
+
+module > .sidebar
+    ul.menu-list1
+        li.menu-item1.active > a hello
+        li.menu-item1 > a hello
+        li.menu-item1 > a hello
+
+script.
+    export default {
+    }

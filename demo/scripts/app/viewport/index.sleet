@@ -1,34 +1,21 @@
 #! drizzle
-module > .pure-g
-    .sidebar.pure-u-1.pure-u-md-1-5
-        .header
-            h1.brand-title Drizzle
-            h2.brand-tagline demo kit
-            nav.nav > ul.nav-list
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-                li.nav-item > a.pure-button TODOS
-
-    .content.pure-u-1.pure-u-md-4-5 b
+module
+    app-header
+    region
 
 script.
     export default {
         items: {
             modules: {
                 'todo-app': 'todos',
-                'app-menu': 'menu'
+                'app-menu': 'main/menu',
+                'repl-app': 'repl',
+                'app-header': 'main/header'
             }
         },
 
         routes: {
-            '/todos1': 'todo-app'   // use default region
+            '/todos1': 'todo-app',   // use default region
+            '/repl': 'repl-app'
         }
     }

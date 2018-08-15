@@ -2462,8 +2462,8 @@
         return TextNode;
     }(Node);
 
-    var ReferenceNode = function (_Node) {
-        inherits(ReferenceNode, _Node);
+    var ReferenceNode = function (_AnchorNode) {
+        inherits(ReferenceNode, _AnchorNode);
 
         function ReferenceNode(name, id) {
             classCallCheck(this, ReferenceNode);
@@ -2517,6 +2517,7 @@
                         });
                         if (attr) name = attr[1];
                     }
+                    it.init(root, delay);
                     if (!_this2.grouped[name]) _this2.grouped[name] = [];
                     _this2.grouped[name].push(it);
                 });
@@ -2526,11 +2527,14 @@
             value: function render(context, delay) {
                 var _this3 = this;
 
+                if (this.rendered) return;
+                this.rendered = true;
+                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context, delay);
                 delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
                     acc[item[1]] = context[item[0]];
                     return acc;
                 }, {})));
-                delay.add(this.item._render(this.parent).then(function () {
+                delay.add(this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
                     }));
@@ -2592,6 +2596,8 @@
             value: function destroy(delay) {
                 var _this4 = this;
 
+                if (!this.rendered) return;
+                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'destroy', this).call(this, delay);
                 delay.add(this.item.destroy());
                 this.hooks.forEach(function (it) {
                     return it.dispose();
@@ -2604,7 +2610,7 @@
             }
         }]);
         return ReferenceNode;
-    }(Node);
+    }(AnchorNode);
 
     var RegionNode = function (_Node) {
         inherits(RegionNode, _Node);
@@ -2681,11 +2687,12 @@
                 var _this3 = this;
 
                 if (!this.rendered) return;
-                this.nodes = nodes;
                 return this.close().then(function () {
+                    _this3.nodes = nodes;
                     return Delay.also(function (d) {
                         return _this3.nodes.forEach(function (it) {
-                            return it.render(context, d);
+                            it.parent = _this3.parent;
+                            it.render(context, d);
                         });
                     });
                 });

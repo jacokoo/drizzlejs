@@ -1,0 +1,14 @@
+#! drizzle
+
+module
+    .brand-title
+        span(style='font-weight: bold;') D
+        span rizzle
+    .header > ul.header-nav
+        li.header-nav-item.active > a(href='#/guide') 开始使用
+        li.header-nav-item > a(href='#/repl') 在线试用
+        li.header-nav-item > a(href='#/demos') 示例集合
+
+script.
+    export default {
+    }

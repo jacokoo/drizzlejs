@@ -5,13 +5,14 @@ import { Module } from '../module'
 import { View } from '../view'
 import { StaticNode } from './static-node'
 import { Disposable } from '../drizzle'
+import { AnchorNode } from './anchor-node'
 
 interface BindResult {
     fn: (any) => void
     event: string
 }
 
-export class ReferenceNode extends Node {
+export class ReferenceNode extends AnchorNode {
     name: string
     item: Module | View
     events: {[event: string]: {method: string, args: Attribute[]}} = {}
@@ -58,17 +59,22 @@ export class ReferenceNode extends Node {
                 if (attr) name = attr[1]
             }
 
+            it.init(root, delay)
             if (!this.grouped[name]) this.grouped[name] = []
             this.grouped[name].push(it)
         })
     }
 
     render (context: object, delay: Delay) {
+        if (this.rendered) return
+        this.rendered = true
+
+        super.render(context, delay)
         delay.add(this.item.set(this.bindings.reduce((acc, item) => {
             acc[item[1]] = context[item[0]]
             return acc
         }, {})))
-        delay.add(this.item._render(this.parent).then(() => {
+        delay.add(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 return this.item.regions[k]._showNode(this.grouped[k], context)
             }))
@@ -124,6 +130,9 @@ export class ReferenceNode extends Node {
     }
 
     destroy (delay: Delay) {
+        if (!this.rendered) return
+        super.destroy(delay)
+
         delay.add(this.item.destroy())
         this.hooks.forEach(it => it.dispose())
         this.hooks = []

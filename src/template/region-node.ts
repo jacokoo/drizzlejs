@@ -61,9 +61,12 @@ export class RegionNode extends Node {
 
     showNode (nodes: Node[], context: object): Promise<any> {
         if (!this.rendered) return
-        this.nodes = nodes
         return this.close().then(() => {
-            return Delay.also(d => this.nodes.forEach(it => it.render(context, d)))
+            this.nodes = nodes
+            return Delay.also(d => this.nodes.forEach(it => {
+                it.parent = this.parent
+                it.render(context, d)
+            }))
         })
     }
 

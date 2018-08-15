@@ -1,0 +1,17 @@
+#! drizzle
+
+module > .tabs
+    ul
+        li.is-active > a
+            span index.sleet
+            span.delete.is-small
+        li > a
+            span view-1.sleet
+            span.delete.is-small
+        li > a
+            span view-2.sleet
+            span.delete.is-small
+
+script.
+    export default {
+    }
