@@ -15,7 +15,6 @@ export interface ItemOptions {
 
 export interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
-    exportedModels?: string[]
     state?: object,
     items?: ItemOptions
     routes?: RouteOptions
@@ -68,7 +67,9 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     set (data: object) {
-        const {exportedModels} = this._options
+        if (!this._options.template) return
+
+        const {exportedModels} = this._options.template
         if (!exportedModels || !exportedModels.length) return
 
         const d = exportedModels.reduce((acc, item) => {

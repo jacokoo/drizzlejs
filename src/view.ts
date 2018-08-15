@@ -1,11 +1,10 @@
-import { RenderOptions, Renderable } from './renderable'
+import { RenderOptions, Renderable, ComponentState } from './renderable'
 import { Module } from './module'
 import { DynamicNode } from './template/dynamic-node'
 
 export interface ViewOptions extends RenderOptions {
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
-    helpers?: {[name: string]: (...any) => any},
-    computed?: {[name: string]: (any) => any}
+    helpers?: {[name: string]: (...any) => any}
 }
 
 export interface BindingGroup {
@@ -28,8 +27,18 @@ export class View extends Renderable<ViewOptions> {
         return this._module.regions
     }
 
+    get (key?: string) {
+        if (!key) return this._state
+
+        if (this._options.computed && this._options.computed[key]) {
+            return this._options.computed[key](this._state)
+        }
+
+        return this._state[key]
+    }
+
     set (data: object, silent: boolean = false) {
-        if (silent) {
+        if (silent || this._status !== ComponentState.RENDERED) {
             Object.assign(this._state, data)
             return Promise.resolve()
         }

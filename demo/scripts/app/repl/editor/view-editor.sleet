@@ -1,0 +1,23 @@
+#! drizzle
+
+view > #editor.code-editor
+
+script.
+    export default {
+        rendered () {
+            console.log(this.get('code'), this._status)
+            this.editor = ace.edit(this.ids.editor, {
+                fontFamily: 'Inconsolata, monospace',
+                fontSize: '13px',
+                showPrintMargin: false,
+                mode: 'ace/mode/sleet',
+                theme: 'ace/theme/xcode'
+            })
+
+            this.editor.setValue(`#! drizzle\n\nmodule\n    div\n\nscript.\n    export default {\n    }\n`, -1)
+        },
+
+        updated () {
+            console.log('updated', this._status)
+        }
+    }

@@ -10,6 +10,7 @@ export class StaticNode extends Node {
         super(id)
         this.name = name
         this.attributes = attributes
+        if (name === 'svg') this.inSvg = true
     }
 
     render (context: object, delay: Delay) {
@@ -32,7 +33,9 @@ export class StaticNode extends Node {
     }
 
     create () {
-        const element = document.createElement(this.name)
+        const element = this.inSvg ?
+            document.createElementNS('http://www.w3.org/2000/svg', this.name) :
+            document.createElement(this.name)
         this.attributes.forEach(it =>  setAttribute(element, it[0], it[1]))
         return element
     }

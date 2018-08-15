@@ -1,6 +1,6 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, Attribute, resolveEventArgument } from './template'
+import { Delay, Attribute, resolveEventArgument, getValue } from './template'
 import { Module } from '../module'
 import { View } from '../view'
 import { StaticNode } from './static-node'
@@ -71,7 +71,7 @@ export class ReferenceNode extends AnchorNode {
 
         super.render(context, delay)
         delay.add(this.item.set(this.bindings.reduce((acc, item) => {
-            acc[item[1]] = context[item[0]]
+            acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
         delay.add(this.item._render(this.newParent).then(() => {

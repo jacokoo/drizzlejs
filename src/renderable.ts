@@ -9,7 +9,8 @@ export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
     customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
     events?: {[name: string]: (...args) => void}
-    template?: ModuleTemplate
+    template?: ModuleTemplate,
+    computed?: {[name: string]: (any) => any}
 }
 
 export enum ComponentState {
@@ -22,7 +23,7 @@ interface Region {
     close (): Promise<any>
 }
 
-export class Renderable<T extends RenderOptions> extends LifecycleContainer {
+export abstract class Renderable<T extends RenderOptions> extends LifecycleContainer {
     _target: Appendable
     _options: T
     ids: {[key: string]: HTMLElement | Renderable<T>} = {}
@@ -38,12 +39,12 @@ export class Renderable<T extends RenderOptions> extends LifecycleContainer {
 
     _render (target: Appendable) {
         if (this._status !== ComponentState.INITED) return Promise.resolve()
-        this._status = ComponentState.RENDERED
 
         this._target = target
         this._busy = this._busy
             .then(() => this._doBeforeRender())
             .then(() => this._doRendered())
+            .then(() => this._status = ComponentState.RENDERED)
 
         return this._busy
     }
@@ -70,4 +71,13 @@ export class Renderable<T extends RenderOptions> extends LifecycleContainer {
         if (events && events[name]) events[name].apply(this, args)
     }
 
+    _context () {
+        const c = this.get() as {[name: string]: any}
+        if (this._options.computed) {
+            c._computed = this._options.computed
+        }
+        return c
+    }
+
+    abstract get (name?: string): object
 }

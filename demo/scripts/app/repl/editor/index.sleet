@@ -1,0 +1,14 @@
+#! drizzle
+
+module(code) > view-editor(code)
+
+script.
+    export default {
+        items: { views: ['view-editor'] },
+
+        store: {
+            models: {
+                code: () => ''
+            }
+        }
+    }

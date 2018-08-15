@@ -1,17 +1,19 @@
 #! drizzle
 
-module > .tabs
-    ul
-        li.is-active > a
-            span index.sleet
-            span.delete.is-small
-        li > a
-            span view-1.sleet
-            span.delete.is-small
-        li > a
-            span view-2.sleet
-            span.delete.is-small
+module(tabs) > .tabs
+    ul > view-tab(tabs current)
 
 script.
     export default {
+        items: { views: ['view-tab'] },
+        store: {
+            models: {
+                tabs: () => [],
+                current: () => 1
+            }
+        },
+
+        rendered () {
+            console.log(this.get(), 'index')
+        }
     }

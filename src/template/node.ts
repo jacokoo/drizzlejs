@@ -8,6 +8,7 @@ export abstract class Node {
     parent: Appendable
     children: Node[] = []
     rendered: boolean = false
+    inSvg: boolean = false
 
     constructor(id?: string) {
         this.id = id
@@ -37,6 +38,12 @@ export abstract class Node {
 
     setChildren (children: Node[]) {
         this.children = children
+        if (this.inSvg) children.forEach(it => it.setToSvg())
+    }
+
+    setToSvg () {
+        this.inSvg = true
+        this.children.forEach(it => it.inSvg = true)
     }
 
     clearHelper () {

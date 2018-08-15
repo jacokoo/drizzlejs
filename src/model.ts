@@ -10,8 +10,9 @@ export class Model {
     private _data: any
 
     constructor(options: ModelOptions) {
-        this._options = options
-        this.set(options.data())
+        const opt = typeof options === 'function' ? { data: options} : options
+        this._options = opt
+        this.set(opt.data())
     }
 
     set (data: any) {

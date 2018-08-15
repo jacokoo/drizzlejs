@@ -70,6 +70,10 @@ body {
     left: 0;
 }
 
+svg {
+    width: 70%;
+}
+
 .sidebar {
     width: 160px;
     position: fixed;
@@ -142,7 +146,7 @@ body {
     width: 100%;
     position: relative;
     border-bottom: 1px solid #c7c7c7;
-    padding: 0 2em;
+    padding: 0;
     overflow: hidden;
     margin-left: 160px;
 }
@@ -189,14 +193,34 @@ body {
     position: relative;
 }
 
-.create-file {
+.operators {
     position: absolute;
     right: 0;
     top: 0;
-    font-size: 2em;
-    margin: -8px 10px;
-    cursor: pointer;
-    color: #ff603b;
+}
+
+.operators button {
+    border-radius: 0;
+    border-width: 0;
+    height: 40px;
+    background-color: #f9fafb;
+}
+
+.operators svg path {
+    fill: #fea143;
+}
+
+.operators button:hover, .operators button:focus {
+    border-width: 0;
+    border-radius: 0;
+}
+
+.operators button:hover svg path {
+    fill: #ff603b;
+}
+
+.dropdown-content {
+    border-radius: 0
 }
 
 .editor .tabs {
@@ -221,7 +245,7 @@ body {
     display: block;
 }
 
-#editor {
+.code-editor {
     position: absolute;
     top: 42px;
     left: 0;

@@ -329,6 +329,7 @@
 
             this.children = [];
             this.rendered = false;
+            this.inSvg = false;
             this.id = id;
         }
 
@@ -362,6 +363,17 @@
             key: 'setChildren',
             value: function setChildren(children) {
                 this.children = children;
+                if (this.inSvg) children.forEach(function (it) {
+                    return it.setToSvg();
+                });
+            }
+        }, {
+            key: 'setToSvg',
+            value: function setToSvg() {
+                this.inSvg = true;
+                this.children.forEach(function (it) {
+                    return it.inSvg = true;
+                });
             }
         }, {
             key: 'clearHelper',
@@ -995,6 +1007,7 @@
 
             _this.exportedModels = [];
             var me = _this;
+            _this.exportedModels = exportedModels;
             _this.life = {
                 stage: 'template',
                 init: function init() {
@@ -1008,14 +1021,14 @@
                     var _this3 = this;
 
                     return Delay.also(function (d) {
-                        return me.render(_this3.get(), d);
+                        return me.render(_this3._context(), d);
                     });
                 },
                 updated: function updated() {
                     var _this4 = this;
 
                     return Delay.also(function (d) {
-                        return me.update(_this4.get(), d);
+                        return me.update(_this4._context(), d);
                     });
                 },
                 beforeDestroy: function beforeDestroy() {
@@ -1052,14 +1065,14 @@
                     var _this3 = this;
 
                     return Delay.also(function (d) {
-                        return me.render(me.getContext(_this3), d);
+                        return me.render(_this3._context(), d);
                     });
                 },
                 updated: function updated() {
                     var _this4 = this;
 
                     return Delay.also(function (d) {
-                        return me.update(me.getContext(_this4), d);
+                        return me.update(_this4._context(), d);
                     });
                 },
                 beforeDestroy: function beforeDestroy() {
@@ -1071,16 +1084,6 @@
             return _this;
         }
 
-        createClass(ViewTemplate, [{
-            key: 'getContext',
-            value: function getContext(view) {
-                var c = view._state;
-                if (view._options.computed) {
-                    c._computed = view._options.computed;
-                }
-                return c;
-            }
-        }]);
         return ViewTemplate;
     }(Template);
 
@@ -1197,12 +1200,13 @@
                 var _this2 = this;
 
                 if (this._status !== ComponentState.INITED) return Promise.resolve();
-                this._status = ComponentState.RENDERED;
                 this._target = target;
                 this._busy = this._busy.then(function () {
                     return _this2._doBeforeRender();
                 }).then(function () {
                     return _this2._doRendered();
+                }).then(function () {
+                    return _this2._status = ComponentState.RENDERED;
                 });
                 return this._busy;
             }
@@ -1243,6 +1247,15 @@
 
                 if (events && events[name]) events[name].apply(this, args);
             }
+        }, {
+            key: "_context",
+            value: function _context() {
+                var c = this.get();
+                if (this._options.computed) {
+                    c._computed = this._options.computed;
+                }
+                return c;
+            }
         }]);
         return Renderable;
     }(LifecycleContainer);
@@ -1251,8 +1264,9 @@
         function Model(options) {
             classCallCheck(this, Model);
 
-            this._options = options;
-            this.set(options.data());
+            var opt = typeof options === 'function' ? { data: options } : options;
+            this._options = opt;
+            this.set(opt.data());
         }
 
         createClass(Model, [{
@@ -1352,13 +1366,22 @@
         }
 
         createClass(View, [{
+            key: 'get',
+            value: function get$$1(key) {
+                if (!key) return this._state;
+                if (this._options.computed && this._options.computed[key]) {
+                    return this._options.computed[key](this._state);
+                }
+                return this._state[key];
+            }
+        }, {
             key: 'set',
             value: function set$$1(data) {
                 var _this2 = this;
 
                 var silent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-                if (silent) {
+                if (silent || this._status !== ComponentState.RENDERED) {
                     Object.assign(this._state, data);
                     return Promise.resolve();
                 }
@@ -1667,7 +1690,8 @@
         createClass(Module, [{
             key: 'set',
             value: function set$$1(data) {
-                var exportedModels = this._options.exportedModels;
+                if (!this._options.template) return;
+                var exportedModels = this._options.template.exportedModels;
 
                 if (!exportedModels || !exportedModels.length) return;
                 var d = exportedModels.reduce(function (acc, item) {
@@ -1921,6 +1945,7 @@
 
             _this.name = name;
             _this.attributes = attributes;
+            if (name === 'svg') _this.inSvg = true;
             return _this;
         }
 
@@ -1952,7 +1977,7 @@
         }, {
             key: 'create',
             value: function create() {
-                var element = document.createElement(this.name);
+                var element = this.inSvg ? document.createElementNS('http://www.w3.org/2000/svg', this.name) : document.createElement(this.name);
                 this.attributes.forEach(function (it) {
                     return setAttribute(element, it[0], it[1]);
                 });
@@ -2531,7 +2556,7 @@
                 this.rendered = true;
                 get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context, delay);
                 delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
-                    acc[item[1]] = context[item[0]];
+                    acc[item[1]] = getValue(item[0], context);
                     return acc;
                 }, {})));
                 delay.add(this.item._render(this.newParent).then(function () {

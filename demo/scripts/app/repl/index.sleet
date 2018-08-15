@@ -3,9 +3,9 @@
 module > .main-content > .tile.is-ancestor.h100
     .tile.is-6.is-parent.br
         .tile.is-child.editor.is-12
-            file-tab
-            span.create-file +
-            #editor(id='editor')
+            file-tab(tabs)
+            c-dropdown > .dropdown-item > p abc
+            code-editor
 
     .tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child
@@ -15,25 +15,22 @@ script.
     export default {
         items: {
             modules: {
-                'content-layout': 'main/content-layout',
-                'file-tab': 'repl/tab'
+                'file-tab': 'repl/tab',
+                'code-editor': 'repl/editor',
+                'c-dropdown': 'component/dropdown'
             }
         },
 
-        rendered () {
-            console.log(arguments)
-            this.editor = ace.edit(this.ids.editor, {
-                fontFamily: 'Inconsolata, monospace',
-                fontSize: '13px',
-                showPrintMargin: false,
-                mode: 'ace/mode/sleet',
-                theme: 'ace/theme/xcode'
-            })
-
-            this.editor.setValue(`#! drizzle\n\nmodule\n    div\n\nscript.\n    export default {\n    }\n`, -1)
+        store: {
+            models: {
+                files: () => { return {index: '', 'view-a': ''} },
+                current: () => 'index'
+            }
         },
 
-        updated () {
-            console.log('updated')
+        computed: {
+            tabs (context) {
+                return Object.keys(context.files)
+            }
         }
     }
