@@ -2,7 +2,7 @@
 
 module
     .brand-title
-        span(style='font-weight: bold;') D
+        span(style='font-weight: 400;') D
         span rizzle
     .header > ul.header-nav
         li.header-nav-item.active > a(href='#/guide') 开始使用

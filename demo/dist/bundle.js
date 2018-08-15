@@ -8,7 +8,7 @@
 
     var template = new drizzlejs.ModuleTemplate([]);
     var o1 = SN('div', null, KV('class', 'brand-title'));
-    var o2 = SN('span', null, KV('style', 'font-weight: bold;'));
+    var o2 = SN('span', null, KV('style', 'font-weight: 400;'));
     var o3 = TX('D');
     var o4 = SN('span', null);
     var o5 = TX('rizzle');
