@@ -58,7 +58,7 @@ export class Module extends Renderable<ModuleOptions> {
     private _extraState: object
 
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState: object = {}) {
-        super(app, options, options.template && options.template.life)
+        super(app, options, options.template && options.template.createLife())
         this._loader = loader
         this._extraState = extraState
         this.regions = {}

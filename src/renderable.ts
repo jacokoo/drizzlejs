@@ -2,8 +2,7 @@ import { Lifecycle, LifecycleContainer } from './lifecycle'
 import { Application } from './application'
 import { Disposable } from './drizzle'
 import { Node } from './template/node'
-import { ModuleTemplate } from './template/module-template'
-import { Appendable } from './template/template'
+import { Appendable, ModuleTemplate } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
@@ -22,6 +21,7 @@ export enum ComponentState {
 interface Region {
     show (name: string, state: object): Promise<Renderable<any>>
     _showNode (nodes: Node[], context: object): Promise<any>
+    _showChildren ()
     close (): Promise<any>
 }
 

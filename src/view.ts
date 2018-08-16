@@ -20,7 +20,7 @@ export class View extends Renderable<ViewOptions> {
     _state: object = {}
 
     constructor(mod: Module, options: ViewOptions) {
-        super(mod.app, options, options.template && options.template.life)
+        super(mod.app, options, options.template && options.template.createLife())
         this._module = mod
     }
 

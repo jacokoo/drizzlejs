@@ -290,42 +290,81 @@
         }
 
         createClass(Template, [{
-            key: "init",
-            value: function init(root, delay) {
-                this.root = root;
-                this.nodes = this.createor();
-                this.nodes.forEach(function (it) {
-                    return it.init(root, delay);
-                });
-            }
-        }, {
-            key: "render",
-            value: function render(context, delay) {
-                var _this = this;
+            key: "createLife",
+            value: function createLife() {
+                var me = this;
+                var o = {
+                    stage: 'template',
+                    nodes: [],
+                    init: function init() {
+                        var _this = this;
 
-                this.nodes.forEach(function (it) {
-                    it.parent = _this.root._target;
-                    it.render(context, delay);
-                });
-            }
-        }, {
-            key: "update",
-            value: function update(context, delay) {
-                this.nodes.forEach(function (it) {
-                    return it.update(context, delay);
-                });
-            }
-        }, {
-            key: "destroy",
-            value: function destroy(delay) {
-                this.nodes.forEach(function (it) {
-                    it.destroy(delay);
-                    it.parent = null;
-                });
+                        o.nodes = me.creator();
+                        return Delay.also(function (d) {
+                            return o.nodes.forEach(function (it) {
+                                return it.init(_this, d);
+                            });
+                        });
+                    },
+                    beforeRender: function beforeRender() {
+                        var _this2 = this;
+
+                        return Delay.also(function (d) {
+                            return o.nodes.forEach(function (it) {
+                                it.parent = _this2._target;
+                                it.render(_this2._context(), d);
+                            });
+                        });
+                    },
+                    updated: function updated() {
+                        var _this3 = this;
+
+                        return Delay.also(function (d) {
+                            return o.nodes.forEach(function (it) {
+                                return it.update(_this3._context(), d);
+                            });
+                        });
+                    },
+                    beforeDestroy: function beforeDestroy() {
+                        return Delay.also(function (d) {
+                            return o.nodes.forEach(function (it) {
+                                return it.destroy(d);
+                            });
+                        });
+                    }
+                };
+                return o;
             }
         }]);
         return Template;
     }();
+
+    var ViewTemplate = function (_Template) {
+        inherits(ViewTemplate, _Template);
+
+        function ViewTemplate() {
+            classCallCheck(this, ViewTemplate);
+            return possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).apply(this, arguments));
+        }
+
+        return ViewTemplate;
+    }(Template);
+
+    var ModuleTemplate = function (_Template2) {
+        inherits(ModuleTemplate, _Template2);
+
+        function ModuleTemplate(exportedModels) {
+            classCallCheck(this, ModuleTemplate);
+
+            var _this5 = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
+
+            _this5.exportedModels = [];
+            _this5.exportedModels = exportedModels;
+            return _this5;
+        }
+
+        return ModuleTemplate;
+    }(Template);
 
     var Node = function () {
         function Node(id) {
@@ -1002,96 +1041,6 @@
         return Loader;
     }();
 
-    var ModuleTemplate = function (_Template) {
-        inherits(ModuleTemplate, _Template);
-
-        function ModuleTemplate(exportedModels) {
-            classCallCheck(this, ModuleTemplate);
-
-            var _this = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
-
-            _this.exportedModels = [];
-            var me = _this;
-            _this.exportedModels = exportedModels;
-            _this.life = {
-                stage: 'template',
-                init: function init() {
-                    var _this2 = this;
-
-                    return Delay.also(function (d) {
-                        return me.init(_this2, d);
-                    });
-                },
-                beforeRender: function beforeRender() {
-                    var _this3 = this;
-
-                    return Delay.also(function (d) {
-                        return me.render(_this3._context(), d);
-                    });
-                },
-                updated: function updated() {
-                    var _this4 = this;
-
-                    return Delay.also(function (d) {
-                        return me.update(_this4._context(), d);
-                    });
-                },
-                beforeDestroy: function beforeDestroy() {
-                    return Delay.also(function (d) {
-                        return me.destroy(d);
-                    });
-                }
-            };
-            return _this;
-        }
-
-        return ModuleTemplate;
-    }(Template);
-
-    var ViewTemplate = function (_Template) {
-        inherits(ViewTemplate, _Template);
-
-        function ViewTemplate() {
-            classCallCheck(this, ViewTemplate);
-
-            var _this = possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).call(this));
-
-            var me = _this;
-            _this.life = {
-                stage: 'template',
-                init: function init() {
-                    var _this2 = this;
-
-                    return Delay.also(function (d) {
-                        return me.init(_this2, d);
-                    });
-                },
-                beforeRender: function beforeRender() {
-                    var _this3 = this;
-
-                    return Delay.also(function (d) {
-                        return me.render(_this3._context(), d);
-                    });
-                },
-                updated: function updated() {
-                    var _this4 = this;
-
-                    return Delay.also(function (d) {
-                        return me.update(_this4._context(), d);
-                    });
-                },
-                beforeDestroy: function beforeDestroy() {
-                    return Delay.also(function (d) {
-                        return me.destroy(d);
-                    });
-                }
-            };
-            return _this;
-        }
-
-        return ViewTemplate;
-    }(Template);
-
     var callIt = function callIt(ctx, cycles, method) {
         var reverse = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
 
@@ -1389,7 +1338,7 @@
         function View(mod, options) {
             classCallCheck(this, View);
 
-            var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options, options.template && options.template.life));
+            var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options, options.template && options.template.createLife()));
 
             _this._groups = {};
             _this._state = {};
@@ -1639,12 +1588,12 @@
 
                 return {
                     enter: function enter(args) {
-                        return _this7._module.dispatch(h.action, args).then(function () {
+                        return _this7._module._dispatch(h.action, args).then(function () {
                             return null;
                         });
                     },
                     update: function update(args) {
-                        return _this7._module.dispatch(h.action, args);
+                        return _this7._module._dispatch(h.action, args);
                     }
                 };
             }
@@ -1698,7 +1647,7 @@
             var extraState = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
             classCallCheck(this, Module);
 
-            var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.life));
+            var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.createLife()));
 
             _this._items = {};
             _this._handlers = {};
@@ -2623,7 +2572,9 @@
                 delay.add(this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
-                    }));
+                    }).concat(Object.keys(_this3.item.regions).map(function (it) {
+                        if (!_this3.grouped[it] || !_this3.grouped[it].length) return _this3.item.regions[it]._showChildren();
+                    })));
                 }));
                 this.context = context;
                 var cbs = [];
@@ -2705,6 +2656,7 @@
 
             var _this = possibleConstructorReturn(this, (RegionNode.__proto__ || Object.getPrototypeOf(RegionNode)).call(this));
 
+            _this.isChildren = false;
             _this.id = id;
             return _this;
         }
@@ -2723,12 +2675,20 @@
                 var me = this;
                 this.mod.regions[this.id] = {
                     show: function show(name, state) {
+                        me.isChildren = false;
                         return me.show(name, state);
                     },
                     _showNode: function _showNode(nodes, context) {
+                        me.isChildren = false;
                         return me.showNode(nodes, context);
                     },
+                    _showChildren: function _showChildren() {
+                        if (!me.context) return Promise.resolve();
+                        me.isChildren = true;
+                        return this._showNode(me.children, me.context);
+                    },
                     close: function close() {
+                        me.isChildren = false;
                         return me.close();
                     }
                 };
@@ -2739,7 +2699,7 @@
                 if (this.rendered) return;
                 this.rendered = true;
                 this.context = context;
-                this.children.forEach(function (it) {
+                if (this.isChildren) this.nodes.forEach(function (it) {
                     return it.render(context, delay);
                 });
             }
@@ -2748,7 +2708,7 @@
             value: function update(context, delay) {
                 if (!this.rendered) return;
                 this.context = context;
-                this.children.forEach(function (it) {
+                if (this.isChildren) this.nodes.forEach(function (it) {
                     return it.update(context, delay);
                 });
             }
@@ -2760,9 +2720,6 @@
                     return it.destroy(delay);
                 });
                 if (this.item) delay.add(this.item.destroy());
-                this.children.forEach(function (it) {
-                    return it.destroy(delay);
-                });
                 this.rendered = false;
             }
         }, {
@@ -2813,11 +2770,6 @@
                 }).then(function () {
                     _this5.nodes = null;
                     _this5.item = null;
-                    return Delay.also(function (d) {
-                        return _this5.children.forEach(function (it) {
-                            return it.render(_this5.context, d);
-                        });
-                    });
                 });
             }
         }]);

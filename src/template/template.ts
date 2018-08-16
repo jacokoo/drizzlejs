@@ -143,33 +143,47 @@ export const customEvents = {
 export const components: {[name: string]: Component} = {
 }
 
-export abstract class Template<T extends Renderable<any>> {
-    life: Lifecycle
-    createor: () => MNode[]
-    nodes: MNode[]
-    root: T
+export abstract class Template {
+    creator: () => MNode[]
 
-    init (root: T, delay: Delay) {
-        this.root = root
-        this.nodes = this.createor()
-        this.nodes.forEach(it => it.init(root, delay))
+    createLife () {
+        const me = this
+        const o = {
+            stage: 'template',
+            nodes: [] as MNode[],
+            init (this: Renderable<any>) {
+                o.nodes = me.creator()
+                return Delay.also(d => o.nodes.forEach(it => it.init(this, d)))
+            },
+
+            beforeRender (this: Renderable<any>) {
+                return Delay.also(d => o.nodes.forEach(it => {
+                    it.parent = this._target
+                    it.render(this._context(), d)
+                }))
+            },
+
+            updated (this: Renderable<any>) {
+                return Delay.also(d => o.nodes.forEach(it => it.update(this._context(), d)))
+            },
+
+            beforeDestroy () {
+                return Delay.also(d => o.nodes.forEach(it => it.destroy(d)))
+            }
+        }
+
+        return o
     }
+}
 
-    render (context: object, delay: Delay) {
-        this.nodes.forEach(it => {
-            it.parent = this.root._target
-            it.render(context, delay)
-        })
-    }
+export class ViewTemplate extends Template {
+}
 
-    update (context: object, delay: Delay) {
-        this.nodes.forEach(it => it.update(context, delay))
-    }
+export class ModuleTemplate extends Template {
+    exportedModels: string[] = []
 
-    destroy (delay: Delay) {
-        this.nodes.forEach(it => {
-            it.destroy(delay)
-            it.parent = null
-        })
+    constructor(exportedModels: string[]) {
+        super()
+        this.exportedModels = exportedModels
     }
 }

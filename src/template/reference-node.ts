@@ -77,7 +77,9 @@ export class ReferenceNode extends AnchorNode {
         delay.add(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 return this.item.regions[k]._showNode(this.grouped[k], context)
-            }))
+            }).concat(Object.keys(this.item.regions).map(it => {
+                if (!this.grouped[it] || !this.grouped[it].length) return this.item.regions[it]._showChildren()
+            })))
         }))
 
         this.context = context

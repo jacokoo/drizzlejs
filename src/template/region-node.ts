@@ -9,6 +9,7 @@ export class RegionNode extends Node {
     item: Renderable<any>
     context: object
     mod: Module
+    isChildren = false
 
     constructor(id: string = 'default') {
         super()
@@ -26,12 +27,20 @@ export class RegionNode extends Node {
         const me = this
         this.mod.regions[this.id] = {
             show (name: string, state: object): Promise<any> {
+                me.isChildren = false
                 return me.show(name, state)
             },
             _showNode (nodes: Node[], context: object): Promise<any> {
+                me.isChildren = false
                 return me.showNode(nodes, context)
             },
+            _showChildren () {
+                if (!me.context) return Promise.resolve()
+                me.isChildren = true
+                return this._showNode(me.children, me.context)
+            },
             close () {
+                me.isChildren = false
                 return me.close()
             }
         }
@@ -42,20 +51,19 @@ export class RegionNode extends Node {
 
         this.rendered = true
         this.context = context
-        this.children.forEach(it => it.render(context, delay))
+        if (this.isChildren) this.nodes.forEach(it => it.render(context, delay))
     }
 
     update (context: object, delay: Delay) {
         if (!this.rendered) return
         this.context = context
-        this.children.forEach(it => it.update(context, delay))
+        if (this.isChildren) this.nodes.forEach(it => it.update(context, delay))
     }
 
     destroy (delay: Delay) {
         if (!this.rendered) return
         if (this.nodes) this.nodes.forEach(it => it.destroy(delay))
         if (this.item) delay.add(this.item.destroy())
-        this.children.forEach(it => it.destroy(delay))
         this.rendered = false
     }
 
@@ -78,7 +86,7 @@ export class RegionNode extends Node {
         })
     }
 
-    close (): Promise<any> {
+    close (show = false): Promise<any> {
         if (!this.nodes && !this.item) return Promise.resolve()
         return Promise.resolve().then(() => {
             if (this.nodes) return Delay.also(d => this.nodes.forEach(it => it.destroy(d)))
@@ -87,7 +95,6 @@ export class RegionNode extends Node {
         }).then(() => {
             this.nodes = null
             this.item = null
-            return Delay.also(d => this.children.forEach(it => it.render(this.context, d)))
         })
     }
 }

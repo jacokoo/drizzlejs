@@ -164,10 +164,10 @@ export class Router {
     private createActionHandler (h: ActionHandler) {
         return {
             enter: (args: object) => {
-                return this._module.dispatch(h.action, args).then(() => null)
+                return this._module._dispatch(h.action, args).then(() => null)
             },
             update: (args: object) => {
-                return this._module.dispatch(h.action, args)
+                return this._module._dispatch(h.action, args)
             }
         }
     }
