@@ -3,7 +3,7 @@
 module > .main-content > .tile.is-ancestor.h100
     .tile.is-6.is-parent.br
         .tile.is-child.editor.is-12
-            file-tab(tabs)
+            file-tab(tabs action:change=switchFile(event))
             c-dropdown > .dropdown-item > p abc
             code-editor(code)
 
@@ -41,6 +41,13 @@ script.
             models: {
                 files: () => { return {index, 'view-a': view} },
                 current: () => 'index'
+            },
+
+            actions: {
+                switchFile ({from, to}) {
+                    console.log(from, to)
+                    this.set({current: to})
+                }
             }
         },
 

@@ -10,10 +10,16 @@ script.
             models: {
                 tabs: () => [],
                 current: () => 0
-            }
-        },
+            },
 
-        rendered () {
-            console.log(this.get(), 'index')
+            actions: {
+                active (index) {
+                    const {tabs, current} = this.get()
+                    if (current === index) return
+
+                    this.set({current: index})
+                    this.fire('change', {from: tabs[current], to: tabs[index]})
+                }
+            }
         }
     }

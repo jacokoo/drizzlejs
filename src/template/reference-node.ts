@@ -47,9 +47,9 @@ export class ReferenceNode extends AnchorNode {
             if (this.id) root.ids[this.id] = i
         }
         if (root instanceof View) {
-            delay.add(root._module.createItem(this.name).then(fn))
+            delay.add(root._module._createItem(this.name).then(fn))
         } else {
-            delay.add((root as Module).createItem(this.name).then(fn))
+            delay.add((root as Module)._createItem(this.name).then(fn))
         }
 
         this.children.forEach(it => {
@@ -85,10 +85,7 @@ export class ReferenceNode extends AnchorNode {
         if (this.item instanceof Module) {
             const m = this.item
             cbs = cbs.concat(this.bindEvents(this.root, m, context))
-
-            if (this.root instanceof View) {
-                cbs = cbs.concat(this.bindActions(this.root, m, context))
-            }
+            cbs = cbs.concat(this.bindActions(this.root, m, context))
 
             this.hooks = cbs.map(it => m.on(it.event, it.fn))
         }
@@ -107,7 +104,7 @@ export class ReferenceNode extends AnchorNode {
         })
     }
 
-    bindActions (root: View, target: Module, context: object): BindResult[] {
+    bindActions (root: Renderable<any>, target: Module, context: object): BindResult[] {
         const me = this
 
         return Object.keys(this.actions).map(it => {
@@ -121,7 +118,7 @@ export class ReferenceNode extends AnchorNode {
 
     update (context: object, delay: Delay) {
         delay.add(this.item.set(this.bindings.reduce((acc, item) => {
-            acc[item[1]] = context[item[0]]
+            acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
 

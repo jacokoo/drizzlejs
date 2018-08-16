@@ -72,7 +72,7 @@ export class RegionNode extends Node {
 
     show (name: string, state: object) {
         if (!this.rendered) return
-        return this.close().then(() => this.mod.createItem(name, state)).then(item => {
+        return this.close().then(() => this.mod._createItem(name, state)).then(item => {
             this.item = item
             return item._render(this.parent).then(() => item)
         })

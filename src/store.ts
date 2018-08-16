@@ -1,4 +1,5 @@
 import { ModelOptions, Model } from './model'
+import { Module } from './module'
 
 export interface StoreOptions {
     models?: {[key: string]: ModelOptions}
@@ -9,9 +10,11 @@ export class Store {
     private _options: StoreOptions
     private _models: {[key: string]: Model} = {}
     private _names: string[] = []
+    private _module: Module
 
-    constructor(options: StoreOptions, updateKey: string) {
+    constructor(mod: Module, options: StoreOptions, updateKey: string) {
         this._options = options
+        this._module = mod
         const {models} = options
         if (models) {
             this._names = Object.keys(models)
@@ -22,6 +25,10 @@ export class Store {
         options.actions[updateKey] = data => {
             this.set(data)
         }
+    }
+
+    fire (name: string, data: any) {
+        this._module.fire(name, data)
     }
 
     get models () {
@@ -38,7 +45,7 @@ export class Store {
     }
 
     set (data: object) {
-        this._names.forEach(k => data[k] && this._models[k].set(data[k]))
+        this._names.forEach(k => (k in data) && this._models[k].set(data[k]))
     }
 
     dispatch (name: string, payload: any): Promise<void> {

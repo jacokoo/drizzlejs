@@ -77,7 +77,8 @@ export class Module extends Renderable<ModuleOptions> {
             return acc
         }, {})
 
-        return (this._status === ComponentState.CREATED ? this._store : this).dispatch(UPDATE_ACTION, d)
+        return this._status === ComponentState.CREATED ?
+            this._store.dispatch(UPDATE_ACTION, d) : this._dispatch(UPDATE_ACTION, d)
     }
 
     get (name?: string) {
@@ -85,15 +86,6 @@ export class Module extends Renderable<ModuleOptions> {
 
         // TODO only works in dev mode
         return clone(obj)
-    }
-
-    dispatch (name: string, payload?: any) {
-        this._busy = this._busy
-            .then(() => this._doBeforeUpdate())
-            .then(() => this._store.dispatch(name, payload))
-            .then(() => this._doUpdated())
-
-        return this._busy
     }
 
     on (name: string, handler: (data: any) => void): Disposable {
@@ -117,12 +109,21 @@ export class Module extends Renderable<ModuleOptions> {
         hs.forEach(it => it.call(this, data))
     }
 
-    createItem (name: string, state?: object) {
+    _createItem (name: string, state?: object) {
         const opt = this._items[name]
         const item = opt.type === 'view' ?
             new View(this, opt.options) :
             new Module(this.app, opt.loader, opt.options, state)
         return item._init().then(() => item)
+    }
+
+    _dispatch (name: string, payload?: any) {
+        this._busy = this._busy
+            .then(() => this._doBeforeUpdate())
+            .then(() => this._store.dispatch(name, payload))
+            .then(() => this._doUpdated())
+
+        return this._busy
     }
 
     _render (target: Appendable) {
@@ -132,7 +133,7 @@ export class Module extends Renderable<ModuleOptions> {
             this._busy = this._busy.then(() => {
                 const {store} = this._options
                 if (store && store.actions && store.actions.init) {
-                    return this.dispatch('init')
+                    return this._dispatch('init')
                 }
             })
             return this._busy
@@ -142,7 +143,7 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     _init () {
-        this._store = new Store(this._options.store || {}, UPDATE_ACTION)
+        this._store = new Store(this, this._options.store || {}, UPDATE_ACTION)
         this.set(Object.assign({}, this._options.state, this._extraState))
         return this._loadItems().then(() => super._init())
     }

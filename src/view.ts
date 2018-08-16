@@ -3,7 +3,6 @@ import { Module } from './module'
 import { DynamicNode } from './template/dynamic-node'
 
 export interface ViewOptions extends RenderOptions {
-    actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
     helpers?: {[name: string]: (...any) => any}
 }
 
@@ -51,15 +50,7 @@ export class View extends Renderable<ViewOptions> {
         return this._busy
     }
 
-    _action (name: string, ...data: any[]) {
-        const {actions} = this._options
-        if (actions && actions[name]) {
-            actions[name].call(this, (d: any) => {
-                return this._module.dispatch(name, d)
-            }, ...data)
-            return
-        }
-
-        this._module.dispatch(name, data[0])
+    _dispatch (name: string, data: any) {
+        return this._module._dispatch(name, data)
     }
 }

@@ -1,10 +1,12 @@
 #! drizzle
 
 view(tabs)
-    li(class=if(i eq current 'is-active'))&each(tabs as tab i) > a
+    li(class=if(i eq current 'is-active') action:click=active(i))&each(tabs as tab i) > a
         span > echo(tab '.sleet')
         span.delete.is-small
 
 script.
     export default {
+        updated () {
+        }
     }

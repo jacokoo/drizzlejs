@@ -9,8 +9,9 @@ export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
     customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
     events?: {[name: string]: (...args) => void}
-    template?: ModuleTemplate,
+    template?: ModuleTemplate
     computed?: {[name: string]: (any) => any}
+    actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
 }
 
 export enum ComponentState {
@@ -79,5 +80,18 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
         return c
     }
 
+    _action (name: string, ...data: any[]) {
+        const {actions} = this._options
+        if (actions && actions[name]) {
+            actions[name].call(this, (d: any) => {
+                return this._dispatch(name, d)
+            }, ...data)
+            return
+        }
+
+        this._dispatch(name, data[0])
+    }
+
     abstract get (name?: string): object
+    abstract _dispatch (name: string, data: any): Promise<any>
 }

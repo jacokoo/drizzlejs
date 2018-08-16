@@ -1256,6 +1256,27 @@
                 }
                 return c;
             }
+        }, {
+            key: "_action",
+            value: function _action(name) {
+                var _this5 = this;
+
+                var actions = this._options.actions;
+
+                for (var _len3 = arguments.length, data = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+                    data[_key3 - 1] = arguments[_key3];
+                }
+
+                if (actions && actions[name]) {
+                    var _actions$name;
+
+                    (_actions$name = actions[name]).call.apply(_actions$name, [this, function (d) {
+                        return _this5._dispatch(name, d);
+                    }].concat(data));
+                    return;
+                }
+                this._dispatch(name, data[0]);
+            }
         }]);
         return Renderable;
     }(LifecycleContainer);
@@ -1292,7 +1313,7 @@
     }();
 
     var Store = function () {
-        function Store(options, updateKey) {
+        function Store(mod, options, updateKey) {
             var _this = this;
 
             classCallCheck(this, Store);
@@ -1300,6 +1321,7 @@
             this._models = {};
             this._names = [];
             this._options = options;
+            this._module = mod;
             var models = options.models;
 
             if (models) {
@@ -1315,6 +1337,11 @@
         }
 
         createClass(Store, [{
+            key: 'fire',
+            value: function fire(name, data) {
+                this._module.fire(name, data);
+            }
+        }, {
             key: 'get',
             value: function get$$1(name) {
                 var _this2 = this;
@@ -1331,7 +1358,7 @@
                 var _this3 = this;
 
                 this._names.forEach(function (k) {
-                    return data[k] && _this3._models[k].set(data[k]);
+                    return k in data && _this3._models[k].set(data[k]);
                 });
             }
         }, {
@@ -1395,25 +1422,9 @@
                 return this._busy;
             }
         }, {
-            key: '_action',
-            value: function _action(name) {
-                var _this3 = this;
-
-                var actions = this._options.actions;
-
-                for (var _len = arguments.length, data = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-                    data[_key - 1] = arguments[_key];
-                }
-
-                if (actions && actions[name]) {
-                    var _actions$name;
-
-                    (_actions$name = actions[name]).call.apply(_actions$name, [this, function (d) {
-                        return _this3._module.dispatch(name, d);
-                    }].concat(data));
-                    return;
-                }
-                this._module.dispatch(name, data[0]);
+            key: '_dispatch',
+            value: function _dispatch(name, data) {
+                return this._module._dispatch(name, data);
             }
         }, {
             key: 'regions',
@@ -1698,7 +1709,7 @@
                     if (data[item]) acc[item] = data[item];
                     return acc;
                 }, {});
-                return (this._status === ComponentState.CREATED ? this._store : this).dispatch(UPDATE_ACTION, d);
+                return this._status === ComponentState.CREATED ? this._store.dispatch(UPDATE_ACTION, d) : this._dispatch(UPDATE_ACTION, d);
             }
         }, {
             key: 'get',
@@ -1706,20 +1717,6 @@
                 var obj = this._store.get(name);
                 // TODO only works in dev mode
                 return clone(obj);
-            }
-        }, {
-            key: 'dispatch',
-            value: function dispatch(name, payload) {
-                var _this2 = this;
-
-                this._busy = this._busy.then(function () {
-                    return _this2._doBeforeUpdate();
-                }).then(function () {
-                    return _this2._store.dispatch(name, payload);
-                }).then(function () {
-                    return _this2._doUpdated();
-                });
-                return this._busy;
             }
         }, {
             key: 'on',
@@ -1738,22 +1735,36 @@
         }, {
             key: 'fire',
             value: function fire(name, data) {
-                var _this3 = this;
+                var _this2 = this;
 
                 if (!this._handlers[name]) return;
                 var hs = this._handlers[name].slice();
                 hs.forEach(function (it) {
-                    return it.call(_this3, data);
+                    return it.call(_this2, data);
                 });
             }
         }, {
-            key: 'createItem',
-            value: function createItem(name, state) {
+            key: '_createItem',
+            value: function _createItem(name, state) {
                 var opt = this._items[name];
                 var item = opt.type === 'view' ? new View(this, opt.options) : new Module(this.app, opt.loader, opt.options, state);
                 return item._init().then(function () {
                     return item;
                 });
+            }
+        }, {
+            key: '_dispatch',
+            value: function _dispatch(name, payload) {
+                var _this3 = this;
+
+                this._busy = this._busy.then(function () {
+                    return _this3._doBeforeUpdate();
+                }).then(function () {
+                    return _this3._store.dispatch(name, payload);
+                }).then(function () {
+                    return _this3._doUpdated();
+                });
+                return this._busy;
             }
         }, {
             key: '_render',
@@ -1766,7 +1777,7 @@
                         var store = _this4._options.store;
 
                         if (store && store.actions && store.actions.init) {
-                            return _this4.dispatch('init');
+                            return _this4._dispatch('init');
                         }
                     });
                     return this._busy;
@@ -1778,7 +1789,7 @@
             value: function _init() {
                 var _this5 = this;
 
-                this._store = new Store(this._options.store || {}, UPDATE_ACTION);
+                this._store = new Store(this, this._options.store || {}, UPDATE_ACTION);
                 this.set(Object.assign({}, this._options.state, this._extraState));
                 return this._loadItems().then(function () {
                     return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this5).call(_this5);
@@ -2530,9 +2541,9 @@
                     if (_this2.id) root.ids[_this2.id] = i;
                 };
                 if (root instanceof View) {
-                    delay.add(root._module.createItem(this.name).then(fn));
+                    delay.add(root._module._createItem(this.name).then(fn));
                 } else {
-                    delay.add(root.createItem(this.name).then(fn));
+                    delay.add(root._createItem(this.name).then(fn));
                 }
                 this.children.forEach(function (it) {
                     var name = 'default';
@@ -2569,9 +2580,7 @@
                 if (this.item instanceof Module) {
                     var m = this.item;
                     cbs = cbs.concat(this.bindEvents(this.root, m, context));
-                    if (this.root instanceof View) {
-                        cbs = cbs.concat(this.bindActions(this.root, m, context));
-                    }
+                    cbs = cbs.concat(this.bindActions(this.root, m, context));
                     this.hooks = cbs.map(function (it) {
                         return m.on(it.event, it.fn);
                     });
@@ -2608,7 +2617,7 @@
             key: 'update',
             value: function update(context, delay) {
                 delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
-                    acc[item[1]] = context[item[0]];
+                    acc[item[1]] = getValue(item[0], context);
                     return acc;
                 }, {})));
                 this.context = context;
@@ -2729,7 +2738,7 @@
 
                 if (!this.rendered) return;
                 return this.close().then(function () {
-                    return _this4.mod.createItem(name, state);
+                    return _this4.mod._createItem(name, state);
                 }).then(function (item) {
                     _this4.item = item;
                     return item._render(_this4.parent).then(function () {

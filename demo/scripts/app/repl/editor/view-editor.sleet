@@ -17,6 +17,6 @@ script.
         },
 
         updated () {
-            console.log('updated', this._status)
+            this.editor.setValue(this.get('code'), -1)
         }
     }
