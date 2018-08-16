@@ -56,19 +56,19 @@ export class EachBlock extends AnchorNode {
         this.renderKeyValue(kv, context, delay)
     }
 
-    createTrueNode (delay: Delay) {
+    createTrueNode (i: number, context: object, delay: Delay) {
         const n = this.trueNode()
         n.parent = this.newParent
+        this.nodes[i] = n
         n.init(this.root, delay)
-        return n
+        delay.execute().then(() => n.render(context, delay))
     }
 
     renderKeyValue (arr: [any, any][], context: object, delay: Delay) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
-            this.nodes[i] = this.createTrueNode(delay)
-            this.nodes[i].render(sub, delay)
+            this.createTrueNode(i, sub, delay)
         })
     }
 
@@ -117,8 +117,7 @@ export class EachBlock extends AnchorNode {
                 this.nodes[i].clearHelper()
                 this.nodes[i].update(sub, delay)
             } else {
-                this.nodes[i] = this.createTrueNode(delay)
-                this.nodes[i].render(sub, delay)
+                this.createTrueNode(i, sub, delay)
             }
         })
 

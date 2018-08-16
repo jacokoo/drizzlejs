@@ -1,11 +1,13 @@
 #! drizzle
 
-module(tabs) > .tabs
-    ul > view-tab(tabs current)
+module(tabs) > view-tab(tabs current)
 
 script.
     export default {
-        items: { views: ['view-tab'] },
+        items: { views: ['view-tab'], modules: {
+            'c-dropdown': 'component/dropdown'
+        }},
+
         store: {
             models: {
                 tabs: () => [],

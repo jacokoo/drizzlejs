@@ -15,7 +15,6 @@ export interface ItemOptions {
 
 export interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
-    state?: object,
     items?: ItemOptions
     routes?: RouteOptions
 }

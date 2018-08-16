@@ -9,6 +9,12 @@ script.
         store: {
             models: {
                 code: () => ''
+            },
+
+            actions: {
+                update ({detail}) {
+                    this.fire('change', {code: detail})
+                }
             }
         }
     }

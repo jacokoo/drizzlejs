@@ -1,9 +1,11 @@
 import { RenderOptions, Renderable, ComponentState } from './renderable'
 import { Module } from './module'
 import { DynamicNode } from './template/dynamic-node'
+import { Component } from './template/template'
 
 export interface ViewOptions extends RenderOptions {
-    helpers?: {[name: string]: (...any) => any}
+    helpers?: {[name: string]: (...any) => any},
+    components?: {[name: string]: Component}
 }
 
 export interface BindingGroup {
@@ -24,6 +26,11 @@ export class View extends Renderable<ViewOptions> {
 
     get regions () {
         return this._module.regions
+    }
+
+    _init () {
+        if (this._options.state) this.set(this._options.state, true)
+        return super._init()
     }
 
     get (key?: string) {

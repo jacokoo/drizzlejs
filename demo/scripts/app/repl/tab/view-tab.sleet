@@ -1,12 +1,20 @@
 #! drizzle
 
-view(tabs)
+view(c-dropdown) > .tabs#tabs > ul
     li(class=if(i eq current 'is-active') action:click=active(i))&each(tabs as tab i) > a
-        span > echo(tab '.sleet')
+        c-dropdown(a=1)&if(i eq current)
+            .dropdown-item
+                input.input
+        span(a=1)&else(a)
+            echo(tab '.sleet')
         span.delete.is-small
 
 script.
     export default {
-        updated () {
+        events: {
+            rename (node, i, current) {
+                if (i !== current) return
+                if (i === current) node.classList.toggle('is-active')
+            }
         }
     }

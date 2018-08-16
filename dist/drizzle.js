@@ -176,18 +176,20 @@
         function Delay() {
             classCallCheck(this, Delay);
 
-            this.delays = [];
+            this.busy = Promise.resolve();
         }
 
         createClass(Delay, [{
             key: "add",
             value: function add(p) {
-                this.delays.push(p);
+                this.busy = this.busy.then(function () {
+                    return p;
+                });
             }
         }, {
             key: "execute",
             value: function execute() {
-                return Promise.all(this.delays);
+                return this.busy;
             }
         }], [{
             key: "also",
@@ -280,6 +282,7 @@
             };
         }
     };
+    var components = {};
 
     var Template = function () {
         function Template() {
@@ -290,6 +293,7 @@
             key: "init",
             value: function init(root, delay) {
                 this.root = root;
+                this.nodes = this.createor();
                 this.nodes.forEach(function (it) {
                     return it.init(root, delay);
                 });
@@ -480,7 +484,7 @@
                 if (!Compare[op]) {
                     throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
                 }
-                return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context));
+                return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[2], context));
             }
         }, {
             key: 'useSingle',
@@ -882,11 +886,14 @@
             }
         }, {
             key: 'createTrueNode',
-            value: function createTrueNode(delay) {
+            value: function createTrueNode(i, context, delay) {
                 var n = this.trueNode();
                 n.parent = this.newParent;
+                this.nodes[i] = n;
                 n.init(this.root, delay);
-                return n;
+                delay.execute().then(function () {
+                    return n.render(context, delay);
+                });
             }
         }, {
             key: 'renderKeyValue',
@@ -896,8 +903,7 @@
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
                     var sub = _this2.sub(context, i);
-                    _this2.nodes[i] = _this2.createTrueNode(delay);
-                    _this2.nodes[i].render(sub, delay);
+                    _this2.createTrueNode(i, sub, delay);
                 });
             }
         }, {
@@ -950,8 +956,7 @@
                         _this3.nodes[i].clearHelper();
                         _this3.nodes[i].update(sub, delay);
                     } else {
-                        _this3.nodes[i] = _this3.createTrueNode(delay);
-                        _this3.nodes[i].render(sub, delay);
+                        _this3.createTrueNode(i, sub, delay);
                     }
                 });
                 while (this.nodes.length !== this.currentSize) {
@@ -1393,6 +1398,12 @@
         }
 
         createClass(View, [{
+            key: '_init',
+            value: function _init() {
+                if (this._options.state) this.set(this._options.state, true);
+                return get(View.prototype.__proto__ || Object.getPrototypeOf(View.prototype), '_init', this).call(this);
+            }
+        }, {
             key: 'get',
             value: function get$$1(key) {
                 if (!key) return this._state;
@@ -2160,6 +2171,7 @@
             var _this = possibleConstructorReturn(this, (DynamicNode.__proto__ || Object.getPrototypeOf(DynamicNode)).apply(this, arguments));
 
             _this.dynamicAttributes = {};
+            _this.components = {};
             _this.events = {};
             _this.actions = {};
             _this.bindings = [];
@@ -2168,11 +2180,7 @@
 
         createClass(DynamicNode, [{
             key: 'attribute',
-            value: function attribute(name) {
-                for (var _len = arguments.length, helpers = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-                    helpers[_key - 1] = arguments[_key];
-                }
-
+            value: function attribute(name, helpers) {
                 this.dynamicAttributes[name] = helpers;
             }
         }, {
@@ -2193,6 +2201,11 @@
             key: 'bind',
             value: function bind$$1(from, to) {
                 this.bindings.push([from, to]);
+            }
+        }, {
+            key: 'component',
+            value: function component(name, helpers) {
+                this.components[name] = helpers;
             }
         }, {
             key: 'init',
@@ -2222,9 +2235,12 @@
                 });
                 Object.keys(this.dynamicAttributes).forEach(function (k) {
                     _this2.dynamicAttributes[k].forEach(function (it) {
-                        if (it instanceof DelayTransfomer) {
-                            it.init(view);
-                        }
+                        if (it instanceof DelayTransfomer) it.init(view);
+                    });
+                });
+                Object.keys(this.components).forEach(function (k) {
+                    return _this2.components[k].forEach(function (it) {
+                        if (it instanceof DelayTransfomer) it.init(view);
                     });
                 });
             }
@@ -2247,6 +2263,16 @@
                     return bind(_this3, context, it[0], it[1]);
                 }).filter(function (it) {
                     return !!it;
+                });
+                this.componentHooks = Object.keys(this.components).map(function (it) {
+                    var comp = _this3.root._options.components || {};
+                    var fn = comp[it] || components[it];
+                    if (!fn) {
+                        throw new Error('Component ' + it + ' is not found.');
+                    }
+                    var vs = _this3.renderHelper(context, _this3.components[it]);
+                    var hook = fn.apply(undefined, [_this3.element].concat(toConsumableArray(vs[1])));
+                    return [it, hook];
                 });
             }
         }, {
@@ -2297,15 +2323,9 @@
                 var _this5 = this;
 
                 Object.keys(this.dynamicAttributes).forEach(function (it) {
-                    var vs = _this5.dynamicAttributes[it].map(function (i) {
-                        return i.render(context);
-                    });
-                    if (vs.some(function (i) {
-                        return i[0] === ChangeType.CHANGED;
-                    })) {
-                        var vvs = vs.map(function (i) {
-                            return i[1];
-                        });
+                    var vs = _this5.renderHelper(context, _this5.dynamicAttributes[it]);
+                    if (vs[0] === ChangeType.CHANGED) {
+                        var vvs = vs[1];
                         if (vvs.length === 1) {
                             setAttribute(_this5.element, it, vvs[0]);
                         } else {
@@ -2316,8 +2336,25 @@
                 });
             }
         }, {
+            key: 'renderHelper',
+            value: function renderHelper(context, helpers) {
+                var vs = helpers.map(function (it) {
+                    return it.render(context);
+                });
+                if (vs.some(function (i) {
+                    return i[0] === ChangeType.CHANGED;
+                })) {
+                    return [ChangeType.CHANGED, vs.map(function (it) {
+                        return it[1];
+                    })];
+                }
+                return [ChangeType.NOT_CHANGED, null];
+            }
+        }, {
             key: 'update',
             value: function update(context, delay) {
+                var _this6 = this;
+
                 if (!this.rendered) return;
                 this.updateAttributes(context);
                 this.context = context;
@@ -2326,6 +2363,15 @@
                 });
                 this.children.forEach(function (it) {
                     return it.update(context, delay);
+                });
+                this.componentHooks.forEach(function (_ref3) {
+                    var _ref4 = slicedToArray(_ref3, 2),
+                        name = _ref4[0],
+                        hook = _ref4[1];
+
+                    var vs = _this6.renderHelper(context, _this6.components[name]);
+                    if (vs[0] === ChangeType.NOT_CHANGED) return;
+                    hook.update.apply(hook, toConsumableArray(vs[1]));
                 });
             }
         }, {
@@ -2342,17 +2388,21 @@
                 this.eventHooks.forEach(function (it) {
                     return it.dispose();
                 });
+                this.componentHooks.forEach(function (it) {
+                    return it[1].dispose();
+                });
                 this.bindingHooks = [];
                 this.actionHooks = [];
                 this.eventHooks = [];
+                this.componentHooks = [];
             }
         }, {
             key: 'clearHelper',
             value: function clearHelper() {
-                var _this6 = this;
+                var _this7 = this;
 
                 Object.keys(this.dynamicAttributes).forEach(function (it) {
-                    return _this6.dynamicAttributes[it].forEach(function (h) {
+                    return _this7.dynamicAttributes[it].forEach(function (h) {
                         return h.clear();
                     });
                 });
@@ -2791,30 +2841,46 @@
         return new StaticNode(name, attributes || [], id);
     };
     var DN = function DN(name, id) {
-        var attributes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
-        var dynamics = arguments[3];
-        var binds = arguments[4];
-        var events = arguments[5];
-        var actions = arguments[6];
+        for (var _len2 = arguments.length, attributes = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+            attributes[_key2 - 2] = arguments[_key2];
+        }
 
-        var d = new DynamicNode(name, attributes, id);
-        if (dynamics) dynamics.forEach(function (da) {
-            return d.attribute.apply(d, [da[0]].concat(toConsumableArray(da[1])));
-        });
-        if (binds) binds.forEach(function (b) {
-            return d.bind(b[0], b[1]);
-        });
-        if (events) events.forEach(function (e) {
-            return d.on(e[0], e[1], e[2]);
-        });
-        if (actions) actions.forEach(function (a) {
-            return d.action(a[0], a[1], a[2]);
-        });
-        return d;
+        return new DynamicNode(name, attributes || [], id);
+    };
+    var DA = function DA(d, name) {
+        for (var _len3 = arguments.length, hs = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
+            hs[_key3 - 2] = arguments[_key3];
+        }
+
+        d.attribute(name, hs);
+    };
+    var BD = function BD(d, from, to) {
+        d.bind(from, to);
+    };
+    var EV = function EV(d, event, method) {
+        for (var _len4 = arguments.length, attrs = Array(_len4 > 3 ? _len4 - 3 : 0), _key4 = 3; _key4 < _len4; _key4++) {
+            attrs[_key4 - 3] = arguments[_key4];
+        }
+
+        d.on(event, method, attrs);
+    };
+    var AC = function AC(d, event, method) {
+        for (var _len5 = arguments.length, attrs = Array(_len5 > 3 ? _len5 - 3 : 0), _key5 = 3; _key5 < _len5; _key5++) {
+            attrs[_key5 - 3] = arguments[_key5];
+        }
+
+        d.action(event, method, attrs);
+    };
+    var CO = function CO(d, name) {
+        for (var _len6 = arguments.length, hs = Array(_len6 > 2 ? _len6 - 2 : 0), _key6 = 2; _key6 < _len6; _key6++) {
+            hs[_key6 - 2] = arguments[_key6];
+        }
+
+        d.component(name, hs);
     };
     var TX = function TX() {
-        for (var _len2 = arguments.length, ss = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            ss[_key2] = arguments[_key2];
+        for (var _len7 = arguments.length, ss = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+            ss[_key7] = arguments[_key7];
         }
 
         return new (Function.prototype.bind.apply(TextNode, [null].concat(ss)))();
@@ -2823,38 +2889,14 @@
         var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
         return new RegionNode(id);
     };
-    var REF = function REF(name, id, binds, events, actions) {
-        var d = new ReferenceNode(name, id);
-        if (binds) binds.forEach(function (b) {
-            return d.bind(b[0], b[1]);
-        });
-        if (events) events.forEach(function (e) {
-            return d.on(e[0], e[1], e[2]);
-        });
-        if (actions) actions.forEach(function (a) {
-            return d.action(a[0], a[1], a[2]);
-        });
-        return d;
-    };
-    var E = function E(event, method) {
-        for (var _len3 = arguments.length, attrs = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
-            attrs[_key3 - 2] = arguments[_key3];
-        }
-
-        return [event, method, attrs];
+    var REF = function REF(name, id) {
+        return new ReferenceNode(name, id);
     };
     var NDA = function NDA(v) {
         return [null, [1, v]];
     };
     var NSA = function NSA(v) {
         return [null, [0, v]];
-    };
-    var DA = function DA(name) {
-        for (var _len4 = arguments.length, hs = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-            hs[_key4 - 1] = arguments[_key4];
-        }
-
-        return [name, hs];
     };
     var SV = function SV(v) {
         return [0, v];
@@ -2872,23 +2914,23 @@
         return Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n));
     };
     var HH = function HH(n) {
-        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-            args[_key5 - 1] = arguments[_key5];
+        for (var _len8 = arguments.length, args = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
+            args[_key8 - 1] = arguments[_key8];
         }
 
         if (helpers[n]) return new (Function.prototype.bind.apply(helpers[n], [null].concat(args)))();
         return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
     };
     var HIF = function HIF() {
-        for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
-            args[_key6] = arguments[_key6];
+        for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+            args[_key9] = arguments[_key9];
         }
 
         return HH.apply(undefined, ['if'].concat(args));
     };
     var HUN = function HUN() {
-        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-            args[_key7] = arguments[_key7];
+        for (var _len10 = arguments.length, args = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
+            args[_key10] = arguments[_key10];
         }
 
         return HH.apply(undefined, ['unless'].concat(args));
@@ -2906,19 +2948,19 @@
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
     var C = function C(parent) {
-        for (var _len8 = arguments.length, children = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
-            children[_key8 - 1] = arguments[_key8];
+        for (var _len11 = arguments.length, children = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
+            children[_key11 - 1] = arguments[_key11];
         }
 
         return parent.setChildren(children);
     };
     var drizzle = {
-        helpers: helpers, blocks: blocks, loaders: loaders, customEvents: customEvents,
+        helpers: helpers, blocks: blocks, loaders: loaders, customEvents: customEvents, components: components,
         lifecycles: { module: [], view: [] },
         ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application, Loader: Loader,
         factory: {
-            SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, E: E, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
-            EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, A: E, B: KV
+            SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
+            EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, BD: BD, EV: EV, AC: AC, CO: CO
         }
     };
 

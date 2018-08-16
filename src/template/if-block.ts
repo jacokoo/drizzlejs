@@ -44,7 +44,7 @@ export class IfBlock extends AnchorNode {
         if (!Compare[op]) {
             throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
         }
-        return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[1], context))
+        return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[2], context))
     }
 
     useSingle (context: object): boolean {

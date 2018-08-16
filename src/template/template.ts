@@ -18,6 +18,12 @@ export interface Updatable extends Disposable {
     update (context: object): void
 }
 
+export interface ComponentHook extends Disposable {
+    update (...args: any[]): void
+}
+
+export type Component = (node: Node, ...args: any[]) => ComponentHook
+
 export interface Appendable {
     append (el: Node)
     remove (el: Node)
@@ -41,14 +47,14 @@ export class Delay {
         return d.execute()
     }
 
-    delays: Promise<any>[] = []
+    busy = Promise.resolve()
 
     add (p: Promise<any>) {
-        this.delays.push(p)
+        this.busy = this.busy.then(() => p)
     }
 
     execute () {
-        return Promise.all(this.delays)
+        return this.busy
     }
 }
 
@@ -134,13 +140,18 @@ export const customEvents = {
     }
 }
 
+export const components: {[name: string]: Component} = {
+}
+
 export abstract class Template<T extends Renderable<any>> {
     life: Lifecycle
+    createor: () => MNode[]
     nodes: MNode[]
     root: T
 
     init (root: T, delay: Delay) {
         this.root = root
+        this.nodes = this.createor()
         this.nodes.forEach(it => it.init(root, delay))
     }
 

@@ -6,7 +6,7 @@ import { EachBlock } from './template/each-block'
 import { Loader } from './loader'
 import { ModuleTemplate } from './template/module-template'
 import { ViewTemplate } from './template/view-template'
-import { customEvents, Attribute, AttributeValue } from './template/template'
+import { customEvents, components, Attribute, AttributeValue } from './template/template'
 import { Application } from './application'
 import { StaticNode } from './template/static-node'
 import { DynamicNode } from './template/dynamic-node'
@@ -34,39 +34,31 @@ const loaders = {
 const SN = (name: string, id: string, ...attributes: [string, string][]) => {
     return new StaticNode(name, attributes || [], id)
 }
-const DN = (
-    name: string, id: string, attributes: [string, string][] = [],
-    dynamics: [string, Helper[]][],
-    binds: [string, string][],
-    events: [string, string, Attribute[]][],
-    actions: [string, string, Attribute[]][]
-) => {
-    const d = new DynamicNode(name, attributes, id)
-    if (dynamics) dynamics.forEach(da => d.attribute(da[0], ...da[1]))
-    if (binds) binds.forEach(b => d.bind(b[0], b[1]))
-    if (events) events.forEach(e => d.on(e[0], e[1], e[2]))
-    if (actions) actions.forEach(a => d.action(a[0], a[1], a[2]))
-    return d
+const DN = (name: string, id: string, ...attributes: [string, string][]) => {
+    return new DynamicNode(name, attributes || [], id)
 }
-const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
-const RG = (id: string = 'default') => new RegionNode(id)
-const REF = (
-    name: string, id: string,
-    binds: [string, string][],
-    events: [string, string, Attribute[]][],
-    actions: [string, string, Attribute[]][]
-) => {
-    const d = new ReferenceNode(name, id)
-    if (binds) binds.forEach(b => d.bind(b[0], b[1]))
-    if (events) events.forEach(e => d.on(e[0], e[1], e[2]))
-    if (actions) actions.forEach(a => d.action(a[0], a[1], a[2]))
-    return d
+const DA = (d: DynamicNode, name: string, ...hs: Helper[]) => {
+    d.attribute(name, hs)
+}
+const BD = (d: DynamicNode | ReferenceNode, from: string, to: string) => {
+    d.bind(from, to)
+}
+const EV = (d: DynamicNode | ReferenceNode, event: string, method: string, ...attrs: Attribute[]) => {
+    d.on(event, method, attrs)
+}
+const AC = (d: DynamicNode | ReferenceNode, event: string, method: string, ...attrs: Attribute[]) => {
+    d.action(event, method, attrs)
+}
+const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => {
+    d.component(name, hs)
 }
 
-const E = (event: string, method: string, ...attrs: Attribute[]) => [event, method, attrs]
+const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
+const RG = (id: string = 'default') => new RegionNode(id)
+const REF = (name: string, id: string) => new ReferenceNode(name, id)
+
 const NDA = (v: string) => [null, [1, v]] as Attribute
 const NSA = (v: string) => [null, [0, v]] as Attribute
-const DA = (name: string, ...hs: Helper[]) => [name, hs]
 
 const SV = (v: string) => [0, v] as AttributeValue
 const DV = (v: string) => [1, v] as AttributeValue
@@ -88,11 +80,11 @@ const UN = (n: string, trueNode: Node, falseNode?: Node) => new UnlessBlock([DV(
 const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 
 export default {
-    helpers, blocks, loaders, customEvents,
+    helpers, blocks, loaders, customEvents, components,
     lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application, Loader,
     factory: {
-        SN, DN, TX, RG, REF, E, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
-        EACH, IF, IFC, UN, C, DA, A: E, B: KV
+        SN, DN, TX, RG, REF, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
+        EACH, IF, IFC, UN, C, DA, BD, EV, AC, CO
     }
 }

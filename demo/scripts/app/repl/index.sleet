@@ -4,8 +4,8 @@ module > .main-content > .tile.is-ancestor.h100
     .tile.is-6.is-parent.br
         .tile.is-child.editor.is-12
             file-tab(tabs action:change=switchFile(event))
-            c-dropdown > .dropdown-item > p abc
-            code-editor(code)
+            c-dropdown > .dropdown-item(d=2) > p abc
+            code-editor(code action:change=updateCode(event))
 
     .tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child
@@ -45,8 +45,13 @@ script.
 
             actions: {
                 switchFile ({from, to}) {
-                    console.log(from, to)
                     this.set({current: to})
+                },
+
+                updateCode ({code}) {
+                    const files = this.get('files')
+                    files[this.get('current')] = code
+                    this.set({files})
                 }
             }
         },

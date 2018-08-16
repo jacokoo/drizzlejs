@@ -3,12 +3,16 @@ import { Helper, DelayTransfomer } from './helper'
 import { Disposable } from '../drizzle'
 import { View } from '../view'
 import { bind } from './binding'
-import { Delay, Attribute, ChangeType, resolveEventArgument, Updatable, customEvents } from './template'
+import {
+    Delay, Attribute, ChangeType, resolveEventArgument,
+    Updatable, customEvents, ComponentHook, components
+} from './template'
 import { Renderable } from '../renderable'
 import { setAttribute } from './attributes'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
+    components: {[name: string]: Helper[]} = {}
     events: {[event: string]: {method: string, args: Attribute[]}} = {}
     actions: {[event: string]: {method: string, args: Attribute[]}} = {}
     bindings: [string, string][] = []
@@ -16,10 +20,11 @@ export class DynamicNode extends StaticNode {
     eventHooks: Disposable[]
     actionHooks: Disposable[]
     bindingHooks: Updatable[]
+    componentHooks: [string, ComponentHook][]
 
     context: object
 
-    attribute (name: string, ...helpers: Helper[]) {
+    attribute (name: string, helpers: Helper[]) {
         this.dynamicAttributes[name] = helpers
     }
 
@@ -33,6 +38,10 @@ export class DynamicNode extends StaticNode {
 
     bind (from: string, to: string) {
         this.bindings.push([from, to])
+    }
+
+    component (name: string, helpers: Helper[]) {
+        this.components[name] = helpers
     }
 
     init (root: Renderable<any>, delay: Delay) {
@@ -58,11 +67,13 @@ export class DynamicNode extends StaticNode {
 
         Object.keys(this.dynamicAttributes).forEach(k => {
             this.dynamicAttributes[k].forEach(it => {
-                if (it instanceof DelayTransfomer) {
-                    (it as DelayTransfomer).init(view)
-                }
+                if (it instanceof DelayTransfomer) it.init(view)
             })
         })
+
+        Object.keys(this.components).forEach(k => this.components[k].forEach(it => {
+            if (it instanceof DelayTransfomer) it.init(view)
+        }))
     }
 
     render (context: object, delay: Delay) {
@@ -78,6 +89,17 @@ export class DynamicNode extends StaticNode {
             this.initAction(it, this.actions[it].method, this.actions[it].args)
         )
         this.bindingHooks = this.bindings.map(it => bind(this, context, it[0], it[1])).filter(it => !!it)
+
+        this.componentHooks = Object.keys(this.components).map(it => {
+            const comp = (this.root as View)._options.components || {}
+            const fn = comp[it] || components[it]
+            if (!fn) {
+                throw new Error(`Component ${it} is not found.`)
+            }
+            const vs = this.renderHelper(context, this.components[it])
+            const hook = fn(this.element, ...vs[1])
+            return [it, hook] as [string, ComponentHook]
+        })
     }
 
     initEvent (name: string, method: string, args: Attribute[]): Disposable {
@@ -121,9 +143,9 @@ export class DynamicNode extends StaticNode {
 
     updateAttributes (context: object) {
         Object.keys(this.dynamicAttributes).forEach(it => {
-            const vs = this.dynamicAttributes[it].map(i => i.render(context))
-            if (vs.some(i => i[0] === ChangeType.CHANGED)) {
-                const vvs = vs.map(i => i[1])
+            const vs = this.renderHelper(context, this.dynamicAttributes[it])
+            if (vs[0] === ChangeType.CHANGED) {
+                const vvs = vs[1]
                 if (vvs.length === 1) {
                     setAttribute(this.element, it, vvs[0])
                 } else {
@@ -134,6 +156,14 @@ export class DynamicNode extends StaticNode {
         })
     }
 
+    renderHelper (context: object, helpers: Helper[]) {
+        const vs = helpers.map(it => it.render(context))
+        if (vs.some(i => i[0] === ChangeType.CHANGED)) {
+            return [ChangeType.CHANGED, vs.map(it => it[1])] as [ChangeType, any[]]
+        }
+        return [ChangeType.NOT_CHANGED, null] as [ChangeType, any[]]
+    }
+
     update (context: object, delay: Delay) {
         if (!this.rendered) return
 
@@ -141,6 +171,11 @@ export class DynamicNode extends StaticNode {
         this.context = context
         this.bindingHooks.forEach(it => it.update(context))
         this.children.forEach(it => it.update(context, delay))
+        this.componentHooks.forEach(([name, hook]) => {
+            const vs = this.renderHelper(context, this.components[name])
+            if (vs[0] === ChangeType.NOT_CHANGED) return
+            hook.update(...vs[1])
+        })
     }
 
     destroy (delay: Delay) {
@@ -150,10 +185,12 @@ export class DynamicNode extends StaticNode {
         this.bindingHooks.forEach(it => it.dispose())
         this.actionHooks.forEach(it => it.dispose())
         this.eventHooks.forEach(it => it.dispose())
+        this.componentHooks.forEach(it => it[1].dispose())
 
         this.bindingHooks = []
         this.actionHooks = []
         this.eventHooks = []
+        this.componentHooks = []
     }
 
     clearHelper () {

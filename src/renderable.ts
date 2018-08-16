@@ -7,6 +7,7 @@ import { Appendable } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
+    state?: object,
     customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
     events?: {[name: string]: (...args) => void}
     template?: ModuleTemplate

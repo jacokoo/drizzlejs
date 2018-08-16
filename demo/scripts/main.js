@@ -1,4 +1,7 @@
-import {Application, Loader} from 'drizzlejs'
+import {Application, Loader, components} from 'drizzlejs'
+import {editor} from './app/component/ace-editor'
+
+components['ace-editor'] = editor
 
 class MLoader extends Loader {
     load (file, mod) {
