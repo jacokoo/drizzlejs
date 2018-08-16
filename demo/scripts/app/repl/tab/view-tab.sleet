@@ -2,10 +2,10 @@
 
 view(c-dropdown) > .tabs#tabs > ul
     li(class=if(i eq current 'is-active') action:click=active(i))&each(tabs as tab i) > a
-        c-dropdown(a=1)&if(i eq current)
+        c-dropdown(on:show=onShow on:hide=onHide)&if(i eq current)
             span(region='trigger') > echo(tab '.sleet')
             .dropdown-item
-                input.input
+                input.input(autofocus='true')
         span(a=1)&else(a)
             echo(tab '.sleet')
         span.delete.is-small
@@ -13,9 +13,12 @@ view(c-dropdown) > .tabs#tabs > ul
 script.
     export default {
         events: {
-            rename (node, i, current) {
-                if (i !== current) return
-                if (i === current) node.classList.toggle('is-active')
+            onShow () {
+                this.ids.tabs.style.overflow = 'unset'
+            },
+
+            onHide () {
+                this.ids.tabs.style.overflow = ''
             }
         }
     }
