@@ -2,12 +2,49 @@ import { View, BindingGroup } from '../view'
 import { getValue, Updatable } from './template'
 import { DynamicNode } from './dynamic-node'
 
-const distruct = (obj: object, key: string) => {
-    const ks = key.split('.')
-    const name = ks.pop()
+const updateSingleKey = (view: View, context: {[name: string]: any}, to: string, value: any) => {
+    if (context._each) {
+        const each = context._each.find(it => it.key === to)
+        if (each) {
+            each.list[each.index] = value
+            view.set({[each.name]: each.list})
+            return
+        }
+    }
 
-    const target = ks.reduce((acc, it) => acc[it], obj)
-    return {name, target}
+    view.set({[to]: value})
+}
+
+const updateView = (view: View, context: {[name: string]: any}, to: string, value: any) => {
+    const ps = to.split('.')
+    if (ps.length === 1) return updateSingleKey(view, context, to, value)
+
+    const root = ps.shift()
+    const last = ps.pop()
+    const result = {}
+    let obj
+    let isEach = false
+
+    if (context._each) {
+        const each = context._each.find(it => it.key === root)
+        if (each) {
+            const first = context._each[0]
+            result[first.name] = first.list
+
+            obj = each.list[each.index]
+            isEach = true
+        }
+    }
+
+    if (!isEach) {
+        result[root] = context[root]
+        obj = result[root]
+    }
+
+    result[root] = context[root]
+    obj = ps.reduce((acc, it) => acc[it], obj)
+    obj[last] = value
+    view.set(result)
 }
 
 const bindIt = <T extends HTMLElement>(
@@ -17,17 +54,8 @@ const bindIt = <T extends HTMLElement>(
     let current
     const obj = {context}
     const cb = function(this: T) {
-        const {name, target} = distruct(obj.context, to)
         current = get(element)
-
-        // bind each key
-        if (name === to && context._each && context._each.some(it => it.key === name)) {
-            const each = context._each.find(it => it.key === name)
-            each.list[each.index] = current
-        } else {
-            target[name] = current
-        }
-        view.set({})
+        updateView(view, obj.context, to, current)
     }
 
     element.addEventListener(event, cb, false)
@@ -74,20 +102,11 @@ const bindGroup = (
     let current
     const cb = function(this: HTMLInputElement) {
         if (group.busy) return
-        const {name, target} = distruct(obj.context, to)
         current = (group.type === 'radio' ? element.value : group.items
             .filter(it => (it.element as HTMLInputElement).checked)
             .map(it => (it.element as HTMLInputElement).value))
 
-        if (name === to && context._each && context._each.some(it => it.key === name)) {
-            const each = context._each.find(it => it.key === name)
-            each.list[each.index] = current
-        } else {
-            target[name] = current
-        }
-        group.busy = true
-        view.set({})
-        group.busy = false
+        updateView(view, obj.context, to, current)
     }
 
     element.addEventListener('change', cb, false)
@@ -125,7 +144,11 @@ export const bind = (node: DynamicNode, context: object, from: string, to: strin
     const element = node.element
     const view = node.root as View
     if ((tag === 'input' || tag === 'textarea') && from === 'value') {
-        return bindIt(context, view, to, element, 'input', el => el.value, (el, value) => el.value = value)
+        return bindIt(
+            context, view, to, element, 'input',
+            el => el.value,
+            (el, value) => el.value = value == null ? '' : value
+        )
     }
 
     if (tag === 'input' && from === 'checked') {

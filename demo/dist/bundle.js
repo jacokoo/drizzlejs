@@ -191,6 +191,7 @@
         REF$1 = drizzlejs.factory.REF,
         H$1 = drizzlejs.factory.H,
         TX$1 = drizzlejs.factory.TX,
+        BD$1 = drizzlejs.factory.BD,
         IFC = drizzlejs.factory.IFC,
         EACH = drizzlejs.factory.EACH;
 
@@ -209,17 +210,33 @@
             var o9 = SN$2('span', null, KV$3('region', 'trigger'));
             var o10 = TX$1(H$1('tab'), '.sleet');
             var o11 = SN$2('div', null, KV$3('class', 'dropdown-item'));
-            var o12 = SN$2('input', null, KV$3('autofocus', 'true'), KV$3('class', 'input'));
-            var o13 = SN$2('span', null, KV$3('a', '1'));
-            var o14 = TX$1(H$1('tab'), '.sleet');
-            var o7 = IFC([DV$2('i'), DV$2('eq'), DV$2('current')], o8, o13);
-            var o15 = SN$2('span', null, KV$3('class', 'delete is-small'));
+            var o12 = SN$2('div', null, KV$3('class', 'field has-addons'));
+            var o13 = SN$2('div', null, KV$3('class', 'control'));
+            var o14 = DN$2('input', null, KV$3('class', 'input rename'));
+            BD$1(o14, 'value', 'name');
+            var o15 = SN$2('div', null, KV$3('class', 'control'));
+            var o16 = SN$2('span', null, KV$3('class', 'button is-static'));
+            var o17 = TX$1('.sleet');
+            var o18 = SN$2('div', null, KV$3('class', 'control'));
+            var o19 = DN$2('span', null, KV$3('class', 'button'));
+            AC$1(o19, 'click', 'rename', NDA$2('tabs'), NDA$2('name'), NDA$2('i'));
+            var o20 = TX$1('重命名');
+            var o21 = SN$2('span', null, KV$3('a', '1'));
+            var o22 = TX$1(H$1('tab'), '.sleet');
+            var o7 = IFC([DV$2('haveDropdown')], o8, o21);
+            var o23 = SN$2('span', null, KV$3('class', 'delete is-small'));
 
             C$3(o9, o10);
+            C$3(o13, o14);
+            C$3(o16, o17);
+            C$3(o15, o16);
+            C$3(o19, o20);
+            C$3(o18, o19);
+            C$3(o12, o13, o15, o18);
             C$3(o11, o12);
             C$3(o8, o9, o11);
-            C$3(o13, o14);
-            C$3(o6, o7, o15);
+            C$3(o21, o22);
+            C$3(o6, o7, o23);
             C$3(o5, o6);
             return o5;
         };
@@ -234,6 +251,15 @@
     template$4.creator = templateNodes$4;
 
     var _view_tab = {
+        computed: {
+            haveDropdown: function haveDropdown(_ref) {
+                var tab = _ref.tab,
+                    i = _ref.i,
+                    current = _ref.current;
+
+                return i === current && tab !== 'index';
+            }
+        },
         events: {
             onShow: function onShow() {
                 this.ids.tabs.style.overflow = 'unset';
@@ -242,17 +268,39 @@
                 this.ids.tabs.style.overflow = '';
             }
         },
+        actions: {
+            rename: function rename(cb, tabs, name, i) {
+                if (tabs[i] === name) {
+                    this.set({ name: '' });
+                    return;
+                }
+                if (tabs.indexOf(name) !== -1) {
+                    console.log('already exists');
+                    return;
+                }
+                if (name.indexOf('.') !== -1) {
+                    console.log('can not have extension');
+                    return;
+                }
+                if (name.indexOf('-') === -1) {
+                    console.log('should have at least one dash(-)');
+                    return;
+                }
+                this.set({ name: '' });
+                cb(name);
+            }
+        },
         template: template$4
     };
 
-    var BD$1 = drizzlejs.factory.BD,
+    var BD$2 = drizzlejs.factory.BD,
         REF$2 = drizzlejs.factory.REF;
 
     var template$5 = new drizzlejs.ModuleTemplate(['tabs']);
     var templateNodes$5 = function templateNodes() {
         var o1 = REF$2('view-tab', []);
-        BD$1(o1, 'tabs', 'tabs');
-        BD$1(o1, 'current', 'current');
+        BD$2(o1, 'tabs', 'tabs');
+        BD$2(o1, 'current', 'current');
         return [o1];
     };
     template$5.creator = templateNodes$5;
@@ -282,6 +330,19 @@
                         from: tabs[current],
                         to: tabs[index]
                     });
+                },
+                rename: function rename(name) {
+                    var _get2 = this.get(),
+                        tabs = _get2.tabs,
+                        current = _get2.current;
+
+                    var old = tabs[current];
+                    tabs[current] = name;
+                    this.set({ tabs: tabs });
+                    this.fire('rename', {
+                        old: old,
+                        name: name
+                    });
                 }
             }
         },
@@ -295,7 +356,7 @@
     var KV$4 = drizzlejs.factory.KV,
         SN$3 = drizzlejs.factory.SN,
         C$4 = drizzlejs.factory.C,
-        BD$2 = drizzlejs.factory.BD,
+        BD$3 = drizzlejs.factory.BD,
         AC$2 = drizzlejs.factory.AC,
         AT$3 = drizzlejs.factory.AT,
         SV$3 = drizzlejs.factory.SV,
@@ -312,15 +373,16 @@
         var o3 = SN$3('div', null, KV$4('class', 'tile is-6 is-parent br'));
         var o4 = SN$3('div', null, KV$4('class', 'tile is-child editor is-12'));
         var o5 = REF$3('file-tab', []);
-        BD$2(o5, 'tabs', 'tabs');
+        BD$3(o5, 'tabs', 'tabs');
         AC$2(o5, 'change', 'switchFile', NDA$3('event'));
+        AC$2(o5, 'rename', 'renameFile', NDA$3('event'));
         var o6 = SN$3('div', null, KV$4('class', 'operators'));
         var o7 = REF$3('c-dropdown', []);
         var o8 = SN$3('div', null, KV$4('d', '2'), KV$4('class', 'dropdown-item'));
         var o9 = SN$3('p');
         var o10 = TX$2('abc');
         var o11 = REF$3('code-editor', []);
-        BD$2(o11, 'code', 'code');
+        BD$3(o11, 'code', 'code');
         AC$2(o11, 'change', 'updateCode', NDA$3('event'));
         var o12 = SN$3('div', null, KV$4('class', 'tile is-6 is-vertical'));
         var o13 = SN$3('div', null, KV$4('class', 'tile is-parent'));
@@ -376,18 +438,34 @@
                     var files = this.get('files');
                     files[this.get('current')] = code;
                     this.set({ files: files });
+                },
+                renameFile: function renameFile(_ref3) {
+                    var name = _ref3.name,
+                        old = _ref3.old;
+
+                    var _get = this.get(),
+                        files = _get.files,
+                        current = _get.current;
+
+                    files[name] = files[old];
+                    delete files[old];
+                    var c = current === old ? name : current;
+                    this.set({
+                        files: files,
+                        current: c
+                    });
                 }
             }
         },
         computed: {
-            tabs: function tabs(_ref3) {
-                var files = _ref3.files;
+            tabs: function tabs(_ref4) {
+                var files = _ref4.files;
 
                 return Object.keys(files);
             },
-            code: function code(_ref4) {
-                var files = _ref4.files,
-                    current = _ref4.current;
+            code: function code(_ref5) {
+                var files = _ref5.files,
+                    current = _ref5.current;
 
                 return files[current];
             }
@@ -524,7 +602,7 @@
         HH$2 = drizzlejs.factory.HH,
         EV$2 = drizzlejs.factory.EV,
         TX$5 = drizzlejs.factory.TX,
-        BD$3 = drizzlejs.factory.BD,
+        BD$4 = drizzlejs.factory.BD,
         EACH$1 = drizzlejs.factory.EACH,
         IFC$2 = drizzlejs.factory.IFC;
 
@@ -549,7 +627,7 @@
             var o13 = DN$4('button', null, KV$7('class', 'destroy'));
             AC$4(o13, 'click', 'remove', AT$5('id', DV$5('todo.id')));
             var o14 = DN$4('input', null, KV$7('class', 'edit'));
-            BD$3(o14, 'value', 'todo.name');
+            BD$4(o14, 'value', 'todo.name');
             AC$4(o14, 'blur', 'commitEdit', NDA$5('todo.id'), NDA$5('this.value'), NSA$5('blur'));
             AC$4(o14, 'enter', 'commitEdit', NDA$5('todo.id'), NDA$5('this.value'), NSA$5('enter'));
             AC$4(o14, 'escape', 'revertEdit', NDA$5('todo'), NDA$5('nameCache'));
@@ -663,7 +741,7 @@
         C$9 = drizzlejs.factory.C,
         TX$6 = drizzlejs.factory.TX,
         REF$4 = drizzlejs.factory.REF,
-        BD$4 = drizzlejs.factory.BD;
+        BD$5 = drizzlejs.factory.BD;
 
     var template$b = new drizzlejs.ModuleTemplate(['todos']);
     var templateNodes$b = function templateNodes() {
@@ -674,11 +752,11 @@
         var o5 = TX$6('todos');
         var o6 = REF$4('create-todo', []);
         var o7 = REF$4('todo-list', []);
-        BD$4(o7, 'todos', 'todos');
-        BD$4(o7, 'filter', 'filter');
+        BD$5(o7, 'todos', 'todos');
+        BD$5(o7, 'filter', 'filter');
         var o8 = REF$4('todo-footer', []);
-        BD$4(o8, 'todos', 'todos');
-        BD$4(o8, 'filter', 'filter');
+        BD$5(o8, 'todos', 'todos');
+        BD$5(o8, 'filter', 'filter');
         C$9(o4, o5);
         C$9(o3, o4, o6);
         C$9(o2, o3, o7, o8);

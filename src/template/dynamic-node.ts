@@ -145,7 +145,7 @@ export class DynamicNode extends StaticNode {
         Object.keys(this.dynamicAttributes).forEach(it => {
             const vs = this.renderHelper(context, this.dynamicAttributes[it])
             if (vs[0] === ChangeType.CHANGED) {
-                const vvs = vs[1]
+                const vvs = vs[1].filter(v => v != null)
                 if (vvs.length === 1) {
                     setAttribute(this.element, it, vvs[0])
                 } else {

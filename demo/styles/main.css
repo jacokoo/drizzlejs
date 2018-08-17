@@ -256,3 +256,7 @@ svg {
 .ace-xcode .ace_gutter {
     background-color: #f9fafb;
 }
+
+input.rename {
+    width: 150px;
+}

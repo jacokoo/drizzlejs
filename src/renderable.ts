@@ -74,7 +74,7 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
     }
 
     _context () {
-        const c = this.get() as {[name: string]: any}
+        const c = Object.assign({}, this.get() as {[name: string]: any})
         if (this._options.computed) {
             c._computed = this._options.computed
         }

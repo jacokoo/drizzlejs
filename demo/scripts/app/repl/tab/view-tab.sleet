@@ -1,21 +1,31 @@
 #! drizzle
 
 view(c-dropdown) > .tabs#tabs > ul
-    li(class=if(i eq current 'is-active') action:click=active(i))&each(tabs as tab i) > a
+    li(
+        class=if(i eq current 'is-active')
+        action:click=active(i)
+    )&each(tabs as tab i) > a
         c-dropdown(
             closeWhenMenuClicked = true
             on:show=onShow
             on:hide=onHide
-        )&if(i eq current)
+        )&if(haveDropdown)
             span(region='trigger') > echo(tab '.sleet')
-            .dropdown-item
-                input.input(autofocus='true')
+            .dropdown-item > .field.has-addons
+                .control > input.input.rename(bind:value=name)
+                .control > span.button.is-static .sleet
+                .control > span.button(action:click=rename(tabs name i)) 重命名
         span(a=1)&else(a)
             echo(tab '.sleet')
         span.delete.is-small
 
 script.
     export default {
+        computed: {
+            haveDropdown ({tab, i, current}) {
+                return i === current && (tab !== 'index')
+            }
+        },
         events: {
             onShow () {
                 this.ids.tabs.style.overflow = 'unset'
@@ -23,6 +33,33 @@ script.
 
             onHide () {
                 this.ids.tabs.style.overflow = ''
+            }
+        },
+
+        actions: {
+            rename (cb, tabs, name, i) {
+                if (tabs[i] === name) {
+                    this.set({name: ''})
+                    return
+                }
+
+                if (tabs.indexOf(name) !== -1) {
+                    console.log('already exists')
+                    return
+                }
+
+                if (name.indexOf('.') !== -1) {
+                    console.log('can not have extension')
+                    return
+                }
+
+                if (name.indexOf('-') === -1) {
+                    console.log('should have at least one dash(-)')
+                    return
+                }
+
+                this.set({name: ''})
+                cb(name)
             }
         }
     }

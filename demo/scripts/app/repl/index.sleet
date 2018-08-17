@@ -3,7 +3,11 @@
 module > .main-content > .tile.is-ancestor.h100
     .tile.is-6.is-parent.br
         .tile.is-child.editor.is-12
-            file-tab(tabs action:change=switchFile(event))
+            file-tab(
+                tabs
+                action:change=switchFile(event)
+                action:rename=renameFile(event)
+            )
             .operators > c-dropdown > .dropdown-item(d=2) > p abc
             code-editor(code action:change=updateCode(event))
 
@@ -52,6 +56,15 @@ script.
                     const files = this.get('files')
                     files[this.get('current')] = code
                     this.set({files})
+                },
+
+                renameFile ({name, old}) {
+                    const {files, current} = this.get()
+                    files[name] = files[old]
+                    delete files[old]
+
+                    const c = current === old ? name : current
+                    this.set({files, current: c})
                 }
             }
         },

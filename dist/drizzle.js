@@ -899,9 +899,9 @@
             key: 'sub',
             value: function sub(context, i) {
                 var o = Object.assign({}, context);
-                if (!o._each) o._each = [];
+                if (!o._each) o._each = [];else o._each = o._each.slice(0);
                 var v = getValue(this.args[0], context);
-                o._each.push({ list: v, index: i, key: this.args[2] });
+                o._each.push({ list: v, index: i, key: this.args[2], name: this.args[0] });
                 o[this.args[2]] = v[i];
                 if (this.args[3]) o[this.args[3]] = i;
                 return o;
@@ -1206,7 +1206,7 @@
         }, {
             key: "_context",
             value: function _context() {
-                var c = this.get();
+                var c = Object.assign({}, this.get());
                 if (this._options.computed) {
                     c._computed = this._options.computed;
                 }
@@ -1961,35 +1961,55 @@
         return StaticNode;
     }(Node);
 
-    var distruct = function distruct(obj, key) {
-        var ks = key.split('.');
-        var name = ks.pop();
-        var target = ks.reduce(function (acc, it) {
+    var updateSingleKey = function updateSingleKey(view, context, to, value) {
+        if (context._each) {
+            var each = context._each.find(function (it) {
+                return it.key === to;
+            });
+            if (each) {
+                each.list[each.index] = value;
+                view.set(defineProperty({}, each.name, each.list));
+                return;
+            }
+        }
+        view.set(defineProperty({}, to, value));
+    };
+    var updateView = function updateView(view, context, to, value) {
+        var ps = to.split('.');
+        if (ps.length === 1) return updateSingleKey(view, context, to, value);
+        var root = ps.shift();
+        var last = ps.pop();
+        var result = {};
+        var obj = void 0;
+        var isEach = false;
+        if (context._each) {
+            var each = context._each.find(function (it) {
+                return it.key === root;
+            });
+            if (each) {
+                var first = context._each[0];
+                result[first.name] = first.list;
+                obj = each.list[each.index];
+                isEach = true;
+            }
+        }
+        if (!isEach) {
+            result[root] = context[root];
+            obj = result[root];
+        }
+        result[root] = context[root];
+        obj = ps.reduce(function (acc, it) {
             return acc[it];
         }, obj);
-        return { name: name, target: target };
+        obj[last] = value;
+        view.set(result);
     };
-    var bindIt = function bindIt(context, view, to, element, event, get, set) {
+    var bindIt = function bindIt(context, view, to, element, event, get$$1, set$$1) {
         var current = void 0;
         var obj = { context: context };
         var cb = function cb() {
-            var _distruct = distruct(obj.context, to),
-                name = _distruct.name,
-                target = _distruct.target;
-
-            current = get(element);
-            // bind each key
-            if (name === to && context._each && context._each.some(function (it) {
-                return it.key === name;
-            })) {
-                var each = context._each.find(function (it) {
-                    return it.key === name;
-                });
-                each.list[each.index] = current;
-            } else {
-                target[name] = current;
-            }
-            view.set({});
+            current = get$$1(element);
+            updateView(view, obj.context, to, current);
         };
         element.addEventListener(event, cb, false);
         var r = {
@@ -2000,7 +2020,7 @@
                 obj.context = ctx;
                 var v = getValue(to, ctx);
                 if (v !== current) {
-                    set(element, v);
+                    set$$1(element, v);
                     current = v;
                 }
             }
@@ -2027,29 +2047,12 @@
         var current = void 0;
         var cb = function cb() {
             if (group.busy) return;
-
-            var _distruct2 = distruct(obj.context, to),
-                name = _distruct2.name,
-                target = _distruct2.target;
-
             current = group.type === 'radio' ? element.value : group.items.filter(function (it) {
                 return it.element.checked;
             }).map(function (it) {
                 return it.element.value;
             });
-            if (name === to && context._each && context._each.some(function (it) {
-                return it.key === name;
-            })) {
-                var each = context._each.find(function (it) {
-                    return it.key === name;
-                });
-                each.list[each.index] = current;
-            } else {
-                target[name] = current;
-            }
-            group.busy = true;
-            view.set({});
-            group.busy = false;
+            updateView(view, obj.context, to, current);
         };
         element.addEventListener('change', cb, false);
         var r = {
@@ -2093,7 +2096,7 @@
             return bindIt(context, view, to, element, 'input', function (el) {
                 return el.value;
             }, function (el, value) {
-                return el.value = value;
+                return el.value = value == null ? '' : value;
             });
         }
         if (tag === 'input' && from === 'checked') {
@@ -2277,7 +2280,9 @@
                 Object.keys(this.dynamicAttributes).forEach(function (it) {
                     var vs = _this5.renderHelper(context, _this5.dynamicAttributes[it]);
                     if (vs[0] === ChangeType.CHANGED) {
-                        var vvs = vs[1];
+                        var vvs = vs[1].filter(function (v) {
+                            return v != null;
+                        });
                         if (vvs.length === 1) {
                             setAttribute(_this5.element, it, vvs[0]);
                         } else {

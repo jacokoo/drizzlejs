@@ -21,6 +21,14 @@ script.
 
                     this.set({current: index})
                     this.fire('change', {from: tabs[current], to: tabs[index]})
+                },
+
+                rename (name) {
+                    const {tabs, current} = this.get()
+                    const old = tabs[current]
+                    tabs[current] = name
+                    this.set({tabs})
+                    this.fire('rename', {old, name})
                 }
             }
         }

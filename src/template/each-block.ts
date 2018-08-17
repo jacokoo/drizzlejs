@@ -28,8 +28,10 @@ export class EachBlock extends AnchorNode {
     sub (context: {[key: string]: any}, i: number | string) {
         const o = Object.assign({}, context)
         if (!o._each) o._each = []
+        else o._each = o._each.slice(0)
+
         const v = getValue(this.args[0], context)
-        o._each.push({list: v, index: i, key: this.args[2]})
+        o._each.push({list: v, index: i, key: this.args[2], name: this.args[0]})
 
         o[this.args[2]] = v[i]
         if (this.args[3]) o[this.args[3]] = i
