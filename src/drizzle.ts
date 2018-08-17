@@ -53,7 +53,13 @@ const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => {
 
 const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
 const RG = (id: string = 'default') => new RegionNode(id)
-const REF = (name: string, id: string) => new ReferenceNode(name, id)
+const REF = (name: string, statics: [string, any][], id: string) => {
+    const ss = statics.reduce((acc, it) => {
+        acc[it[0]] = it[1]
+        return acc
+    }, {})
+    return new ReferenceNode(name, ss, id)
+}
 
 const NDA = (v: string) => [null, [1, v]] as Attribute
 const NSA = (v: string) => [null, [0, v]] as Attribute

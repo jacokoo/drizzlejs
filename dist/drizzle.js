@@ -2503,7 +2503,7 @@
     var ReferenceNode = function (_AnchorNode) {
         inherits(ReferenceNode, _AnchorNode);
 
-        function ReferenceNode(name, id) {
+        function ReferenceNode(name, statics, id) {
             classCallCheck(this, ReferenceNode);
 
             var _this = possibleConstructorReturn(this, (ReferenceNode.__proto__ || Object.getPrototypeOf(ReferenceNode)).call(this, id));
@@ -2512,8 +2512,10 @@
             _this.actions = {};
             _this.bindings = [];
             _this.grouped = {};
+            _this.statics = {};
             _this.hooks = [];
             _this.name = name;
+            _this.statics = statics;
             return _this;
         }
 
@@ -2568,10 +2570,10 @@
                 if (this.rendered) return;
                 this.rendered = true;
                 get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context, delay);
-                delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
+                delay.add(this.item.set(Object.assign({}, this.statics, this.bindings.reduce(function (acc, item) {
                     acc[item[1]] = getValue(item[0], context);
                     return acc;
-                }, {})));
+                }, {}))));
                 delay.add(this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
@@ -2844,8 +2846,12 @@
         var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
         return new RegionNode(id);
     };
-    var REF = function REF(name, id) {
-        return new ReferenceNode(name, id);
+    var REF = function REF(name, statics, id) {
+        var ss = statics.reduce(function (acc, it) {
+            acc[it[0]] = it[1];
+            return acc;
+        }, {});
+        return new ReferenceNode(name, ss, id);
     };
     var NDA = function NDA(v) {
         return [null, [1, v]];

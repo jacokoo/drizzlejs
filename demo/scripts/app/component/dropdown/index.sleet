@@ -1,6 +1,6 @@
 #! drizzle
 
-module > #dropdown.dropdown(on:click=clickIt(event this))
+module(closeWhenMenuClicked) > #dropdown.dropdown(on:click=clickIt(event this))
     .dropdown-trigger > region#trigger
         button.button > span.icon.is-small
             svg(viewBox='0 0 129 129' enable-background='new 0 0 129 129')
@@ -8,14 +8,20 @@ module > #dropdown.dropdown(on:click=clickIt(event this))
     .dropdown-menu > .dropdown-content#content > region
 
 script.
-    let i = 0
     export default {
+        store: {
+            models: {
+                closeWhenMenuClicked: () => false
+            }
+        },
+
         events: {
             clickIt (e, it) {
+                const closeIt = this.get('closeWhenMenuClicked')
                 event.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = (ee) => {
-                        if (ee && this.ids.content.contains(ee.target)) return
+                        if (closeIt && ee && this.ids.content.contains(ee.target)) return
                         it.classList.remove('is-active')
                         document.removeEventListener('click', this.dropdownHandler)
                         this.dropdownHandler = null

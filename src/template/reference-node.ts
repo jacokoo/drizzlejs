@@ -19,13 +19,15 @@ export class ReferenceNode extends AnchorNode {
     actions: {[event: string]: {method: string, args: Attribute[]}} = {}
     bindings: [string, string][] = []
     grouped: {[name: string]: Node[]} = {}
+    statics: {[name: string]: any} = {}
 
     hooks: Disposable[] = []
     context: object
 
-    constructor(name: string, id?: string) {
+    constructor(name: string, statics: {[name: string]: any}, id?: string) {
         super(id)
         this.name = name
+        this.statics = statics
     }
 
     bind (from: string, to?: string) {
@@ -70,10 +72,10 @@ export class ReferenceNode extends AnchorNode {
         this.rendered = true
 
         super.render(context, delay)
-        delay.add(this.item.set(this.bindings.reduce((acc, item) => {
+        delay.add(this.item.set(Object.assign({}, this.statics, this.bindings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
-        }, {})))
+        }, {}))))
         delay.add(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 return this.item.regions[k]._showNode(this.grouped[k], context)

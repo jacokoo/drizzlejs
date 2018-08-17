@@ -52,7 +52,7 @@
         SN$1 = drizzlejs.factory.SN,
         RG = drizzlejs.factory.RG;
 
-    var template$1 = new drizzlejs.ModuleTemplate([]);
+    var template$1 = new drizzlejs.ModuleTemplate(['closeWhenMenuClicked']);
     var templateNodes$1 = function templateNodes() {
         var o1 = DN('div', 'dropdown', KV$1('class', 'dropdown'));
         EV(o1, 'click', 'clickIt', NDA('event'), NDA('this'));
@@ -79,14 +79,18 @@
     };
     template$1.creator = templateNodes$1;
     var _c_dropdown = {
+        store: { models: { closeWhenMenuClicked: function closeWhenMenuClicked() {
+                    return false;
+                } } },
         events: {
             clickIt: function clickIt(e, it) {
                 var _this = this;
 
+                var closeIt = this.get('closeWhenMenuClicked');
                 event.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = function (ee) {
-                        if (ee && _this.ids.content.contains(ee.target)) return;
+                        if (closeIt && ee && _this.ids.content.contains(ee.target)) return;
                         it.classList.remove('is-active');
                         document.removeEventListener('click', _this.dropdownHandler);
                         _this.dropdownHandler = null;
@@ -148,7 +152,7 @@
 
     var template$3 = new drizzlejs.ModuleTemplate(['code']);
     var templateNodes$3 = function templateNodes() {
-        var o1 = REF('view-editor');
+        var o1 = REF('view-editor', []);
         BD(o1, 'code', 'code');
         return [o1];
     };
@@ -199,7 +203,7 @@
             DA(o5, 'class', HH('if', DV$2('i'), DV$2('eq'), DV$2('current'), SV$2('is-active')));
             AC$1(o5, 'click', 'active', NDA$2('i'));
             var o6 = SN$2('a');
-            var o8 = REF$1('c-dropdown');
+            var o8 = REF$1('c-dropdown', [['closeWhenMenuClicked', true]]);
             EV$1(o8, 'show', 'onShow');
             EV$1(o8, 'hide', 'onHide');
             var o9 = SN$2('span', null, KV$3('region', 'trigger'));
@@ -246,7 +250,7 @@
 
     var template$5 = new drizzlejs.ModuleTemplate(['tabs']);
     var templateNodes$5 = function templateNodes() {
-        var o1 = REF$2('view-tab');
+        var o1 = REF$2('view-tab', []);
         BD$1(o1, 'tabs', 'tabs');
         BD$1(o1, 'current', 'current');
         return [o1];
@@ -307,15 +311,15 @@
         var o2 = SN$3('div', null, KV$4('class', 'tile is-ancestor h100'));
         var o3 = SN$3('div', null, KV$4('class', 'tile is-6 is-parent br'));
         var o4 = SN$3('div', null, KV$4('class', 'tile is-child editor is-12'));
-        var o5 = REF$3('file-tab');
+        var o5 = REF$3('file-tab', []);
         BD$2(o5, 'tabs', 'tabs');
         AC$2(o5, 'change', 'switchFile', NDA$3('event'));
         var o6 = SN$3('div', null, KV$4('class', 'operators'));
-        var o7 = REF$3('c-dropdown');
+        var o7 = REF$3('c-dropdown', []);
         var o8 = SN$3('div', null, KV$4('d', '2'), KV$4('class', 'dropdown-item'));
         var o9 = SN$3('p');
         var o10 = TX$2('abc');
-        var o11 = REF$3('code-editor');
+        var o11 = REF$3('code-editor', []);
         BD$2(o11, 'code', 'code');
         AC$2(o11, 'change', 'updateCode', NDA$3('event'));
         var o12 = SN$3('div', null, KV$4('class', 'tile is-6 is-vertical'));
@@ -668,11 +672,11 @@
         var o3 = SN$7('header', null, KV$9('class', 'header'));
         var o4 = SN$7('h1');
         var o5 = TX$6('todos');
-        var o6 = REF$4('create-todo');
-        var o7 = REF$4('todo-list');
+        var o6 = REF$4('create-todo', []);
+        var o7 = REF$4('todo-list', []);
         BD$4(o7, 'todos', 'todos');
         BD$4(o7, 'filter', 'filter');
-        var o8 = REF$4('todo-footer');
+        var o8 = REF$4('todo-footer', []);
         BD$4(o8, 'todos', 'todos');
         BD$4(o8, 'filter', 'filter');
         C$9(o4, o5);
@@ -771,7 +775,7 @@
 
     var template$c = new drizzlejs.ModuleTemplate([]);
     var templateNodes$c = function templateNodes() {
-        var o1 = REF$5('app-header');
+        var o1 = REF$5('app-header', []);
         var o2 = RG$1();
         return [o1, o2];
     };
