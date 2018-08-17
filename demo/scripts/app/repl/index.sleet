@@ -8,12 +8,12 @@ module > .main-content > .tile.is-ancestor.h100
                 action:change=switchFile(event)
                 action:rename=renameFile(event)
             )
-            .operators > c-dropdown > .dropdown-item(d=2) > p abc
             code-editor(code action:change=updateCode(event))
+            .operators > c-dropdown > .dropdown-item(d=2) > p abc
 
     .tile.is-6.is-vertical
-        .tile.is-parent > .tile.is-child
-        .tile.is-parent.bt > .tile.is-child
+        .tile.is-parent > .tile.is-child > region#showcase
+        .tile.is-parent.bt > .tile.is-child.editor > view-json(json)
 
 script.
     const index = `#! drizzle
@@ -34,6 +34,7 @@ script.
     `
     export default {
         items: {
+            views: ['view-json'],
             modules: {
                 'file-tab': 'repl/tab',
                 'code-editor': 'repl/editor',
@@ -44,7 +45,8 @@ script.
         store: {
             models: {
                 files: () => { return {index, 'view-a': view} },
-                current: () => 'index'
+                current: () => 'index',
+                json: () => JSON.stringify({name: 'hello'})
             },
 
             actions: {

@@ -353,60 +353,155 @@
         }
     };
 
-    var KV$4 = drizzlejs.factory.KV,
-        SN$3 = drizzlejs.factory.SN,
-        C$4 = drizzlejs.factory.C,
-        BD$3 = drizzlejs.factory.BD,
+    var CO$1 = drizzlejs.factory.CO,
+        H$2 = drizzlejs.factory.H,
+        SV$3 = drizzlejs.factory.SV,
         AC$2 = drizzlejs.factory.AC,
         AT$3 = drizzlejs.factory.AT,
-        SV$3 = drizzlejs.factory.SV,
         NSA$3 = drizzlejs.factory.NSA,
         DV$3 = drizzlejs.factory.DV,
         NDA$3 = drizzlejs.factory.NDA,
-        REF$3 = drizzlejs.factory.REF,
-        TX$2 = drizzlejs.factory.TX;
+        KV$4 = drizzlejs.factory.KV,
+        DN$3 = drizzlejs.factory.DN,
+        C$4 = drizzlejs.factory.C;
 
-    var template$6 = new drizzlejs.ModuleTemplate([]);
+    var template$6 = new drizzlejs.ViewTemplate();
     var templateNodes$6 = function templateNodes() {
-        var o1 = SN$3('div', null, KV$4('class', 'main-content'));
-        var o2 = SN$3('div', null, KV$4('class', 'tile is-ancestor h100'));
-        var o3 = SN$3('div', null, KV$4('class', 'tile is-6 is-parent br'));
-        var o4 = SN$3('div', null, KV$4('class', 'tile is-child editor is-12'));
+        var o1 = DN$3('div', 'editor', KV$4('class', 'code-editor'));
+        CO$1(o1, 'ace-editor', H$2('options'), H$2('code'));
+        AC$2(o1, 'codeChange', 'update', NDA$3('event'));
+
+        return [o1];
+    };
+    var indent = function indent(num) {
+        var idt = '';
+        for (var i = 0; i < num; i++) {
+            idt += '    ';
+        }return idt;
+    };
+    var format = function format(json) {
+        var idt = 0;
+        var result = '';
+        var inStr = false;
+        json.split('').forEach(function (it) {
+            if (it === '"' && result.slice(-1) !== '\\') inStr = !inStr;
+            if (inStr) {
+                result += it;
+                return;
+            }
+            if (it === '{' || it === '[') {
+                idt++;
+                result += it + '\n' + indent(idt);
+                return;
+            }
+            if (it === '}' || it === ']') {
+                idt--;
+                result += '\n' + indent(idt) + it;
+                return;
+            }
+            if (it === ',') {
+                result += ',\n' + indent(idt);
+                return;
+            }
+            if (it === ':') {
+                result += ': ';
+                return;
+            }
+            result += it;
+        });
+        return result;
+    };
+
+    template$6.creator = templateNodes$6;
+
+    var _view_json = {
+        state: {
+            options: {
+                fontFamily: 'Inconsolata, monospace',
+                fontSize: '13px',
+                showPrintMargin: false,
+                mode: 'ace/mode/json',
+                theme: 'ace/theme/xcode'
+            }
+        },
+        computed: {
+            code: function code(_ref) {
+                var json = _ref.json;
+
+                return format(json);
+            }
+        },
+        actions: {
+            update: function update(cb, _ref2) {
+                var detail = _ref2.detail;
+
+                console.log(detail, this.regions.showcase);
+            }
+        },
+        template: template$6
+    };
+
+    var KV$5 = drizzlejs.factory.KV,
+        SN$3 = drizzlejs.factory.SN,
+        C$5 = drizzlejs.factory.C,
+        BD$3 = drizzlejs.factory.BD,
+        AC$3 = drizzlejs.factory.AC,
+        AT$4 = drizzlejs.factory.AT,
+        SV$4 = drizzlejs.factory.SV,
+        NSA$4 = drizzlejs.factory.NSA,
+        DV$4 = drizzlejs.factory.DV,
+        NDA$4 = drizzlejs.factory.NDA,
+        REF$3 = drizzlejs.factory.REF,
+        TX$2 = drizzlejs.factory.TX,
+        RG$1 = drizzlejs.factory.RG;
+
+    var template$7 = new drizzlejs.ModuleTemplate([]);
+    var templateNodes$7 = function templateNodes() {
+        var o1 = SN$3('div', null, KV$5('class', 'main-content'));
+        var o2 = SN$3('div', null, KV$5('class', 'tile is-ancestor h100'));
+        var o3 = SN$3('div', null, KV$5('class', 'tile is-6 is-parent br'));
+        var o4 = SN$3('div', null, KV$5('class', 'tile is-child editor is-12'));
         var o5 = REF$3('file-tab', []);
         BD$3(o5, 'tabs', 'tabs');
-        AC$2(o5, 'change', 'switchFile', NDA$3('event'));
-        AC$2(o5, 'rename', 'renameFile', NDA$3('event'));
-        var o6 = SN$3('div', null, KV$4('class', 'operators'));
-        var o7 = REF$3('c-dropdown', []);
-        var o8 = SN$3('div', null, KV$4('d', '2'), KV$4('class', 'dropdown-item'));
-        var o9 = SN$3('p');
-        var o10 = TX$2('abc');
-        var o11 = REF$3('code-editor', []);
-        BD$3(o11, 'code', 'code');
-        AC$2(o11, 'change', 'updateCode', NDA$3('event'));
-        var o12 = SN$3('div', null, KV$4('class', 'tile is-6 is-vertical'));
-        var o13 = SN$3('div', null, KV$4('class', 'tile is-parent'));
-        var o14 = SN$3('div', null, KV$4('class', 'tile is-child'));
-        var o15 = SN$3('div', null, KV$4('class', 'tile is-parent bt'));
-        var o16 = SN$3('div', null, KV$4('class', 'tile is-child'));
-        C$4(o9, o10);
-        C$4(o8, o9);
-        C$4(o7, o8);
-        C$4(o6, o7);
-        C$4(o4, o5, o6, o11);
-        C$4(o3, o4);
-        C$4(o13, o14);
-        C$4(o15, o16);
-        C$4(o12, o13, o15);
-        C$4(o2, o3, o12);
-        C$4(o1, o2);
+        AC$3(o5, 'change', 'switchFile', NDA$4('event'));
+        AC$3(o5, 'rename', 'renameFile', NDA$4('event'));
+        var o6 = REF$3('code-editor', []);
+        BD$3(o6, 'code', 'code');
+        AC$3(o6, 'change', 'updateCode', NDA$4('event'));
+        var o7 = SN$3('div', null, KV$5('class', 'operators'));
+        var o8 = REF$3('c-dropdown', []);
+        var o9 = SN$3('div', null, KV$5('d', '2'), KV$5('class', 'dropdown-item'));
+        var o10 = SN$3('p');
+        var o11 = TX$2('abc');
+        var o12 = SN$3('div', null, KV$5('class', 'tile is-6 is-vertical'));
+        var o13 = SN$3('div', null, KV$5('class', 'tile is-parent'));
+        var o14 = SN$3('div', null, KV$5('class', 'tile is-child'));
+        var o15 = RG$1('showcase');
+        var o16 = SN$3('div', null, KV$5('class', 'tile is-parent bt'));
+        var o17 = SN$3('div', null, KV$5('class', 'tile is-child editor'));
+        var o18 = REF$3('view-json', []);
+        BD$3(o18, 'json', 'json');
+        C$5(o10, o11);
+        C$5(o9, o10);
+        C$5(o8, o9);
+        C$5(o7, o8);
+        C$5(o4, o5, o6, o7);
+        C$5(o3, o4);
+        C$5(o14, o15);
+        C$5(o13, o14);
+        C$5(o17, o18);
+        C$5(o16, o17);
+        C$5(o12, o13, o16);
+        C$5(o2, o3, o12);
+        C$5(o1, o2);
         return [o1];
     };
     var index = '#! drizzle\n\nmodule > view-a\n\nscript.\n    export default {\n        items: { views: [\'view-a\'] }\n    }\n';
     var view = '#! drizzle\n\nview\n    input(bind:value=name)\n    echo(\'hello\' name)\n';
-    template$6.creator = templateNodes$6;
+    template$7.creator = templateNodes$7;
     var _repl_app = {
         items: {
+            views: ['view-json'],
             modules: {
                 'file-tab': 'repl/tab',
                 'code-editor': 'repl/editor',
@@ -423,6 +518,9 @@
                 },
                 current: function current() {
                     return 'index';
+                },
+                json: function json() {
+                    return JSON.stringify({ name: 'hello' });
                 }
             },
             actions: {
@@ -470,102 +568,103 @@
                 return files[current];
             }
         },
-        template: template$6,
+        template: template$7,
         _loadedItems: {
+            'view-json': _view_json,
             'repl/tab': _file_tab,
             'repl/editor': _code_editor,
             'component/dropdown': _c_dropdown
         }
     };
 
-    var KV$5 = drizzlejs.factory.KV,
+    var KV$6 = drizzlejs.factory.KV,
         SN$4 = drizzlejs.factory.SN,
-        C$5 = drizzlejs.factory.C,
+        C$6 = drizzlejs.factory.C,
         TX$3 = drizzlejs.factory.TX;
 
-    var template$7 = new drizzlejs.ModuleTemplate([]);
-    var templateNodes$7 = function templateNodes() {
-        var o1 = SN$4('div', null, KV$5('class', 'sidebar'));
-        var o2 = SN$4('ul', null, KV$5('class', 'menu-list1'));
-        var o3 = SN$4('li', null, KV$5('class', 'menu-item1 active'));
+    var template$8 = new drizzlejs.ModuleTemplate([]);
+    var templateNodes$8 = function templateNodes() {
+        var o1 = SN$4('div', null, KV$6('class', 'sidebar'));
+        var o2 = SN$4('ul', null, KV$6('class', 'menu-list1'));
+        var o3 = SN$4('li', null, KV$6('class', 'menu-item1 active'));
         var o4 = SN$4('a');
         var o5 = TX$3('hello');
-        var o6 = SN$4('li', null, KV$5('class', 'menu-item1'));
+        var o6 = SN$4('li', null, KV$6('class', 'menu-item1'));
         var o7 = SN$4('a');
         var o8 = TX$3('hello');
-        var o9 = SN$4('li', null, KV$5('class', 'menu-item1'));
+        var o9 = SN$4('li', null, KV$6('class', 'menu-item1'));
         var o10 = SN$4('a');
         var o11 = TX$3('hello');
-        C$5(o4, o5);
-        C$5(o3, o4);
-        C$5(o7, o8);
-        C$5(o6, o7);
-        C$5(o10, o11);
-        C$5(o9, o10);
-        C$5(o2, o3, o6, o9);
-        C$5(o1, o2);
+        C$6(o4, o5);
+        C$6(o3, o4);
+        C$6(o7, o8);
+        C$6(o6, o7);
+        C$6(o10, o11);
+        C$6(o9, o10);
+        C$6(o2, o3, o6, o9);
+        C$6(o1, o2);
         return [o1];
     };
-    template$7.creator = templateNodes$7;
-    var _app_menu = { template: template$7 };
+    template$8.creator = templateNodes$8;
+    var _app_menu = { template: template$8 };
 
-    var KV$6 = drizzlejs.factory.KV,
+    var KV$7 = drizzlejs.factory.KV,
         SN$5 = drizzlejs.factory.SN,
-        C$6 = drizzlejs.factory.C,
-        H$2 = drizzlejs.factory.H,
+        C$7 = drizzlejs.factory.C,
+        H$3 = drizzlejs.factory.H,
         TX$4 = drizzlejs.factory.TX,
-        DV$4 = drizzlejs.factory.DV,
-        SV$4 = drizzlejs.factory.SV,
+        DV$5 = drizzlejs.factory.DV,
+        SV$5 = drizzlejs.factory.SV,
         HH$1 = drizzlejs.factory.HH,
         DA$1 = drizzlejs.factory.DA,
-        DN$3 = drizzlejs.factory.DN,
-        AC$3 = drizzlejs.factory.AC,
-        AT$4 = drizzlejs.factory.AT,
-        NSA$4 = drizzlejs.factory.NSA,
-        NDA$4 = drizzlejs.factory.NDA,
+        DN$4 = drizzlejs.factory.DN,
+        AC$4 = drizzlejs.factory.AC,
+        AT$5 = drizzlejs.factory.AT,
+        NSA$5 = drizzlejs.factory.NSA,
+        NDA$5 = drizzlejs.factory.NDA,
         IFC$1 = drizzlejs.factory.IFC;
 
-    var template$8 = new drizzlejs.ViewTemplate();
-    var templateNodes$8 = function templateNodes() {
-        var o1 = SN$5('footer', null, KV$6('class', 'footer'));
-        var o2 = SN$5('span', null, KV$6('class', 'todo-count'));
+    var template$9 = new drizzlejs.ViewTemplate();
+    var templateNodes$9 = function templateNodes() {
+        var o1 = SN$5('footer', null, KV$7('class', 'footer'));
+        var o2 = SN$5('span', null, KV$7('class', 'todo-count'));
         var o3 = SN$5('strong');
-        var o4 = TX$4(H$2('remaining'));
-        var o5 = TX$4(HH$1('if', DV$4('remaining'), DV$4('eq'), SV$4(1), SV$4(' item left'), SV$4(' items left')));
-        var o6 = SN$5('ul', null, KV$6('class', 'filters'));
+        var o4 = TX$4(H$3('remaining'));
+        var o5 = TX$4(HH$1('if', DV$5('remaining'), DV$5('eq'), SV$5(1), SV$5(' item left'), SV$5(' items left')));
+        var o6 = SN$5('ul', null, KV$7('class', 'filters'));
         var o7 = SN$5('li');
-        var o8 = DN$3('a', null, KV$6('href', '#/todos/all'));
-        DA$1(o8, 'class', HH$1('if', DV$4('filter'), DV$4('eq'), SV$4('all'), SV$4('selected')));
+        var o8 = DN$4('a', null, KV$7('href', '#/todos/all'));
+        DA$1(o8, 'class', HH$1('if', DV$5('filter'), DV$5('eq'), SV$5('all'), SV$5('selected')));
         var o9 = TX$4('All');
         var o10 = SN$5('li');
-        var o11 = DN$3('a', null, KV$6('href', '#/todos/active'));
-        DA$1(o11, 'class', HH$1('if', DV$4('filter'), DV$4('eq'), SV$4('active'), SV$4('selected')));
+        var o11 = DN$4('a', null, KV$7('href', '#/todos/active'));
+        DA$1(o11, 'class', HH$1('if', DV$5('filter'), DV$5('eq'), SV$5('active'), SV$5('selected')));
         var o12 = TX$4('Active');
         var o13 = SN$5('li');
-        var o14 = DN$3('a', null, KV$6('href', '#/todos/completed'));
-        DA$1(o14, 'class', HH$1('if', DV$4('filter'), DV$4('eq'), SV$4('completed'), SV$4('selected')));
+        var o14 = DN$4('a', null, KV$7('href', '#/todos/completed'));
+        DA$1(o14, 'class', HH$1('if', DV$5('filter'), DV$5('eq'), SV$5('completed'), SV$5('selected')));
         var o15 = TX$4('Completed');
-        var o17 = DN$3('button', null, KV$6('class', 'clear-completed'));
-        AC$3(o17, 'click', 'clearCompleted');
+        var o17 = DN$4('button', null, KV$7('class', 'clear-completed'));
+        AC$4(o17, 'click', 'clearCompleted');
         var o18 = TX$4('Clear completed');
-        var o16 = IFC$1([DV$4('haveCompleted')], o17);
+        var o16 = IFC$1([DV$5('haveCompleted')], o17);
 
-        C$6(o3, o4);
-        C$6(o2, o3, o5);
-        C$6(o8, o9);
-        C$6(o7, o8);
-        C$6(o11, o12);
-        C$6(o10, o11);
-        C$6(o14, o15);
-        C$6(o13, o14);
-        C$6(o6, o7, o10, o13);
-        C$6(o17, o18);
-        C$6(o1, o2, o6, o16);
+        C$7(o3, o4);
+        C$7(o2, o3, o5);
+        C$7(o8, o9);
+        C$7(o7, o8);
+        C$7(o11, o12);
+        C$7(o10, o11);
+        C$7(o14, o15);
+        C$7(o13, o14);
+        C$7(o6, o7, o10, o13);
+        C$7(o17, o18);
+        C$7(o1, o2, o6, o16);
 
         return [o1];
     };
 
-    template$8.creator = templateNodes$8;
+    template$9.creator = templateNodes$9;
 
     var _todo_footer = {
         computed: {
@@ -584,21 +683,21 @@
                 });
             }
         },
-        template: template$8
+        template: template$9
     };
 
-    var KV$7 = drizzlejs.factory.KV,
+    var KV$8 = drizzlejs.factory.KV,
         SN$6 = drizzlejs.factory.SN,
-        C$7 = drizzlejs.factory.C,
+        C$8 = drizzlejs.factory.C,
         DA$2 = drizzlejs.factory.DA,
-        H$3 = drizzlejs.factory.H,
-        SV$5 = drizzlejs.factory.SV,
-        AC$4 = drizzlejs.factory.AC,
-        AT$5 = drizzlejs.factory.AT,
-        NSA$5 = drizzlejs.factory.NSA,
-        DV$5 = drizzlejs.factory.DV,
-        NDA$5 = drizzlejs.factory.NDA,
-        DN$4 = drizzlejs.factory.DN,
+        H$4 = drizzlejs.factory.H,
+        SV$6 = drizzlejs.factory.SV,
+        AC$5 = drizzlejs.factory.AC,
+        AT$6 = drizzlejs.factory.AT,
+        NSA$6 = drizzlejs.factory.NSA,
+        DV$6 = drizzlejs.factory.DV,
+        NDA$6 = drizzlejs.factory.NDA,
+        DN$5 = drizzlejs.factory.DN,
         HH$2 = drizzlejs.factory.HH,
         EV$2 = drizzlejs.factory.EV,
         TX$5 = drizzlejs.factory.TX,
@@ -606,47 +705,47 @@
         EACH$1 = drizzlejs.factory.EACH,
         IFC$2 = drizzlejs.factory.IFC;
 
-    var template$9 = new drizzlejs.ViewTemplate();
-    var templateNodes$9 = function templateNodes() {
-        var o2 = SN$6('section', null, KV$7('class', 'main'));
-        var o3 = DN$4('input', null, KV$7('type', 'checkbox'), KV$7('id', 'toggle-all'), KV$7('class', 'toggle-all'));
-        DA$2(o3, 'checked', H$3('allDone'));
-        AC$4(o3, 'change', 'toggleAll', AT$5('completed', DV$5('this.checked')));
-        var o4 = SN$6('label', null, KV$7('for', 'toggle-all'));
-        var o5 = SN$6('ul', null, KV$7('class', 'todo-list'));
+    var template$a = new drizzlejs.ViewTemplate();
+    var templateNodes$a = function templateNodes() {
+        var o2 = SN$6('section', null, KV$8('class', 'main'));
+        var o3 = DN$5('input', null, KV$8('type', 'checkbox'), KV$8('id', 'toggle-all'), KV$8('class', 'toggle-all'));
+        DA$2(o3, 'checked', H$4('allDone'));
+        AC$5(o3, 'change', 'toggleAll', AT$6('completed', DV$6('this.checked')));
+        var o4 = SN$6('label', null, KV$8('for', 'toggle-all'));
+        var o5 = SN$6('ul', null, KV$8('class', 'todo-list'));
         var o7 = function o7() {
-            var o8 = DN$4('li');
-            DA$2(o8, 'class', HH$2('if', DV$5('todo.completed'), SV$5('completed')), HH$2('if', DV$5('todo'), DV$5('eq'), DV$5('editing'), SV$5('editing')));
-            var o9 = SN$6('div', null, KV$7('class', 'view'));
-            var o10 = DN$4('input', null, KV$7('type', 'checkbox'), KV$7('class', 'toggle'));
-            DA$2(o10, 'checked', H$3('todo.completed'));
-            AC$4(o10, 'change', 'toggle', AT$5('id', DV$5('todo.id')), AT$5('checked', DV$5('this.checked')));
-            var o11 = DN$4('label');
-            EV$2(o11, 'dblclick', 'edit', NDA$5('todo'));
-            var o12 = TX$5(H$3('todo.name'));
-            var o13 = DN$4('button', null, KV$7('class', 'destroy'));
-            AC$4(o13, 'click', 'remove', AT$5('id', DV$5('todo.id')));
-            var o14 = DN$4('input', null, KV$7('class', 'edit'));
+            var o8 = DN$5('li');
+            DA$2(o8, 'class', HH$2('if', DV$6('todo.completed'), SV$6('completed')), HH$2('if', DV$6('todo'), DV$6('eq'), DV$6('editing'), SV$6('editing')));
+            var o9 = SN$6('div', null, KV$8('class', 'view'));
+            var o10 = DN$5('input', null, KV$8('type', 'checkbox'), KV$8('class', 'toggle'));
+            DA$2(o10, 'checked', H$4('todo.completed'));
+            AC$5(o10, 'change', 'toggle', AT$6('id', DV$6('todo.id')), AT$6('checked', DV$6('this.checked')));
+            var o11 = DN$5('label');
+            EV$2(o11, 'dblclick', 'edit', NDA$6('todo'));
+            var o12 = TX$5(H$4('todo.name'));
+            var o13 = DN$5('button', null, KV$8('class', 'destroy'));
+            AC$5(o13, 'click', 'remove', AT$6('id', DV$6('todo.id')));
+            var o14 = DN$5('input', null, KV$8('class', 'edit'));
             BD$4(o14, 'value', 'todo.name');
-            AC$4(o14, 'blur', 'commitEdit', NDA$5('todo.id'), NDA$5('this.value'), NSA$5('blur'));
-            AC$4(o14, 'enter', 'commitEdit', NDA$5('todo.id'), NDA$5('this.value'), NSA$5('enter'));
-            AC$4(o14, 'escape', 'revertEdit', NDA$5('todo'), NDA$5('nameCache'));
+            AC$5(o14, 'blur', 'commitEdit', NDA$6('todo.id'), NDA$6('this.value'), NSA$6('blur'));
+            AC$5(o14, 'enter', 'commitEdit', NDA$6('todo.id'), NDA$6('this.value'), NSA$6('enter'));
+            AC$5(o14, 'escape', 'revertEdit', NDA$6('todo'), NDA$6('nameCache'));
 
-            C$7(o11, o12);
-            C$7(o9, o10, o11, o13);
-            C$7(o8, o9, o14);
+            C$8(o11, o12);
+            C$8(o9, o10, o11, o13);
+            C$8(o8, o9, o14);
             return o8;
         };
         var o6 = EACH$1(['filtered', 'as', 'todo'], o7);
-        var o1 = IFC$2([DV$5('todos.length')], o2);
+        var o1 = IFC$2([DV$6('todos.length')], o2);
 
-        C$7(o5, o6);
-        C$7(o2, o3, o4, o5);
+        C$8(o5, o6);
+        C$8(o2, o3, o4, o5);
 
         return [o1];
     };
 
-    template$9.creator = templateNodes$9;
+    template$a.creator = templateNodes$a;
 
     var _todo_list = {
         computed: {
@@ -702,28 +801,28 @@
                 });
             }
         },
-        template: template$9
+        template: template$a
     };
 
-    var KV$8 = drizzlejs.factory.KV,
-        AC$5 = drizzlejs.factory.AC,
-        AT$6 = drizzlejs.factory.AT,
-        SV$6 = drizzlejs.factory.SV,
-        NSA$6 = drizzlejs.factory.NSA,
-        DV$6 = drizzlejs.factory.DV,
-        NDA$6 = drizzlejs.factory.NDA,
-        DN$5 = drizzlejs.factory.DN,
-        C$8 = drizzlejs.factory.C;
+    var KV$9 = drizzlejs.factory.KV,
+        AC$6 = drizzlejs.factory.AC,
+        AT$7 = drizzlejs.factory.AT,
+        SV$7 = drizzlejs.factory.SV,
+        NSA$7 = drizzlejs.factory.NSA,
+        DV$7 = drizzlejs.factory.DV,
+        NDA$7 = drizzlejs.factory.NDA,
+        DN$6 = drizzlejs.factory.DN,
+        C$9 = drizzlejs.factory.C;
 
-    var template$a = new drizzlejs.ViewTemplate();
-    var templateNodes$a = function templateNodes() {
-        var o1 = DN$5('input', 'create', KV$8('placeholder', 'What needs to be done?'), KV$8('class', 'new-todo'));
-        AC$5(o1, 'enter', 'newTodo', AT$6('name', DV$6('this.value')));
+    var template$b = new drizzlejs.ViewTemplate();
+    var templateNodes$b = function templateNodes() {
+        var o1 = DN$6('input', 'create', KV$9('placeholder', 'What needs to be done?'), KV$9('class', 'new-todo'));
+        AC$6(o1, 'enter', 'newTodo', AT$7('name', DV$7('this.value')));
 
         return [o1];
     };
 
-    template$a.creator = templateNodes$a;
+    template$b.creator = templateNodes$b;
 
     var _create_todo = {
         actions: {
@@ -733,21 +832,21 @@
                 cb(payload);
             }
         },
-        template: template$a
+        template: template$b
     };
 
-    var KV$9 = drizzlejs.factory.KV,
+    var KV$a = drizzlejs.factory.KV,
         SN$7 = drizzlejs.factory.SN,
-        C$9 = drizzlejs.factory.C,
+        C$a = drizzlejs.factory.C,
         TX$6 = drizzlejs.factory.TX,
         REF$4 = drizzlejs.factory.REF,
         BD$5 = drizzlejs.factory.BD;
 
-    var template$b = new drizzlejs.ModuleTemplate(['todos']);
-    var templateNodes$b = function templateNodes() {
-        var o1 = SN$7('div', null, KV$9('class', 'todoapp-container'));
-        var o2 = SN$7('section', null, KV$9('class', 'todoapp'));
-        var o3 = SN$7('header', null, KV$9('class', 'header'));
+    var template$c = new drizzlejs.ModuleTemplate(['todos']);
+    var templateNodes$c = function templateNodes() {
+        var o1 = SN$7('div', null, KV$a('class', 'todoapp-container'));
+        var o2 = SN$7('section', null, KV$a('class', 'todoapp'));
+        var o3 = SN$7('header', null, KV$a('class', 'header'));
         var o4 = SN$7('h1');
         var o5 = TX$6('todos');
         var o6 = REF$4('create-todo', []);
@@ -757,14 +856,14 @@
         var o8 = REF$4('todo-footer', []);
         BD$5(o8, 'todos', 'todos');
         BD$5(o8, 'filter', 'filter');
-        C$9(o4, o5);
-        C$9(o3, o4, o6);
-        C$9(o2, o3, o7, o8);
-        C$9(o1, o2);
+        C$a(o4, o5);
+        C$a(o3, o4, o6);
+        C$a(o2, o3, o7, o8);
+        C$a(o1, o2);
         return [o1];
     };
     var id = 0;
-    template$b.creator = templateNodes$b;
+    template$c.creator = templateNodes$c;
     var _todo_app = {
         items: {
             views: ['create-todo', 'todo-list', 'todo-footer']
@@ -840,7 +939,7 @@
                 }
             }
         },
-        template: template$b,
+        template: template$c,
         _loadedItems: {
             'create-todo': _create_todo,
             'todo-list': _todo_list,
@@ -849,15 +948,15 @@
     };
 
     var REF$5 = drizzlejs.factory.REF,
-        RG$1 = drizzlejs.factory.RG;
+        RG$2 = drizzlejs.factory.RG;
 
-    var template$c = new drizzlejs.ModuleTemplate([]);
-    var templateNodes$c = function templateNodes() {
+    var template$d = new drizzlejs.ModuleTemplate([]);
+    var templateNodes$d = function templateNodes() {
         var o1 = REF$5('app-header', []);
-        var o2 = RG$1();
+        var o2 = RG$2();
         return [o1, o2];
     };
-    template$c.creator = templateNodes$c;
+    template$d.creator = templateNodes$d;
     var _viewport = {
         items: {
             modules: {
@@ -871,7 +970,7 @@
             '/todos1': 'todo-app',
             '/repl': 'repl-app'
         },
-        template: template$c,
+        template: template$d,
         _loadedItems: {
             'todos': _todo_app,
             'main/menu': _app_menu,

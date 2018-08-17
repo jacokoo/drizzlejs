@@ -247,10 +247,14 @@ svg {
 
 .code-editor {
     position: absolute;
-    top: 42px;
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;
+}
+
+.tabs + .code-editor {
+    top: 42px;
 }
 
 .ace-xcode .ace_gutter {
