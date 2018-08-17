@@ -17,9 +17,8 @@ module > .main-content > .tile.is-ancestor.h100
 
 script.
     import {compile} from 'sleet'
-    import * as hello from 'sleet-drizzle'
 
-    console.log(compile, hello)
+    console.log(window['sleet-drizzle'])
 
     const index = `#! drizzle
 
