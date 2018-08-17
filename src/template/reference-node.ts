@@ -49,9 +49,9 @@ export class ReferenceNode extends AnchorNode {
             if (this.id) root.ids[this.id] = i
         }
         if (root instanceof View) {
-            delay.add(root._module._createItem(this.name).then(fn))
+            delay.add(root._module._createItem(this.name, this.statics).then(fn))
         } else {
-            delay.add((root as Module)._createItem(this.name).then(fn))
+            delay.add((root as Module)._createItem(this.name, this.statics).then(fn))
         }
 
         this.children.forEach(it => {
@@ -72,10 +72,10 @@ export class ReferenceNode extends AnchorNode {
         this.rendered = true
 
         super.render(context, delay)
-        delay.add(this.item.set(Object.assign({}, this.statics, this.bindings.reduce((acc, item) => {
+        delay.add(this.item.set(this.bindings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
-        }, {}))))
+        }, {})))
         delay.add(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 return this.item.regions[k]._showNode(this.grouped[k], context)

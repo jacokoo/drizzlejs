@@ -2545,9 +2545,9 @@
                     if (_this2.id) root.ids[_this2.id] = i;
                 };
                 if (root instanceof View) {
-                    delay.add(root._module._createItem(this.name).then(fn));
+                    delay.add(root._module._createItem(this.name, this.statics).then(fn));
                 } else {
-                    delay.add(root._createItem(this.name).then(fn));
+                    delay.add(root._createItem(this.name, this.statics).then(fn));
                 }
                 this.children.forEach(function (it) {
                     var name = 'default';
@@ -2570,10 +2570,10 @@
                 if (this.rendered) return;
                 this.rendered = true;
                 get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context, delay);
-                delay.add(this.item.set(Object.assign({}, this.statics, this.bindings.reduce(function (acc, item) {
+                delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
                     acc[item[1]] = getValue(item[0], context);
                     return acc;
-                }, {}))));
+                }, {})));
                 delay.add(this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
