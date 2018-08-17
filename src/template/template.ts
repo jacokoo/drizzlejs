@@ -167,7 +167,7 @@ export abstract class Template {
                 return Delay.also(d => o.nodes.forEach(it => it.update(this._context(), d)))
             },
 
-            beforeDestroy () {
+            destroyed () {
                 return Delay.also(d => o.nodes.forEach(it => it.destroy(d)))
             }
         }

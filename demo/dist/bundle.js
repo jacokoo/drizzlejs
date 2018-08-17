@@ -86,7 +86,7 @@
                 event.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = function (ee) {
-                        if (_this.ids.content.contains(ee.target)) return;
+                        if (ee && _this.ids.content.contains(ee.target)) return;
                         it.classList.remove('is-active');
                         document.removeEventListener('click', _this.dropdownHandler);
                         _this.dropdownHandler = null;

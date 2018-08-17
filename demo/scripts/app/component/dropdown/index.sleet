@@ -8,13 +8,14 @@ module > #dropdown.dropdown(on:click=clickIt(event this))
     .dropdown-menu > .dropdown-content#content > region
 
 script.
+    let i = 0
     export default {
         events: {
             clickIt (e, it) {
                 event.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = (ee) => {
-                        if (this.ids.content.contains(ee.target)) return
+                        if (ee && this.ids.content.contains(ee.target)) return
                         it.classList.remove('is-active')
                         document.removeEventListener('click', this.dropdownHandler)
                         this.dropdownHandler = null

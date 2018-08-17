@@ -11,6 +11,7 @@ export abstract class AnchorNode extends MNode {
     }
 
     render (context: object, delay: Delay) {
+        super.render(context, delay)
         if (!this.newParent) {
             this.parent.append(this.anchor)
             this.newParent = this.parent.before(this.anchor)

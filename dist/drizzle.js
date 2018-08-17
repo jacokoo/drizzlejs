@@ -325,7 +325,7 @@
                             });
                         });
                     },
-                    beforeDestroy: function beforeDestroy() {
+                    destroyed: function destroyed() {
                         return Delay.also(function (d) {
                             return o.nodes.forEach(function (it) {
                                 return it.destroy(d);
@@ -381,7 +381,6 @@
             value: function init(root, delay) {
                 this.root = root;
                 this.element = this.create();
-                if (this.id && this.element) root.ids[this.id] = this.element;
                 var a = createAppendable(this.element);
                 this.children.forEach(function (it) {
                     it.parent = a;
@@ -390,17 +389,19 @@
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {}
+            value: function render(context, delay) {
+                if (this.id && this.element) this.root.ids[this.id] = this.element;
+            }
         }, {
             key: 'update',
             value: function update(context, delay) {}
         }, {
             key: 'destroy',
             value: function destroy(delay) {
-                if (this.id) delete this.root.ids[this.id];
                 this.children.forEach(function (it) {
                     return it.destroy(delay);
                 });
+                if (this.id) delete this.root.ids[this.id];
             }
         }, {
             key: 'setChildren',
@@ -449,6 +450,7 @@
         createClass(AnchorNode, [{
             key: 'render',
             value: function render(context, delay) {
+                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'render', this).call(this, context, delay);
                 if (!this.newParent) {
                     this.parent.append(this.anchor);
                     this.newParent = this.parent.before(this.anchor);
@@ -1925,6 +1927,7 @@
             value: function render(context, delay) {
                 if (this.rendered) return;
                 this.rendered = true;
+                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'render', this).call(this, context, delay);
                 this.parent.append(this.element);
                 this.children.forEach(function (it) {
                     return it.render(context, delay);

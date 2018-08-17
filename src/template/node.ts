@@ -17,7 +17,6 @@ export abstract class Node {
     init (root: Renderable<any>, delay: Delay) {
         this.root = root
         this.element = this.create()
-        if (this.id && this.element) root.ids[this.id] = this.element
         const a = createAppendable(this.element)
         this.children.forEach(it => {
             it.parent = a
@@ -26,14 +25,15 @@ export abstract class Node {
     }
 
     render (context: object, delay: Delay) {
+        if (this.id && this.element) this.root.ids[this.id] = this.element
     }
 
     update (context: object, delay: Delay) {
     }
 
     destroy (delay: Delay) {
-        if (this.id) delete this.root.ids[this.id]
         this.children.forEach(it => it.destroy(delay))
+        if (this.id) delete this.root.ids[this.id]
     }
 
     setChildren (children: Node[]) {

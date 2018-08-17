@@ -16,6 +16,8 @@ export class StaticNode extends Node {
     render (context: object, delay: Delay) {
         if (this.rendered) return
         this.rendered = true
+
+        super.render(context, delay)
         this.parent.append(this.element)
         this.children.forEach(it => it.render(context, delay))
     }
