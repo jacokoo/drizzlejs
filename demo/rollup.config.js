@@ -1,18 +1,20 @@
 import babel from 'rollup-plugin-babel'
 import commonjs from 'rollup-plugin-commonjs'
 import drizzle from './rollup-plugin-drizzle'
+import resolve from 'rollup-plugin-node-resolve'
 
 export default {
     input: 'scripts/main.js',
-    external: ['drizzlejs'],
+    external: ['drizzlejs', 'fs', 'path'],
     plugins: [
+        drizzle({scriptRoot: 'app'}),
+        resolve(),
         commonjs({
-            include: ['../dist/drizzle.js'],
+            include: 'node_modules/**',
             namedExports: {
-                '../dist/drizzle.js': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application', 'Loader']
+                'drizzlejs': ['factory', 'ModuleTemplate', 'ViewTemplate', 'Application', 'Loader']
             }
         }),
-        drizzle({scriptRoot: 'app'}),
         babel({
             babelrc: false,
             presets: ['es2015-rollup']

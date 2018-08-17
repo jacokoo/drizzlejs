@@ -16,6 +16,11 @@ module > .main-content > .tile.is-ancestor.h100
         .tile.is-parent.bt > .tile.is-child.editor > view-json(json)
 
 script.
+    import {compile} from 'sleet'
+    import * as hello from 'sleet-drizzle'
+
+    console.log(compile, hello)
+
     const index = `#! drizzle
 
     module > view-a
@@ -55,7 +60,9 @@ script.
                 },
 
                 updateCode ({code}) {
+                    console.log(code)
                     const files = this.get('files')
+                    console.log(compile(code))
                     files[this.get('current')] = code
                     this.set({files})
                 },

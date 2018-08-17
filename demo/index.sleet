@@ -13,9 +13,12 @@ html
         link(rel=stylesheet href='./styles/todo-app.css')
         link(rel=stylesheet href='./styles/main.css')
         script(src='./node_modules/drizzlejs/dist/drizzle.js')
-        script(src='./scripts/vendors/ace.js')
-        script(src='./scripts/vendors/mode-javascript.js')
+        script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js')
+        script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/mode-javascript.js')
         script(src='./scripts/vendors/sleet-mode.js')
+        script.
+            const fs = {}
+            const path = {}
 
     body
         script(src='./dist/bundle.js')

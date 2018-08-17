@@ -7,6 +7,7 @@ export function editor(node, options = {}, code) {
     const handler = () => {
         if (busy) return
         current = editor.getValue()
+        console.log(current)
         node.dispatchEvent(new CustomEvent('codeChange', {detail: current}))
     }
 
