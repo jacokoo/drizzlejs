@@ -2069,7 +2069,7 @@
                 var changed = false;
                 if (group.type === 'radio' && v !== current) changed = true;
                 if (!changed && group.type === 'checkbox' && v.some(function (it, i) {
-                    return current[i] !== it;
+                    return !current || current[i] !== it;
                 })) changed = true;
                 if (!changed) return;
                 if (group.type === 'radio') {

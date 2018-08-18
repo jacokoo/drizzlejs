@@ -4745,6 +4745,21 @@
       };
     }();
 
+    var defineProperty = function (obj, key, value) {
+      if (key in obj) {
+        Object.defineProperty(obj, key, {
+          value: value,
+          enumerable: true,
+          configurable: true,
+          writable: true
+        });
+      } else {
+        obj[key] = value;
+      }
+
+      return obj;
+    };
+
     var inherits = function (subClass, superClass) {
       if (typeof superClass !== "function" && superClass !== null) {
         throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
@@ -6665,6 +6680,33 @@
         template: template$7
     };
 
+    var index = '#! drizzle\n\nmodule(name) > view-a(name)\n\nscript.\n    export default {\n        items: { views: [\'view-a\'] },\n        store: {\n            models: {\n                name: () => \'\'\n            }\n        }\n    }\n';
+
+    var view = '#! drizzle\n\nview\n    input.input(bind:value=name)\n    h3 > echo(\'hello \' name \'!\')\nscript.\n    export default {\n    }\n';
+
+    var json = '{\n    "name": "world"\n}';
+
+    var hw = {
+        code: 'hello-world',
+        name: 'Hello World',
+        files: { index: index, 'view-a': view },
+        json: json
+    };
+
+    var index$1 = '#! drizzle\n\nmodule(names) > view-a(names)\n\nscript.\n    export default {\n        items: { views: [\'view-a\'] },\n        store: {\n            models: {\n                names: () => []\n            }\n        }\n    }\n';
+
+    var view$1 = '#! drizzle\n\nview\n    .control\n        label(class=\'checkbox\') > input(type=\'checkbox\' bind:group=names value=\'a\') + echo(\'A checked\')\n        label(class=\'checkbox\') > input(type=\'checkbox\' bind:group=names value=\'b\') + echo(\'B checked\')\n        label(class=\'checkbox\') > input(type=\'checkbox\' bind:group=names value=\'c\') + echo(\'C checked\')\n    h3 > echo(\'hello \' names \'!\')\nscript.\n    export default {\n    }\n';
+
+    var json$1 = '{\n    "names": ["a", "b", "c"]\n}';
+
+    var bg = {
+        code: 'bind-group',
+        name: 'Group binding',
+        files: { index: index$1, 'view-a': view$1 },
+        json: json$1
+    };
+
+    var _examples;
     var KV$6 = drizzlejs.factory.KV,
         SN$4 = drizzlejs.factory.SN,
         C$6 = drizzlejs.factory.C,
@@ -6722,8 +6764,7 @@
         C$6(o1, o2);
         return [o1];
     };
-    var index = '#! drizzle\n\nmodule(name) > view-a(name)\n\nscript.\n    export default {\n        items: { views: [\'view-a\'] },\n        store: {\n            models: {\n                name: () => \'\'\n            }\n        }\n    }\n';
-    var view = '#! drizzle\n\nview\n    input.input(bind:value=name)\n    h3 > echo(\'hello \' name \'!\')\nscript.\n    export default {\n    }\n';
+    var examples = (_examples = {}, defineProperty(_examples, hw.code, hw), defineProperty(_examples, bg.code, bg), _examples);
     template$8.creator = templateNodes$8;
     var _repl_app = {
         items: {
@@ -6734,19 +6775,17 @@
                 'c-dropdown': 'component/dropdown'
             }
         },
+        routes: { '/:code': { action: 'changeExample' } },
         store: {
             models: {
                 files: function files() {
-                    return {
-                        index: index,
-                        'view-a': view
-                    };
+                    return {};
                 },
                 current: function current() {
                     return 'index';
                 },
                 json: function json() {
-                    return '{\n    "name": "world"\n}';
+                    return '';
                 },
                 changed: function changed() {
                     return true;
@@ -6799,18 +6838,29 @@
                     var changed = _ref5.changed;
 
                     this.set({ changed: changed });
+                },
+                changeExample: function changeExample(_ref6) {
+                    var code = _ref6.code;
+
+                    console.log(code);
+                    if (!code || !examples[code]) code = 'hello-world';
+                    var c = examples[code];
+                    this.set({
+                        files: c.files,
+                        json: c.json
+                    });
                 }
             }
         },
         computed: {
-            tabs: function tabs(_ref6) {
-                var files = _ref6.files;
+            tabs: function tabs(_ref7) {
+                var files = _ref7.files;
 
                 return Object.keys(files);
             },
-            code: function code(_ref7) {
-                var files = _ref7.files,
-                    current = _ref7.current;
+            code: function code(_ref8) {
+                var files = _ref8.files,
+                    current = _ref8.current;
 
                 return files[current];
             }

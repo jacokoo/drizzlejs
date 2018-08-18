@@ -123,7 +123,10 @@ const bindGroup = (
 
             let changed = false
             if (group.type === 'radio' && v !== current) changed = true
-            if (!changed && group.type === 'checkbox' && (v as any[]).some((it, i) => current[i] !== it)) changed = true
+            if (
+                !changed && group.type === 'checkbox' &&
+                (v as any[]).some((it, i) => !current || current[i] !== it)
+            ) changed = true
             if (!changed) return
 
             if (group.type === 'radio') {
