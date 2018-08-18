@@ -2432,7 +2432,7 @@
             value: function update(context, delay) {
                 var r = this.helper.render(context);
                 if (r[0] === ChangeType.CHANGED) {
-                    this.node.data = r[1];
+                    this.node.data = r[1] == null ? '' : r[1];
                 }
             }
         }, {
@@ -2476,8 +2476,11 @@
         }, {
             key: 'render',
             value: function render(context, delay) {
+                var _this5 = this;
+
                 this.nodes.forEach(function (it) {
-                    return it.render(context, delay);
+                    if (!it.parent) it.parent = _this5.parent;
+                    it.render(context, delay);
                 });
             }
         }, {
@@ -2581,6 +2584,7 @@
                 }, {})));
                 delay.add(this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
+                        if (!_this3.item.regions[k]) return;
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
                     }).concat(Object.keys(_this3.item.regions).map(function (it) {
                         if (!_this3.grouped[it] || !_this3.grouped[it].length) return _this3.item.regions[it]._showChildren();
@@ -2649,6 +2653,7 @@
                 });
                 this.hooks = [];
                 delay.add(Promise.all(Object.keys(this.grouped).map(function (it) {
+                    if (!_this4.item.regions[it]) return;
                     return _this4.item.regions[it].close();
                 })));
                 this.rendered = false;
@@ -2684,6 +2689,9 @@
                 });
                 var me = this;
                 this.mod.regions[this.id] = {
+                    get item() {
+                        return me.item;
+                    },
                     show: function show(name, state) {
                         me.isChildren = false;
                         return me.show(name, state);

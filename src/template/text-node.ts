@@ -50,7 +50,7 @@ class DynamicTextNode extends StaticTextNode {
     update (context: object, delay: Delay) {
         const r = this.helper.render(context)
         if (r[0] === ChangeType.CHANGED) {
-            this.node.data = r[1]
+            this.node.data = r[1] == null ? '' : r[1]
         }
     }
 
@@ -78,7 +78,10 @@ export class TextNode extends Node {
     }
 
     render (context: object, delay: Delay) {
-        this.nodes.forEach(it => it.render(context, delay))
+        this.nodes.forEach(it => {
+            if (!it.parent) it.parent = this.parent
+            it.render(context, delay)
+        })
     }
 
     update (context: object, delay: Delay) {

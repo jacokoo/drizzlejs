@@ -78,6 +78,7 @@ export class ReferenceNode extends AnchorNode {
         }, {})))
         delay.add(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
+                if (!this.item.regions[k]) return
                 return this.item.regions[k]._showNode(this.grouped[k], context)
             }).concat(Object.keys(this.item.regions).map(it => {
                 if (!this.grouped[it] || !this.grouped[it].length) return this.item.regions[it]._showChildren()
@@ -138,6 +139,7 @@ export class ReferenceNode extends AnchorNode {
         this.hooks.forEach(it => it.dispose())
         this.hooks = []
         delay.add(Promise.all(Object.keys(this.grouped).map(it => {
+            if (!this.item.regions[it]) return
             return this.item.regions[it].close()
         })))
         this.rendered = false

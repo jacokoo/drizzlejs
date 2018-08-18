@@ -16,10 +16,12 @@ html
         script(src='./node_modules/sleet-drizzle/dist/sleet-drizzle.js')
         script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js')
         script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/mode-javascript.js')
+        script(src='https://unpkg.com/babel-standalone@6.26.0/babel.js')
         script(src='./scripts/vendors/sleet-mode.js')
         script.
-            const fs = {}
-            const path = {}
+            window.fs = {}
+            window.path = {}
+            window.require1 = function(name) { return name === 'drizzlejs' ? drizzlejs : null }
 
     body
         script(src='./dist/bundle.js')

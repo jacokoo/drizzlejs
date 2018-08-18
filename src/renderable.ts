@@ -19,6 +19,7 @@ export enum ComponentState {
 }
 
 interface Region {
+    item: Renderable<any>
     show (name: string, state: object): Promise<Renderable<any>>
     _showNode (nodes: Node[], context: object): Promise<any>
     _showChildren ()

@@ -26,6 +26,9 @@ export class RegionNode extends Node {
 
         const me = this
         this.mod.regions[this.id] = {
+            get item () {
+                return me.item
+            },
             show (name: string, state: object): Promise<any> {
                 me.isChildren = false
                 return me.show(name, state)

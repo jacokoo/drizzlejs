@@ -1,6 +1,6 @@
 #! drizzle
 
-view > #editor.code-editor(comp:ace-editor=options + code action:codeChange=update(event))
+view > #editor.code-editor(comp:ace-editor=options + json action:codeChange=updateJson(event))
 
 script.
     const indent = num => {
@@ -56,18 +56,6 @@ script.
                 showPrintMargin: false,
                 mode: 'ace/mode/json',
                 theme: 'ace/theme/xcode'
-            }
-        },
-
-        computed: {
-            code ({json}) {
-                return format(json)
-            }
-        },
-
-        actions: {
-            update (cb, {detail}) {
-                console.log(detail, this.regions.showcase)
             }
         }
     }

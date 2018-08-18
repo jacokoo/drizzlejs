@@ -264,3 +264,23 @@ svg {
 input.rename {
     width: 150px;
 }
+
+.is-relative {
+    position: relative;
+}
+
+.click-to-run {
+    top: 50px;
+    position: absolute;
+    width: 100%;
+    cursor: pointer;
+}
+
+.run-overlay {
+    opacity: .5;
+    cursor: pointer;
+}
+
+.showcase {
+    padding: 1em;
+}

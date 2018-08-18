@@ -12,33 +12,39 @@ module > .main-content > .tile.is-ancestor.h100
             .operators > c-dropdown > .dropdown-item(d=2) > p abc
 
     .tile.is-6.is-vertical
-        .tile.is-parent > .tile.is-child > region#showcase
+        .tile.is-parent > .tile.is-child.is-relative > view-show(files json changed)
         .tile.is-parent.bt > .tile.is-child.editor > view-json(json)
 
 script.
     import {compile} from 'sleet'
 
-    console.log(window['sleet-drizzle'])
-
     const index = `#! drizzle
 
-    module > view-a
+    module(name) > view-a(name)
 
     script.
         export default {
-            items: { views: ['view-a'] }
+            items: { views: ['view-a'] },
+            store: {
+                models: {
+                    name: () => ''
+                }
+            }
         }
     `
 
     const view = `#! drizzle
 
     view
-        input(bind:value=name)
-        echo('hello' name)
+        input.input(bind:value=name)
+        h3 > echo('hello ' name '!')
+    script.
+        export default {
+        }
     `
     export default {
         items: {
-            views: ['view-json'],
+            views: ['view-json', 'view-show'],
             modules: {
                 'file-tab': 'repl/tab',
                 'code-editor': 'repl/editor',
@@ -50,7 +56,8 @@ script.
             models: {
                 files: () => { return {index, 'view-a': view} },
                 current: () => 'index',
-                json: () => JSON.stringify({name: 'hello'})
+                json: () => `{\n    "name": "world"\n}`,
+                changed: () => true
             },
 
             actions: {
@@ -59,11 +66,18 @@ script.
                 },
 
                 updateCode ({code}) {
-                    console.log(code)
                     const files = this.get('files')
-                    console.log(compile(code))
+                    try {
+                        compile(code, {'drizzle': window['sleet-drizzle']}).content
+                    } catch (e) {
+                        console.log(e)
+                    }
                     files[this.get('current')] = code
-                    this.set({files})
+                    this.set({files, changed: true})
+                },
+
+                updateJson ({detail}) {
+                    this.set({json: detail})
                 },
 
                 renameFile ({name, old}) {
@@ -73,6 +87,10 @@ script.
 
                     const c = current === old ? name : current
                     this.set({files, current: c})
+                },
+
+                run ({changed}) {
+                    this.set({changed})
                 }
             }
         },
