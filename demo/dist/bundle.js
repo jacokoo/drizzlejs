@@ -90,7 +90,7 @@
                 var _this = this;
 
                 var closeIt = this.get('closeWhenMenuClicked');
-                event.stopPropagation();
+                e.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = function (ee) {
                         if (closeIt && ee && _this.ids.content.contains(ee.target)) return;

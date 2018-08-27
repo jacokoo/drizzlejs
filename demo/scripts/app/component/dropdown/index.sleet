@@ -18,7 +18,7 @@ script.
         events: {
             clickIt (e, it) {
                 const closeIt = this.get('closeWhenMenuClicked')
-                event.stopPropagation();
+                e.stopPropagation();
                 if (!this.dropdownHandler) {
                     this.dropdownHandler = (ee) => {
                         if (closeIt && ee && this.ids.content.contains(ee.target)) return
