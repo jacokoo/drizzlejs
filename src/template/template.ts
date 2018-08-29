@@ -1,15 +1,16 @@
 import { Disposable } from '../drizzle'
 import { Node as MNode } from './node'
 import { Renderable } from '../renderable'
-import { Lifecycle } from '../lifecycle'
+import { Transformer } from './transformer'
 
 type StaticValue = string | number | boolean
 type DynamicValue = string
 
-export enum ValueType { STATIC, DYNAMIC }
+export enum ValueType { STATIC, DYNAMIC, TRANSFORMER }
 export enum ChangeType { CHANGED, NOT_CHANGED }
 
-export type AttributeValue = [ValueType.STATIC, StaticValue] | [ValueType.DYNAMIC, DynamicValue]
+export type NormalValue = [ValueType.STATIC, StaticValue] | [ValueType.DYNAMIC, DynamicValue]
+export type AttributeValue = NormalValue | [ValueType.TRANSFORMER, Transformer]
 export type Attribute = [string, AttributeValue]
 
 export type HelperResult = [ChangeType, any]

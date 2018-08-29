@@ -73,21 +73,9 @@ export abstract class Helper {
     }
 }
 
-export class Transfromer extends Helper {
-    fn: (...args: any[]) => any
-
-    constructor(fn: (...args: any[]) => any, ...args: AttributeValue[]) {
-        super(...args)
-        this.fn = fn
-    }
-
-    doRender (context: object): any {
-        return this.fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
-    }
-}
-
-export class DelayTransfomer extends Transfromer {
+export class DelayHelper extends Helper {
     name: string
+    fn: (...args: any[]) => any
 
     constructor(name: string, ...args: AttributeValue[]) {
         super(null, ...args)
@@ -98,6 +86,10 @@ export class DelayTransfomer extends Transfromer {
         const {helpers} = root._options
         if (helpers && helpers[this.name]) this.fn = helpers[this.name]
         else throw new Error(`no helper found: ${name}`)
+    }
+
+    doRender (context: object): any {
+        return this.fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
     }
 }
 

@@ -1,5 +1,5 @@
 import { Delay, ChangeType } from './template'
-import { Helper, DelayTransfomer } from './helper'
+import { Helper, DelayHelper } from './helper'
 import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Node } from './node'
@@ -37,7 +37,7 @@ class DynamicTextNode extends StaticTextNode {
     }
 
     init (root: Renderable<any>) {
-        if (root instanceof View && this.helper instanceof DelayTransfomer) {
+        if (root instanceof View && this.helper instanceof DelayHelper) {
             this.helper.init(root)
         }
     }

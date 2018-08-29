@@ -1,5 +1,5 @@
 import { StaticNode } from './static-node'
-import { Helper, DelayTransfomer } from './helper'
+import { Helper, DelayHelper } from './helper'
 import { Disposable } from '../drizzle'
 import { View } from '../view'
 import { bind } from './binding'
@@ -67,12 +67,12 @@ export class DynamicNode extends StaticNode {
 
         Object.keys(this.dynamicAttributes).forEach(k => {
             this.dynamicAttributes[k].forEach(it => {
-                if (it instanceof DelayTransfomer) it.init(view)
+                if (it instanceof DelayHelper) it.init(view)
             })
         })
 
         Object.keys(this.components).forEach(k => this.components[k].forEach(it => {
-            if (it instanceof DelayTransfomer) it.init(view)
+            if (it instanceof DelayHelper) it.init(view)
         }))
     }
 
