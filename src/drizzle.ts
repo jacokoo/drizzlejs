@@ -33,70 +33,57 @@ const loaders = {
     default: Loader
 }
 
-const SN = (name: string, id: string, ...attributes: [string, string][]) => {
-    return new StaticNode(name, attributes || [], id)
+// nodes
+const SN = (name: string, id?: string) => new StaticNode(name, id)
+const DN = (name: string, id?: string) => new DynamicNode(name, id)
+const REF = (name: string, id?: string) => new ReferenceNode(name, id)
+const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
+const RG = (id: string = 'default') => new RegionNode(id)
+
+// node attribute
+const SA = (d: StaticNode | DynamicNode | ReferenceNode, name: string, value: any) => {
+    d.attribute(name, value)
 }
-const DN = (name: string, id: string, ...attributes: [string, string][]) => {
-    return new DynamicNode(name, attributes || [], id)
-}
-const DA = (d: DynamicNode, name: string, ...hs: Helper[]) => {
-    d.attribute(name, hs)
-}
-const BD = (d: DynamicNode | ReferenceNode, from: string, to: string) => {
-    d.bind(from, to)
-}
+const DA = (d: DynamicNode, name: string, ...hs: Helper[]) => d.dynamicAttribute(name, hs)
+const BD = (d: DynamicNode, from: string, to: string) => d.bind(from, to)
+const MP = (d: ReferenceNode, from: string, to?: string) => d.map(from, to)
 const EV = (d: DynamicNode | ReferenceNode, event: string, method: string, ...attrs: Attribute[]) => {
     d.on(event, method, attrs)
 }
 const AC = (d: DynamicNode | ReferenceNode, event: string, method: string, ...attrs: Attribute[]) => {
     d.action(event, method, attrs)
 }
-const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => {
-    d.component(name, hs)
-}
+const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
+const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 
-const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
-const RG = (id: string = 'default') => new RegionNode(id)
-const REF = (name: string, statics: [string, any][], id: string) => {
-    const ss = statics.reduce((acc, it) => {
-        acc[it[0]] = it[1]
-        return acc
-    }, {})
-    return new ReferenceNode(name, ss, id)
-}
+// attributes
+const TI = (name: string, ...args: NormalValue[]) => new TransformerItem(name, args)
 
-const NDA = (v: string) => [null, [1, v]] as Attribute
-const NSA = (v: string) => [null, [0, v]] as Attribute
-
+const TV = (value: string, end?: NormalValue, ...items: TransformerItem[]) =>
+    [ValueType.TRANSFORMER, new Transformer(value, items, end)] as AttributeValue
 const SV = (v: string) => [ValueType.STATIC, v] as NormalValue
 const DV = (v: string) => [ValueType.DYNAMIC, v] as NormalValue
 const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
-const KV = (k: string, v?: string) => [k, v || k]
 
+// helpers
 const H = (n: string | AttributeValue) => Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n))
 const HH = (n: string, ...args: AttributeValue[]) => {
     if (helpers[n]) return new helpers[n](...args)
     return new DelayHelper(n, ...args)
 }
-const HIF = (...args: AttributeValue[]) => HH('if', ...args)
-const HUN = (...args: AttributeValue[]) => HH('unless', ...args)
 
+// block
 const EACH = (args: string[], trueNode: () => Node, falseNode?: Node) => new EachBlock(args, trueNode, falseNode)
-const IF = (n: string, trueNode: Node, falseNode?: Node) => new IfBlock([DV(n)], trueNode, falseNode)
-const IFC = (args: AttributeValue[], trueNode: Node, falseNode?: Node) => new IfBlock(args, trueNode, falseNode)
+const IF = (args: AttributeValue[], trueNode: Node, falseNode?: Node) => new IfBlock(args, trueNode, falseNode)
 const UN = (n: string, trueNode: Node, falseNode?: Node) => new UnlessBlock([DV(n)], trueNode, falseNode)
-const C = (parent: Node, ...children: Node[]) => parent.setChildren(children)
 
-const TI = (name: string, ...args: NormalValue[]) => new TransformerItem(name, args)
-const TV = (value: string, end?: NormalValue, ...items: TransformerItem[]) =>
-    [ValueType.TRANSFORMER, new Transformer(value, items, end)] as AttributeValue
+export const lifecycles = {module: [], view: []}
+export const factory = {
+    SN, DN, TX, RG, REF, SV, DV, AT, H, HH,
+    EACH, IF, UN, C, SA, DA, BD, EV, AC, CO, TI, TV, MP
+}
 
-export default {
+export {
     helpers, blocks, loaders, customEvents, components,
-    lifecycles: {module: [], view: []},
     ModuleTemplate, ViewTemplate, Application, Loader,
-    factory: {
-        SN, DN, TX, RG, REF, NDA, NSA, SV, DV, AT, KV, H, HH, HIF, HUN,
-        EACH, IF, IFC, UN, C, DA, BD, EV, AC, CO, TI, TV
-    }
 }

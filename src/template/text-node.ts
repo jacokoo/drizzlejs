@@ -1,8 +1,9 @@
-import { Delay, ChangeType } from './template'
+import { ChangeType } from './template'
 import { Helper, DelayHelper } from './helper'
 import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Node } from './node'
+import { Delay } from './util'
 
 class StaticTextNode extends Node {
     data: string

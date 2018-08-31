@@ -1,6 +1,6 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { getValue, Delay, Appendable } from './template'
+import { getValue, Delay } from './util'
 import { AnchorNode } from './anchor-node'
 
 export class EachBlock extends AnchorNode {

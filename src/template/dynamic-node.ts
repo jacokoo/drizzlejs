@@ -4,11 +4,12 @@ import { Disposable } from '../drizzle'
 import { View } from '../view'
 import { bind } from './binding'
 import {
-    Delay, Attribute, ChangeType, resolveEventArgument,
+    Attribute, ChangeType,
     Updatable, customEvents, ComponentHook, components
 } from './template'
 import { Renderable } from '../renderable'
 import { setAttribute } from './attributes'
+import { resolveEventArgument, Delay } from './util'
 
 export class DynamicNode extends StaticNode {
     dynamicAttributes: {[name: string]: Helper[]} = {}
@@ -24,7 +25,7 @@ export class DynamicNode extends StaticNode {
 
     context: object
 
-    attribute (name: string, helpers: Helper[]) {
+    dynamicAttribute (name: string, helpers: Helper[]) {
         this.dynamicAttributes[name] = helpers
     }
 

@@ -1,7 +1,8 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, AttributeValue, ValueType, getAttributeValue, Appendable } from './template'
+import { AttributeValue, ValueType } from './template'
 import { AnchorNode } from './anchor-node'
+import { Delay, getAttributeValue } from './util'
 
 export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
     eq: (v1, v2) => v1 === v2,

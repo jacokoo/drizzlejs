@@ -1,5 +1,5 @@
 import { Node } from './node'
-import { Delay } from './template'
+import { Delay } from './util'
 import { Renderable } from '../renderable'
 import { Module } from '../module'
 import { View } from '../view'

@@ -1,7 +1,8 @@
 import { HelperResult, ChangeType } from './template'
-import { getValue, AttributeValue, ValueType } from './template'
+import { AttributeValue, ValueType } from './template'
 import { View } from '../view'
 import { Compare } from './if-block'
+import { getValue } from './util'
 
 export abstract class Helper {
     name: string = ''

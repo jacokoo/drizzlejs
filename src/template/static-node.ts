@@ -1,16 +1,19 @@
 import { Node } from './node'
-import { Delay } from './template'
+import { Delay } from './util'
 import { setAttribute } from './attributes'
 
 export class StaticNode extends Node {
     name: string
-    attributes: [string, string][]
+    attributes: [string, any][] = []
 
-    constructor(name: string, attributes: [string, string][] = [], id?: string) {
+    constructor(name: string, id?: string) {
         super(id)
         this.name = name
-        this.attributes = attributes
         if (name === 'svg') this.inSvg = true
+    }
+
+    attribute (name: string, value: any) {
+        this.attributes.push([name, value])
     }
 
     render (context: object, delay: Delay) {

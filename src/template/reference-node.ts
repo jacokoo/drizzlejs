@@ -1,11 +1,12 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
-import { Delay, Attribute, resolveEventArgument, getValue } from './template'
+import { Attribute } from './template'
 import { Module } from '../module'
 import { View } from '../view'
 import { StaticNode } from './static-node'
 import { Disposable } from '../drizzle'
 import { AnchorNode } from './anchor-node'
+import { getValue, resolveEventArgument, Delay } from './util'
 
 interface BindResult {
     fn: (any) => void
@@ -17,21 +18,24 @@ export class ReferenceNode extends AnchorNode {
     item: Module | View
     events: {[event: string]: {method: string, args: Attribute[]}} = {}
     actions: {[event: string]: {method: string, args: Attribute[]}} = {}
-    bindings: [string, string][] = []
+    mappings: [string, string][] = []
     grouped: {[name: string]: Node[]} = {}
     statics: {[name: string]: any} = {}
 
     hooks: Disposable[] = []
     context: object
 
-    constructor(name: string, statics: {[name: string]: any}, id?: string) {
+    constructor(name: string, id?: string) {
         super(id)
         this.name = name
-        this.statics = statics
     }
 
-    bind (from: string, to?: string) {
-        this.bindings.push([from, to || from])
+    attribute (name: string, value: any) {
+        this.statics[name] = value
+    }
+
+    map (from: string, to?: string) {
+        this.mappings.push([from, to || from])
     }
 
     on (event: string, method: string, args: Attribute[]) {
@@ -72,7 +76,7 @@ export class ReferenceNode extends AnchorNode {
         this.rendered = true
 
         super.render(context, delay)
-        delay.add(this.item.set(this.bindings.reduce((acc, item) => {
+        delay.add(this.item.set(this.mappings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
@@ -122,7 +126,7 @@ export class ReferenceNode extends AnchorNode {
     }
 
     update (context: object, delay: Delay) {
-        delay.add(this.item.set(this.bindings.reduce((acc, item) => {
+        delay.add(this.item.set(this.mappings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))

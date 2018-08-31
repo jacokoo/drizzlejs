@@ -1,5 +1,6 @@
 import { Node as MNode } from './node'
-import { Appendable, Delay } from './template'
+import { Appendable } from './template'
+import { Delay } from './util'
 
 export abstract class AnchorNode extends MNode {
     newParent: Appendable

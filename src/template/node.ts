@@ -1,5 +1,6 @@
 import { Renderable, RenderOptions } from '../renderable'
-import { Delay, Appendable, createAppendable } from './template'
+import { Delay, createAppendable } from './util'
+import { Appendable } from './template'
 
 export abstract class Node {
     root: Renderable<RenderOptions>

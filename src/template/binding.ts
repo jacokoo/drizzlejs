@@ -1,6 +1,7 @@
 import { View, BindingGroup } from '../view'
-import { getValue, Updatable } from './template'
+import { Updatable } from './template'
 import { DynamicNode } from './dynamic-node'
+import { getValue, tokenize } from './util'
 
 const updateSingleKey = (view: View, context: {[name: string]: any}, to: string, value: any) => {
     if (context._each) {
@@ -16,7 +17,7 @@ const updateSingleKey = (view: View, context: {[name: string]: any}, to: string,
 }
 
 const updateView = (view: View, context: {[name: string]: any}, to: string, value: any) => {
-    const ps = to.split('.')
+    const ps = tokenize(to)
     if (ps.length === 1) return updateSingleKey(view, context, to, value)
 
     const root = ps.shift()
