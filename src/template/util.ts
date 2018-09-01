@@ -1,5 +1,6 @@
 import { AttributeValue, ValueType, Attribute, Appendable } from './template'
 import { DataContext } from './context'
+import { Transformer } from './transformer'
 
 export function tokenize(input: string): string[] {
     let token = ''
@@ -69,19 +70,14 @@ export function getValue (key: string, context: DataContext): any {
 
 export function getAttributeValue(attr: AttributeValue, context: DataContext): any {
     if (attr[0] === ValueType.STATIC) return attr[1]
-    return getValue(attr[1] as string, context)
+    if (attr[0] === ValueType.DYNAMIC) return getValue(attr[1] as string, context)
+    return (attr[1] as Transformer).render(context)
 }
 
 export function resolveEventArgument (me: any, context: DataContext, args: Attribute[], event: any): any[] {
-    const values = args.map(([name, v]) => {
-        if (v[0] === ValueType.STATIC) return v[1]
-        const it = v[1] as string
-        if (it === 'event') return event
-        if (it === 'this') return me
-        if (it.slice(0, 6) === 'event.') return event[it.slice(6)]
-        if (it.slice(0, 5) === 'this.') return me[it.slice(5)]
-        return getValue(it, context)
-    })
+    const o = Object.assign({}, context.data, {event, this: me})
+    const sub = context.sub(o)
+    const values = args.map(([name, v]) => getAttributeValue(v, sub))
 
     const obj = {}
     const result = [obj]

@@ -5,12 +5,12 @@ import { getAttributeValue } from './util'
 import { Context, DataContext } from './context'
 
 export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
-    eq: (v1, v2) => v1 === v2,
-    ne: (v1, v2) => v1 !== v2,
-    gt: (v1, v2) => v1 > v2,
-    lt: (v1, v2) => v1 < v2,
-    gte: (v1, v2) => v1 >= v2,
-    lte: (v1, v2) => v1 <= v2
+    '==': (v1, v2) => v1 === v2,
+    '!=': (v1, v2) => v1 !== v2,
+    '>': (v1, v2) => v1 > v2,
+    '<': (v1, v2) => v1 < v2,
+    '>=': (v1, v2) => v1 >= v2,
+    '<=': (v1, v2) => v1 <= v2
 }
 
 export class IfBlock extends AnchorNode {
@@ -42,15 +42,14 @@ export class IfBlock extends AnchorNode {
     useCompare (context: DataContext): boolean {
         const op = this.args[1][1] as string
         if (!Compare[op]) {
-            throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
+            throw Error(`${op} is not a valid compare operator, use: ==, !=, >, <, >=, <=`)
         }
         return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[2], context))
     }
 
     useSingle (context: DataContext): boolean {
         if (this.args[0][0] === ValueType.STATIC) {
-            // TODO throw
-            return false
+            return !!this.args[0][1]
         }
         return !!getAttributeValue(this.args[0], context)
     }

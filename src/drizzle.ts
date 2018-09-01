@@ -1,5 +1,5 @@
 import {
-    IfHelper, UnlessHelper, Helper, DelayHelper, ConcatHelper, EchoHelper
+    IfHelper, UnlessHelper, Helper, DelayHelper, EchoHelper
 } from './template/helper'
 import { IfBlock, UnlessBlock } from './template/if-block'
 import { EachBlock } from './template/each-block'
@@ -23,7 +23,7 @@ export interface Disposable {
 }
 
 const innerHelpers = {
-    echo: EchoHelper, if: IfHelper, unless: UnlessHelper, concat: ConcatHelper
+    echo: EchoHelper, if: IfHelper, unless: UnlessHelper
 }
 
 const loaders = {

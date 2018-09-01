@@ -1,52 +1,36 @@
 import { HelperResult, ChangeType } from './template'
 import { AttributeValue, ValueType } from './template'
-import { View } from '../view'
 import { Compare } from './if-block'
-import { getValue } from './util'
+import { getAttributeValue } from './util'
 import { DataContext } from './context'
 
 export abstract class Helper {
     name: string = ''
     args: AttributeValue[]
-    dynamicKeys: string[]
-    currentKeys: string[]
-    currentValues: string[]
-
     current: any
 
     constructor (...args: AttributeValue[]) {
         this.args = args
-        this.dynamicKeys = args.filter(it => it[0] === ValueType.DYNAMIC).map(it => it[1] as string)
         this.check()
     }
 
     clear () {
-        this.currentValues = null
     }
 
     render (context: DataContext): HelperResult {
-        if (!this.currentValues) return [ChangeType.CHANGED, this.renderIt(context)]
+        if (!this.current) return [ChangeType.CHANGED, this.renderIt(context)]
 
-        const vs = this.currentKeys.map(it => getValue(it, context))  // TODO if changed, will it do get value twice?
-        if (vs.some((it, i) => it !== this.currentValues[i])) {
-            return [ChangeType.CHANGED, this.renderIt(context)]
+        const c = this.current
+        const u = this.renderIt(context)
+        if (c !== u) {
+            return [ChangeType.CHANGED, this.current]
         }
 
         return [ChangeType.NOT_CHANGED, this.current]
     }
 
     arg (idx: number, context: DataContext): any {
-        const arg = this.args[idx]
-        if (!arg) return ''
-        if (arg[0] === ValueType.STATIC) return arg[1]
-        return this.key(arg[1] as string, context)
-    }
-
-    key (key: string, context: DataContext): any {
-        this.currentKeys.push(key)
-        const v = getValue(key, context)
-        this.currentValues.push(v)
-        return v
+        return getAttributeValue(this.args[idx], context)
     }
 
     check () {}
@@ -59,7 +43,7 @@ export abstract class Helper {
 
     assertDynamic (...numbers: number[]) {
         numbers.forEach(it => {
-            if (this.args[it][0] !== ValueType.DYNAMIC) {
+            if (this.args[it][0] === ValueType.STATIC) {
                 throw new Error(`the ${it}th argument of ${name} helper should be dynamic`)
             }
         })
@@ -68,8 +52,6 @@ export abstract class Helper {
     abstract doRender (context: DataContext): any
 
     private renderIt (context: DataContext): any {
-        this.currentKeys = []
-        this.currentValues = []
         this.current = this.doRender(context)
         return this.current
     }
@@ -77,39 +59,22 @@ export abstract class Helper {
 
 export class DelayHelper extends Helper {
     name: string
-    fn: (...args: any[]) => any
 
     constructor(name: string, ...args: AttributeValue[]) {
         super(null, ...args)
         this.name = name
     }
 
-    init (root: View) {
-        const {helpers} = root._options
-        if (helpers && helpers[this.name]) this.fn = helpers[this.name]
-        else throw new Error(`no helper found: ${name}`)
-    }
-
     doRender (context: DataContext): any {
-        return this.fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
+        const fn = context.helper(this.name)
+        if (!fn) throw new Error(`no helper found: ${this.name}`)
+        return fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
     }
 }
 
 export class EchoHelper extends Helper {
     doRender (context) {
         return this.arg(0, context)
-    }
-}
-
-export class ConcatHelper extends Helper {
-    name = 'concat'
-
-    check () {
-        this.currentKeys = this.dynamicKeys
-    }
-
-    doRender (context: DataContext): any {
-        return this.args.map((it, i) => this.arg(i, context)).join(' ')
     }
 }
 
@@ -131,13 +96,13 @@ export class IfHelper extends Helper {
     }
 
     useSingle (context): number {
-        return this.key(this.dynamicKeys[0], context) ? 1 : 2
+        return this.arg(0, context) ? 1 : 2
     }
 
     useMultiple (context): number {
         const op = this.args[1][1] as string
         if (!Compare[op]) {
-            throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
+            throw Error(`${op} is not a valid compare operator, use: ==, !=, >, <, >=, <=`)
         }
 
         return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4
@@ -148,6 +113,6 @@ export class UnlessHelper extends IfHelper {
     name = 'unless'
 
     use (context: DataContext): number {
-        return this.key(this.dynamicKeys[0], context) ? 2 : 1
+        return this.arg(0, context) ? 2 : 1
     }
 }
