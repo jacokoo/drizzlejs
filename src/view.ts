@@ -1,22 +1,15 @@
 import { RenderOptions, Renderable, ComponentState } from './renderable'
 import { Module } from './module'
 import { DynamicNode } from './template/dynamic-node'
-import { Component } from './template/template'
+import { Component } from './template/context'
 
 export interface ViewOptions extends RenderOptions {
     helpers?: {[name: string]: (...any) => any},
     components?: {[name: string]: Component}
 }
 
-export interface BindingGroup {
-    type: 'checkbox' | 'radio'
-    busy: boolean
-    items: DynamicNode[]
-}
-
 export class View extends Renderable<ViewOptions> {
     _module: Module
-    _groups: {[name: string]: BindingGroup} = {}
     _state: object = {}
 
     constructor(mod: Module, options: ViewOptions) {

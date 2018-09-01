@@ -3,6 +3,7 @@ import { AttributeValue, ValueType } from './template'
 import { View } from '../view'
 import { Compare } from './if-block'
 import { getValue } from './util'
+import { DataContext } from './context'
 
 export abstract class Helper {
     name: string = ''
@@ -23,7 +24,7 @@ export abstract class Helper {
         this.currentValues = null
     }
 
-    render (context: object): HelperResult {
+    render (context: DataContext): HelperResult {
         if (!this.currentValues) return [ChangeType.CHANGED, this.renderIt(context)]
 
         const vs = this.currentKeys.map(it => getValue(it, context))  // TODO if changed, will it do get value twice?
@@ -34,14 +35,14 @@ export abstract class Helper {
         return [ChangeType.NOT_CHANGED, this.current]
     }
 
-    arg (idx: number, context: object): any {
+    arg (idx: number, context: DataContext): any {
         const arg = this.args[idx]
         if (!arg) return ''
         if (arg[0] === ValueType.STATIC) return arg[1]
         return this.key(arg[1] as string, context)
     }
 
-    key (key: string, context: object): any {
+    key (key: string, context: DataContext): any {
         this.currentKeys.push(key)
         const v = getValue(key, context)
         this.currentValues.push(v)
@@ -64,9 +65,9 @@ export abstract class Helper {
         })
     }
 
-    abstract doRender (context: object): any
+    abstract doRender (context: DataContext): any
 
-    private renderIt (context: object): any {
+    private renderIt (context: DataContext): any {
         this.currentKeys = []
         this.currentValues = []
         this.current = this.doRender(context)
@@ -89,7 +90,7 @@ export class DelayHelper extends Helper {
         else throw new Error(`no helper found: ${name}`)
     }
 
-    doRender (context: object): any {
+    doRender (context: DataContext): any {
         return this.fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
     }
 }
@@ -107,7 +108,7 @@ export class ConcatHelper extends Helper {
         this.currentKeys = this.dynamicKeys
     }
 
-    doRender (context: object): any {
+    doRender (context: DataContext): any {
         return this.args.map((it, i) => this.arg(i, context)).join(' ')
     }
 }
@@ -120,11 +121,11 @@ export class IfHelper extends Helper {
         this.assertDynamic(0)
     }
 
-    doRender (context: object): any {
+    doRender (context: DataContext): any {
         return this.arg(this.use(context), context)
     }
 
-    use (context: object): number {
+    use (context: DataContext): number {
         if (this.args.length <= 3) return this.useSingle(context)
         return this.useMultiple(context)
     }
@@ -146,7 +147,7 @@ export class IfHelper extends Helper {
 export class UnlessHelper extends IfHelper {
     name = 'unless'
 
-    use (context: object): number {
+    use (context: DataContext): number {
         return this.key(this.dynamicKeys[0], context) ? 2 : 1
     }
 }

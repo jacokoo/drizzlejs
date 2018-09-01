@@ -1,9 +1,8 @@
-import { Renderable, RenderOptions } from '../renderable'
-import { Delay, createAppendable } from './util'
+import { createAppendable } from './util'
 import { Appendable } from './template'
+import { Context, DataContext } from './context'
 
 export abstract class Node {
-    root: Renderable<RenderOptions>
     id: string
     element: HTMLElement
     parent: Appendable
@@ -15,26 +14,25 @@ export abstract class Node {
         this.id = id
     }
 
-    init (root: Renderable<any>, delay: Delay) {
-        this.root = root
+    init (context: Context) {
         this.element = this.create()
         const a = createAppendable(this.element)
         this.children.forEach(it => {
             it.parent = a
-            it.init(root, delay)
+            it.init(context)
         })
     }
 
-    render (context: object, delay: Delay) {
-        if (this.id && this.element) this.root.ids[this.id] = this.element
+    render (context: DataContext) {
+        if (this.id && this.element) context.ref(this.id, this.element)
     }
 
-    update (context: object, delay: Delay) {
+    update (context: DataContext) {
     }
 
-    destroy (delay: Delay) {
-        this.children.forEach(it => it.destroy(delay))
-        if (this.id) delete this.root.ids[this.id]
+    destroy (context: Context) {
+        this.children.forEach(it => it.destroy(context))
+        if (this.id) context.ref(this.id)
     }
 
     setChildren (children: Node[]) {

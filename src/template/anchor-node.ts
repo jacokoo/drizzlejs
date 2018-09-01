@@ -1,6 +1,6 @@
 import { Node as MNode } from './node'
 import { Appendable } from './template'
-import { Delay } from './util'
+import { DataContext, Context } from './context'
 
 export abstract class AnchorNode extends MNode {
     newParent: Appendable
@@ -11,16 +11,16 @@ export abstract class AnchorNode extends MNode {
         this.anchor = document.createComment('')
     }
 
-    render (context: object, delay: Delay) {
-        super.render(context, delay)
+    render (context: DataContext) {
+        super.render(context)
         if (!this.newParent) {
             this.parent.append(this.anchor)
             this.newParent = this.parent.before(this.anchor)
         }
     }
 
-    destroy (delay: Delay) {
-        super.destroy(delay)
+    destroy (context: Context) {
+        super.destroy(context)
 
         this.parent.remove(this.anchor)
         this.newParent = null

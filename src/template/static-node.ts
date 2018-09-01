@@ -1,6 +1,6 @@
 import { Node } from './node'
-import { Delay } from './util'
 import { setAttribute } from './attributes'
+import { DataContext, Context } from './context'
 
 export class StaticNode extends Node {
     name: string
@@ -16,22 +16,22 @@ export class StaticNode extends Node {
         this.attributes.push([name, value])
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
 
-        super.render(context, delay)
+        super.render(context)
         this.parent.append(this.element)
-        this.children.forEach(it => it.render(context, delay))
+        this.children.forEach(it => it.render(context))
     }
 
-    update (context: object, delay: Delay) {
-        this.children.forEach(it => it.update(context, delay))
+    update (context: DataContext) {
+        this.children.forEach(it => it.update(context))
     }
 
-    destroy (delay: Delay) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        super.destroy(delay)
+        super.destroy(context)
 
         this.parent.remove(this.element)
         this.rendered = false

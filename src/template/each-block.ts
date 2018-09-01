@@ -1,7 +1,7 @@
 import { Node } from './node'
-import { Renderable } from '../renderable'
-import { getValue, Delay } from './util'
+import { getValue } from './util'
 import { AnchorNode } from './anchor-node'
+import { DataContext, Context } from './context'
 
 export class EachBlock extends AnchorNode {
     args: string[]
@@ -17,16 +17,12 @@ export class EachBlock extends AnchorNode {
         this.falseNode = falseNode
     }
 
-    init (root: Renderable<any>, delay: Delay) {
-        this.root = root
-    }
-
     isEmpty (list: any): boolean {
         return !list || (Array.isArray(list) && !list.length) || (typeof list === 'object' && !Object.keys(list))
     }
 
-    sub (context: {[key: string]: any}, i: number | string) {
-        const o = Object.assign({}, context)
+    sub (context: DataContext, i: number | string) {
+        const o = Object.assign({}, context.data)
         if (!o._each) o._each = []
         else o._each = o._each.slice(0)
 
@@ -35,19 +31,19 @@ export class EachBlock extends AnchorNode {
 
         o[this.args[2]] = v[i]
         if (this.args[3]) o[this.args[3]] = i
-        return o
+        return context.sub(o)
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
 
-        super.render(context, delay)
+        super.render(context)
         if (this.falseNode) this.falseNode.parent = this.newParent
 
         const list = getValue(this.args[0], context)
         if (this.isEmpty(list)) {
-            this.renderElse(context, delay)
+            this.renderElse(context)
             return
         }
 
@@ -55,47 +51,47 @@ export class EachBlock extends AnchorNode {
             list.map((it, i) => [i, it]) as [any, any] :
             Object.keys(list).map(it => [it, list[it]] as [any, any])
 
-        this.renderKeyValue(kv, context, delay)
+        this.renderKeyValue(kv, context)
     }
 
-    createTrueNode (i: number, context: object, delay: Delay) {
+    createTrueNode (i: number, context: DataContext) {
         const n = this.trueNode()
         n.parent = this.newParent
         this.nodes[i] = n
-        n.init(this.root, delay)
-        delay.execute().then(() => n.render(context, delay))
+        n.init(context)
+        context.delay(context.end().then(() => n.render(context)))
     }
 
-    renderKeyValue (arr: [any, any][], context: object, delay: Delay) {
+    renderKeyValue (arr: [any, any][], context: DataContext) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
-            this.createTrueNode(i, sub, delay)
+            this.createTrueNode(i, sub)
         })
     }
 
-    renderElse (context: object, delay: Delay) {
+    renderElse (context: DataContext) {
         if (!this.falseNode) return
-        this.falseNode.init(this.root, delay)
-        this.falseNode.render(context, delay)
+        this.falseNode.init(context)
+        this.falseNode.render(context)
     }
 
-    update (context: object, delay: Delay) {
+    update (context: DataContext) {
         if (!this.rendered) return
 
         const list = getValue(this.args[0], context)
         const empty = this.isEmpty(list)
         if (empty && !this.currentSize) {
-            this.updateElse(context, delay)
+            this.updateElse(context)
             return
         }
 
         if (empty) {
             this.currentSize = 0
-            this.nodes.forEach(it => it.destroy(delay))
+            this.nodes.forEach(it => it.destroy(context))
             this.nodes = []
 
-            this.renderElse(context, delay)
+            this.renderElse(context)
             return
         }
 
@@ -103,43 +99,43 @@ export class EachBlock extends AnchorNode {
             list.map((it, i) => [i, it] as [any, any]) :
             Object.keys(list).map(it => [it, list[it]] as [any, any])
 
-        this.updateKeyValue(kv, context, delay)
+        this.updateKeyValue(kv, context)
     }
 
-    updateElse (context: object, delay: Delay) {
-        if (this.falseNode) this.falseNode.update(context, delay)
+    updateElse (context: DataContext) {
+        if (this.falseNode) this.falseNode.update(context)
     }
 
-    updateKeyValue (arr: [any, any][], context: object, delay: Delay) {
+    updateKeyValue (arr: [any, any][], context: DataContext) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
             const sub = this.sub(context, i)
 
             if (this.nodes[i]) {
                 this.nodes[i].clearHelper()
-                this.nodes[i].update(sub, delay)
+                this.nodes[i].update(sub)
             } else {
-                this.createTrueNode(i, sub, delay)
+                this.createTrueNode(i, sub)
             }
         })
 
         while (this.nodes.length !== this.currentSize) {
             const node = this.nodes.pop()
-            node.destroy(delay)
+            node.destroy(context)
         }
     }
 
-    destroy (delay: Delay) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        super.destroy(delay)
+        super.destroy(context)
 
         if (!this.currentSize) {
-            if (this.falseNode) this.falseNode.destroy(delay)
+            if (this.falseNode) this.falseNode.destroy(context)
             return
         }
 
         this.currentSize = 0
-        this.nodes.forEach(it => it.destroy(delay))
+        this.nodes.forEach(it => it.destroy(context))
         this.nodes = []
         this.rendered = false
     }

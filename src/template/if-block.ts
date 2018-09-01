@@ -1,8 +1,8 @@
 import { Node } from './node'
-import { Renderable } from '../renderable'
 import { AttributeValue, ValueType } from './template'
 import { AnchorNode } from './anchor-node'
-import { Delay, getAttributeValue } from './util'
+import { getAttributeValue } from './util'
+import { Context, DataContext } from './context'
 
 export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
     eq: (v1, v2) => v1 === v2,
@@ -26,21 +26,20 @@ export class IfBlock extends AnchorNode {
         this.args = args
     }
 
-    init (root: Renderable<any>, delay: Delay) {
-        this.root = root
-        this.trueNode.init(root, delay)
+    init (context: Context) {
+        this.trueNode.init(context)
         if (this.falseNode) {
-            this.falseNode.init(root, delay)
+            this.falseNode.init(context)
         }
     }
 
-    use (context: object): boolean {
+    use (context: DataContext): boolean {
         if (this.args.length === 1) return this.useSingle(context)
         if (this.args.length === 3) return this.useCompare(context)
         throw new Error('if block should have 1 or 3 arguments')
     }
 
-    useCompare (context: object): boolean {
+    useCompare (context: DataContext): boolean {
         const op = this.args[1][1] as string
         if (!Compare[op]) {
             throw Error(`${op} is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)`)
@@ -48,7 +47,7 @@ export class IfBlock extends AnchorNode {
         return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[2], context))
     }
 
-    useSingle (context: object): boolean {
+    useSingle (context: DataContext): boolean {
         if (this.args[0][0] === ValueType.STATIC) {
             // TODO throw
             return false
@@ -56,11 +55,11 @@ export class IfBlock extends AnchorNode {
         return !!getAttributeValue(this.args[0], context)
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
 
-        super.render(context, delay)
+        super.render(context)
 
         this.trueNode.parent = this.newParent
         if (this.falseNode) {
@@ -70,28 +69,28 @@ export class IfBlock extends AnchorNode {
         this.current = this.use(context) ? this.trueNode : this.falseNode
 
         if (this.current) {
-            this.current.render(context, delay)
+            this.current.render(context)
         }
     }
 
-    update (context: object, delay: Delay) {
+    update (context: DataContext) {
         if (!this.rendered) return
 
         const use = this.use(context) ? this.trueNode : this.falseNode
         if (use === this.current) {
-            if (use) use.update(context, delay)
+            if (use) use.update(context)
             return
         }
 
-        if (this.current) this.current.destroy(delay)
+        if (this.current) this.current.destroy(context)
         this.current = use === this.trueNode ? this.trueNode : this.falseNode
-        if (this.current) this.current.render(context, delay)
+        if (this.current) this.current.render(context)
     }
 
-    destroy (delay: Delay) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        if (this.current) this.current.destroy(delay)
-        super.destroy(delay)
+        if (this.current) this.current.destroy(context)
+        super.destroy(context)
         this.rendered = false
     }
 

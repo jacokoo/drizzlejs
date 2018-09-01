@@ -1,9 +1,7 @@
 import { ChangeType } from './template'
-import { Helper, DelayHelper } from './helper'
-import { Renderable } from '../renderable'
-import { View } from '../view'
+import { Helper } from './helper'
 import { Node } from './node'
-import { Delay } from './util'
+import { DataContext, Context } from './context'
 
 class StaticTextNode extends Node {
     data: string
@@ -15,15 +13,15 @@ class StaticTextNode extends Node {
         this.node = document.createTextNode(this.data)
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
         this.parent.append(this.node)
     }
 
-    destroy (delay: Delay) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        super.destroy(delay)
+        super.destroy(context)
         this.parent.remove(this.node)
         this.rendered = false
     }
@@ -37,18 +35,12 @@ class DynamicTextNode extends StaticTextNode {
         this.helper = helper
     }
 
-    init (root: Renderable<any>) {
-        if (root instanceof View && this.helper instanceof DelayHelper) {
-            this.helper.init(root)
-        }
+    render (context: DataContext) {
+        super.render(context)
+        this.update(context)
     }
 
-    render (context: object, delay: Delay) {
-        super.render(context, delay)
-        this.update(context, delay)
-    }
-
-    update (context: object, delay: Delay) {
+    update (context: DataContext) {
         const r = this.helper.render(context)
         if (r[0] === ChangeType.CHANGED) {
             this.node.data = r[1] == null ? '' : r[1]
@@ -71,26 +63,26 @@ export class TextNode extends Node {
         })
     }
 
-    init (root: Renderable<any>, delay: Delay) {
+    init (context: Context) {
         this.nodes.forEach(it => {
             it.parent = this.parent
-            it.init(root, delay)
+            it.init(context)
         })
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         this.nodes.forEach(it => {
             if (!it.parent) it.parent = this.parent
-            it.render(context, delay)
+            it.render(context)
         })
     }
 
-    update (context: object, delay: Delay) {
-        this.nodes.forEach(it => it.update(context, delay))
+    update (context: DataContext) {
+        this.nodes.forEach(it => it.update(context))
     }
 
-    destroy (delay: Delay) {
-        this.nodes.forEach(it => it.destroy(delay))
+    destroy (context: Context) {
+        this.nodes.forEach(it => it.destroy(context))
     }
 
     clearHelper () {

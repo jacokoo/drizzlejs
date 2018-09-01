@@ -1,12 +1,12 @@
 import { Node } from './node'
-import { Renderable } from '../renderable'
 import { Attribute } from './template'
 import { Module } from '../module'
 import { View } from '../view'
 import { StaticNode } from './static-node'
 import { Disposable } from '../drizzle'
 import { AnchorNode } from './anchor-node'
-import { getValue, resolveEventArgument, Delay } from './util'
+import { getValue, resolveEventArgument } from './util'
+import { Context, DataContext } from './context'
 
 interface BindResult {
     fn: (any) => void
@@ -23,7 +23,7 @@ export class ReferenceNode extends AnchorNode {
     statics: {[name: string]: any} = {}
 
     hooks: Disposable[] = []
-    context: object
+    context: DataContext
 
     constructor(name: string, id?: string) {
         super(id)
@@ -46,17 +46,13 @@ export class ReferenceNode extends AnchorNode {
         this.actions[event] = {method, args}
     }
 
-    init (root: Renderable<any>, delay: Delay) {
-        this.root = root
+    init (context: Context) {
         const fn = (i: Module | View) => {
             this.item = i
-            if (this.id) root.ids[this.id] = i
+            if (this.id) context.ref(this.id, i)
         }
-        if (root instanceof View) {
-            delay.add(root._module._createItem(this.name, this.statics).then(fn))
-        } else {
-            delay.add((root as Module)._createItem(this.name, this.statics).then(fn))
-        }
+
+        context.create(this.name, this.statics).then(fn)
 
         this.children.forEach(it => {
             let name = 'default'
@@ -65,22 +61,22 @@ export class ReferenceNode extends AnchorNode {
                 if (attr) name = attr[1]
             }
 
-            it.init(root, delay)
+            it.init(context)
             if (!this.grouped[name]) this.grouped[name] = []
             this.grouped[name].push(it)
         })
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
 
-        super.render(context, delay)
-        delay.add(this.item.set(this.mappings.reduce((acc, item) => {
+        super.render(context)
+        context.delay(this.item.set(this.mappings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
-        delay.add(this.item._render(this.newParent).then(() => {
+        context.delay(this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 if (!this.item.regions[k]) return
                 return this.item.regions[k]._showNode(this.grouped[k], context)
@@ -93,56 +89,55 @@ export class ReferenceNode extends AnchorNode {
         let cbs = []
         if (this.item instanceof Module) {
             const m = this.item
-            cbs = cbs.concat(this.bindEvents(this.root, m, context))
-            cbs = cbs.concat(this.bindActions(this.root, m, context))
+            cbs = cbs.concat(this.bindEvents(context))
+            cbs = cbs.concat(this.bindActions(context))
 
             this.hooks = cbs.map(it => m.on(it.event, it.fn))
         }
     }
 
-    bindEvents (root: Renderable<any>, target: Module, context: object): BindResult[] {
+    bindEvents (context: DataContext): BindResult[] {
         const me = this
-        const obj = {context}
 
         return Object.keys(this.events).map(it => {
             const cb = function (this: Module, event: any) {
-                const data = resolveEventArgument(this, obj.context, me.events[it].args, event)
-                root._event(me.events[it].method, ...data)
-            }
-            return {fn: cb, event: it, update: (ctx) => obj.context = ctx}
-        })
-    }
-
-    bindActions (root: Renderable<any>, target: Module, context: object): BindResult[] {
-        const me = this
-
-        return Object.keys(this.actions).map(it => {
-            const cb = function(this: Module, event: any) {
-                const data = resolveEventArgument(this, me.context, me.actions[it].args, event)
-                root._action(me.actions[it].method, ...data)
+                const data = resolveEventArgument(this, me.context, me.events[it].args, event)
+                context.trigger(me.events[it].method, ...data)
             }
             return {fn: cb, event: it}
         })
     }
 
-    update (context: object, delay: Delay) {
-        delay.add(this.item.set(this.mappings.reduce((acc, item) => {
+    bindActions (context: DataContext): BindResult[] {
+        const me = this
+
+        return Object.keys(this.actions).map(it => {
+            const cb = function(this: Module, event: any) {
+                const data = resolveEventArgument(this, me.context, me.actions[it].args, event)
+                context.dispatch(me.actions[it].method, ...data)
+            }
+            return {fn: cb, event: it}
+        })
+    }
+
+    update (context: DataContext) {
+        context.delay(this.item.set(this.mappings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
 
         this.context = context
-        this.children.forEach(it => it.update(context, delay))
+        this.children.forEach(it => it.update(context))
     }
 
-    destroy (delay: Delay) {
+    destroy (delay: Context) {
         if (!this.rendered) return
         super.destroy(delay)
 
-        delay.add(this.item.destroy())
+        this.context.delay(this.item.destroy())
         this.hooks.forEach(it => it.dispose())
         this.hooks = []
-        delay.add(Promise.all(Object.keys(this.grouped).map(it => {
+        this.context.delay(Promise.all(Object.keys(this.grouped).map(it => {
             if (!this.item.regions[it]) return
             return this.item.regions[it].close()
         })))

@@ -2,7 +2,9 @@ import { Disposable } from '../drizzle'
 import { Node as MNode } from './node'
 import { Renderable } from '../renderable'
 import { Transformer } from './transformer'
-import { Delay } from './util'
+import { DataContext, ViewDataContext, ModuleDataContext } from './context'
+import { Module } from '../module'
+import { View } from '../view'
 
 type StaticValue = string | number | boolean
 type DynamicValue = string
@@ -17,14 +19,8 @@ export type Attribute = [string, AttributeValue]
 export type HelperResult = [ChangeType, any]
 
 export interface Updatable extends Disposable {
-    update (context: object): void
+    update (context: DataContext): void
 }
-
-export interface ComponentHook extends Disposable {
-    update (...args: any[]): void
-}
-
-export type Component = (node: Node, ...args: any[]) => ComponentHook
 
 export interface Appendable {
     append (el: Node)
@@ -61,9 +57,6 @@ export const customEvents = {
     }
 }
 
-export const components: {[name: string]: Component} = {
-}
-
 export abstract class Template {
     creator: () => MNode[]
 
@@ -72,32 +65,46 @@ export abstract class Template {
         const o = {
             stage: 'template',
             nodes: [] as MNode[],
+
             init (this: Renderable<any>) {
                 o.nodes = me.creator()
-                return Delay.also(d => o.nodes.forEach(it => it.init(this, d)))
+                const context = me.create(this)
+                o.nodes.forEach(it => it.init(context))
+                return context.end()
             },
 
             beforeRender (this: Renderable<any>) {
-                return Delay.also(d => o.nodes.forEach(it => {
+                const context = me.create(this)
+                o.nodes.forEach(it => {
                     it.parent = this._target
-                    it.render(this._context(), d)
-                }))
+                    it.render(context)
+                })
+                return context.end()
             },
 
             updated (this: Renderable<any>) {
-                return Delay.also(d => o.nodes.forEach(it => it.update(this._context(), d)))
+                const context = me.create(this)
+                o.nodes.forEach(it => it.update(context))
+                return context.end()
             },
 
-            destroyed () {
-                return Delay.also(d => o.nodes.forEach(it => it.destroy(d)))
+            destroyed (this: Renderable<any>) {
+                const context = me.create(this)
+                o.nodes.forEach(it => it.destroy(context))
+                return context.end()
             }
         }
 
         return o
     }
+
+    abstract create (root: Renderable<any>): DataContext
 }
 
 export class ViewTemplate extends Template {
+    create (root: View): DataContext {
+        return new ViewDataContext(root, root._context())
+    }
 }
 
 export class ModuleTemplate extends Template {
@@ -106,5 +113,9 @@ export class ModuleTemplate extends Template {
     constructor(exportedModels: string[]) {
         super()
         this.exportedModels = exportedModels
+    }
+
+    create (root: Module): DataContext {
+        return new ModuleDataContext(root, root._context())
     }
 }

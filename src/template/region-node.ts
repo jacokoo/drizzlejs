@@ -1,14 +1,11 @@
 import { Node } from './node'
-import { Delay } from './util'
 import { Renderable } from '../renderable'
-import { Module } from '../module'
-import { View } from '../view'
+import { Context, DataContext } from './context'
 
 export class RegionNode extends Node {
     nodes: Node[]
     item: Renderable<any>
-    context: object
-    mod: Module
+    context: DataContext
     isChildren = false
 
     constructor(id: string = 'default') {
@@ -16,16 +13,14 @@ export class RegionNode extends Node {
         this.id = id
     }
 
-    init (root: Renderable<any>, delay: Delay) {
-        this.root = root
-        this.mod = (root instanceof Module) ? root : (root as View)._module
+    init (context: Context) {
         this.children.forEach(it => {
             it.parent = this.parent
-            it.init(root, delay)
+            it.init(context)
         })
 
         const me = this
-        this.mod.regions[this.id] = {
+        context.region(this.id, {
             get item () {
                 return me.item
             },
@@ -33,9 +28,9 @@ export class RegionNode extends Node {
                 me.isChildren = false
                 return me.show(name, state)
             },
-            _showNode (nodes: Node[], context: object): Promise<any> {
+            _showNode (nodes: Node[], ctx: DataContext): Promise<any> {
                 me.isChildren = false
-                return me.showNode(nodes, context)
+                return me.showNode(nodes, ctx)
             },
             _showChildren () {
                 if (!me.context) return Promise.resolve()
@@ -46,53 +41,56 @@ export class RegionNode extends Node {
                 me.isChildren = false
                 return me.close()
             }
-        }
+        })
     }
 
-    render (context: object, delay: Delay) {
+    render (context: DataContext) {
         if (this.rendered) return
 
         this.rendered = true
         this.context = context
-        if (this.isChildren) this.nodes.forEach(it => it.render(context, delay))
+        if (this.isChildren) this.nodes.forEach(it => it.render(context))
     }
 
-    update (context: object, delay: Delay) {
+    update (context: DataContext) {
         if (!this.rendered) return
         this.context = context
-        if (this.isChildren) this.nodes.forEach(it => it.update(context, delay))
+        if (this.isChildren) this.nodes.forEach(it => it.update(context))
     }
 
-    destroy (delay: Delay) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        if (this.nodes) this.nodes.forEach(it => it.destroy(delay))
-        if (this.item) delay.add(this.item.destroy())
+        if (this.nodes) this.nodes.forEach(it => it.destroy(context))
+        if (this.item) context.delay(this.item.destroy())
         this.rendered = false
     }
 
-    showNode (nodes: Node[], context: object): Promise<any> {
+    showNode (nodes: Node[], context: DataContext): Promise<any> {
         if (!this.rendered) return
+        this.context = context
         return this.close().then(() => {
             this.nodes = nodes
-            return Delay.also(d => this.nodes.forEach(it => {
+            this.nodes.forEach(it => {
                 it.parent = this.parent
-                it.render(context, d)
-            }))
+                it.render(context)
+            })
+            return context.end()
         })
     }
 
     show (name: string, state: object) {
         if (!this.rendered) return
-        return this.close().then(() => this.mod._createItem(name, state)).then(item => {
+        return this.close().then(() => this.context.create(name, state)).then(item => {
             this.item = item
             return item._render(this.parent).then(() => item)
         })
     }
 
-    close (show = false): Promise<any> {
+    close (): Promise<any> {
         if (!this.nodes && !this.item) return Promise.resolve()
         return Promise.resolve().then(() => {
-            if (this.nodes) return Delay.also(d => this.nodes.forEach(it => it.destroy(d)))
+            this.nodes.forEach(it => it.destroy(this.context))
+            return this.context.end()
         }).then(() => {
             if (this.item) return this.item.destroy()
         }).then(() => {

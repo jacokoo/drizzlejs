@@ -1,4 +1,5 @@
 import { AttributeValue, ValueType, Attribute, Appendable } from './template'
+import { DataContext } from './context'
 
 export function tokenize(input: string): string[] {
     let token = ''
@@ -45,12 +46,13 @@ export function tokenize(input: string): string[] {
     return result
 }
 
-export function getValue (key: string, context: any): any {
+export function getValue (key: string, context: DataContext): any {
     const ks = tokenize(key)
     const first = ks.shift()
     let ctx
-    if (context._computed && first in context._computed) {
-        ctx = context._computed[first](context)
+    const data = context.data
+    if (data._computed && first in data._computed) {
+        ctx = data._computed[first](context)
     } else {
         ctx = context[first]
     }
@@ -65,12 +67,12 @@ export function getValue (key: string, context: any): any {
     return ctx
 }
 
-export function getAttributeValue(attr: AttributeValue, context: object): any {
+export function getAttributeValue(attr: AttributeValue, context: DataContext): any {
     if (attr[0] === ValueType.STATIC) return attr[1]
     return getValue(attr[1] as string, context)
 }
 
-export function resolveEventArgument (me: any, context: object, args: Attribute[], event: any): any[] {
+export function resolveEventArgument (me: any, context: DataContext, args: Attribute[], event: any): any[] {
     const values = args.map(([name, v]) => {
         if (v[0] === ValueType.STATIC) return v[1]
         const it = v[1] as string
@@ -106,22 +108,4 @@ export function createAppendable (target: Node): Appendable {
         return {remove, before, append: (el: Node) => target.insertBefore(el, anchor)}
     }
     return {append, remove, before}
-}
-
-export class Delay {
-    static also (fn: (Delay) => void) {
-        const d = new Delay()
-        fn(d)
-        return d.execute()
-    }
-
-    busy = Promise.resolve()
-
-    add (p: Promise<any>) {
-        this.busy = this.busy.then(() => p)
-    }
-
-    execute () {
-        return this.busy
-    }
 }

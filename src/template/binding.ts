@@ -1,24 +1,25 @@
-import { View, BindingGroup } from '../view'
 import { Updatable } from './template'
 import { DynamicNode } from './dynamic-node'
 import { getValue, tokenize } from './util'
+import { DataContext, BindingGroup } from './context'
 
-const updateSingleKey = (view: View, context: {[name: string]: any}, to: string, value: any) => {
-    if (context._each) {
-        const each = context._each.find(it => it.key === to)
+const updateSingleKey = (context: DataContext, to: string, value: any) => {
+    const data = context.data
+    if (data._each) {
+        const each = data._each.find(it => it.key === to)
         if (each) {
             each.list[each.index] = value
-            view.set({[each.name]: each.list})
+            context.update({[each.name]: each.list})
             return
         }
     }
 
-    view.set({[to]: value})
+    context.update({[to]: value})
 }
 
-const updateView = (view: View, context: {[name: string]: any}, to: string, value: any) => {
+const updateView = (context: DataContext, to: string, value: any) => {
     const ps = tokenize(to)
-    if (ps.length === 1) return updateSingleKey(view, context, to, value)
+    if (ps.length === 1) return updateSingleKey(context, to, value)
 
     const root = ps.shift()
     const last = ps.pop()
@@ -26,10 +27,11 @@ const updateView = (view: View, context: {[name: string]: any}, to: string, valu
     let obj
     let isEach = false
 
-    if (context._each) {
-        const each = context._each.find(it => it.key === root)
+    const data = context.data
+    if (data._each) {
+        const each = data._each.find(it => it.key === root)
         if (each) {
-            const first = context._each[0]
+            const first = data._each[0]
             result[first.name] = first.list
 
             obj = each.list[each.index]
@@ -45,18 +47,18 @@ const updateView = (view: View, context: {[name: string]: any}, to: string, valu
     result[root] = context[root]
     obj = ps.reduce((acc, it) => acc[it], obj)
     obj[last] = value
-    view.set(result)
+    context.update(result)
 }
 
 const bindIt = <T extends HTMLElement>(
-    context: {[name: string]: any}, view: View, to: string, element: T,
+    context: DataContext, to: string, element: T,
     event: string, get: (T) => any, set: (T, any) => void
 ): Updatable => {
     let current
     const obj = {context}
     const cb = function(this: T) {
         current = get(element)
-        updateView(view, obj.context, to, current)
+        updateView(obj.context, to, current)
     }
 
     element.addEventListener(event, cb, false)
@@ -65,7 +67,7 @@ const bindIt = <T extends HTMLElement>(
         dispose () {
             element.removeEventListener(event, cb, false)
         },
-        update (ctx: object) {
+        update (ctx: DataContext) {
             obj.context = ctx
             const v = getValue(to, ctx)
             if (v !== current) {
@@ -96,7 +98,7 @@ const setSelectOption = (el: HTMLSelectElement, value) => {
 }
 
 const bindGroup = (
-    context: {[name: string]: any}, view: View, group: BindingGroup, to: string,
+    context: DataContext, group: BindingGroup, to: string,
     element: HTMLInputElement
 ): Updatable => {
     const obj = {context}
@@ -107,7 +109,7 @@ const bindGroup = (
             .filter(it => (it.element as HTMLInputElement).checked)
             .map(it => (it.element as HTMLInputElement).value))
 
-        updateView(view, obj.context, to, current)
+        updateView(obj.context, to, current)
     }
 
     element.addEventListener('change', cb, false)
@@ -116,7 +118,7 @@ const bindGroup = (
         dispose () {
             element.removeEventListener('change', cb, false)
         },
-        update (ctx: object) {
+        update (ctx: DataContext) {
             obj.context = ctx
             if (group.busy) return
             const v = getValue(to, ctx)
@@ -143,30 +145,29 @@ const bindGroup = (
     return r
 }
 
-export const bind = (node: DynamicNode, context: object, from: string, to: string): Updatable => {
+export const bind = (node: DynamicNode, context: DataContext, from: string, to: string): Updatable => {
     const tag = node.name.toLowerCase()
     const element = node.element
-    const view = node.root as View
     if ((tag === 'input' || tag === 'textarea') && from === 'value') {
         return bindIt(
-            context, view, to, element, 'input',
+            context, to, element, 'input',
             el => el.value,
             (el, value) => el.value = value == null ? '' : value
         )
     }
 
     if (tag === 'input' && from === 'checked') {
-        return bindIt(context, view, to, element, 'change', el => el.checked, (el, value) => el.checked = value)
+        return bindIt(context, to, element, 'change', el => el.checked, (el, value) => el.checked = value)
     }
 
     if (tag === 'select' && from === 'value') {
-        return bindIt(context, view, to, element, 'change', getSelectValue, setSelectOption)
+        return bindIt(context, to, element, 'change', getSelectValue, setSelectOption)
     }
 
     if (tag === 'input' && from === 'group') {
         const type = (element as HTMLInputElement).type
         if (type !== 'checkbox' && type !== 'radio') return null
-        return bindGroup(context, view, view._groups[to], to, (element as HTMLInputElement))
+        return bindGroup(context, context.groups[to], to, (element as HTMLInputElement))
     }
 
     return null

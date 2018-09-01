@@ -5,9 +5,10 @@ import { IfBlock, UnlessBlock } from './template/if-block'
 import { EachBlock } from './template/each-block'
 import { Loader } from './loader'
 import {
-    customEvents, components, Attribute, AttributeValue, ModuleTemplate,
+    customEvents, Attribute, AttributeValue, ModuleTemplate,
     ViewTemplate, NormalValue, ValueType,
 } from './template/template'
+import { components, helpers } from './template/context'
 import { Application } from './application'
 import { StaticNode } from './template/static-node'
 import { DynamicNode } from './template/dynamic-node'
@@ -21,12 +22,8 @@ export interface Disposable {
     dispose (): void
 }
 
-const helpers = {
+const innerHelpers = {
     echo: EchoHelper, if: IfHelper, unless: UnlessHelper, concat: ConcatHelper
-}
-
-const blocks = {
-    if: IfBlock, unless: UnlessBlock, each: EachBlock
 }
 
 const loaders = {
@@ -68,7 +65,7 @@ const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
 // helpers
 const H = (n: string | AttributeValue) => Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n))
 const HH = (n: string, ...args: AttributeValue[]) => {
-    if (helpers[n]) return new helpers[n](...args)
+    if (innerHelpers[n]) return new innerHelpers[n](...args)
     return new DelayHelper(n, ...args)
 }
 
@@ -84,6 +81,6 @@ export const factory = {
 }
 
 export {
-    helpers, blocks, loaders, customEvents, components,
+    helpers, loaders, customEvents, components,
     ModuleTemplate, ViewTemplate, Application, Loader,
 }
