@@ -9,92 +9,94 @@ module > .main-content > .tile.is-ancestor.h100
                 action:rename=renameFile(event)
             )
             code-editor(code action:change=updateCode(event))
-            .operators > c-dropdown > .dropdown-item(d=2) > p a
+            .operators > c-dropdown > .dropdown-item > p a
 
     ad.tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child.is-relative > view-show(files json changed)
         .tile.is-parent.bt > .tile.is-child.editor > view-json(json)
 
-script.
-    import {compile} from 'sleet'
-    import hw from '../../examples/hello-world'
-    import bg from '../../examples/bind-group'
+script..
+import {compile} from 'sleet'
+import hw from '../../examples/hello-world'
+import bg from '../../examples/bind-group'
 
-    const examples = {
-        [hw.code]: hw,
-        [bg.code]: bg
-    }
+const examples = {
+    [hw.code]: hw,
+    [bg.code]: bg
+}
 
-    export default {
-        items: {
-            views: ['view-json', 'view-show'],
-            modules: {
-                'file-tab': 'repl/tab',
-                'code-editor': 'repl/editor',
-                'c-dropdown': 'component/dropdown'
-            }
+export default {
+    items: {
+        views: ['view-json', 'view-show'],
+        modules: {
+            'file-tab': 'repl/tab',
+            'code-editor': 'repl/editor',
+            'c-dropdown': 'component/dropdown'
+        }
+    },
+
+    routes: {
+        '/:code': { action: 'changeExample' }
+    },
+
+    store: {
+        models: {
+            files: () => { return {} },
+            current: () => 'index',
+            json: () => '',
+            changed: () => true
         },
 
-        routes: {
-            '/:code': { action: 'changeExample' }
-        },
-
-        store: {
-            models: {
-                files: () => { return {} },
-                current: () => 'index',
-                json: () => '',
-                changed: () => true
+        actions: {
+            switchFile ({from, to}) {
+                this.set({current: to})
             },
 
-            actions: {
-                switchFile ({from, to}) {
-                    this.set({current: to})
-                },
-
-                updateCode ({code}) {
-                    const files = this.get('files')
-                    try {
-                        compile(code, {'drizzle': window['sleet-drizzle']}).content
-                    } catch (e) {
-                        console.log(e)
-                    }
-                    files[this.get('current')] = code
-                    this.set({files, changed: true})
-                },
-
-                updateJson ({detail}) {
-                    this.set({json: detail})
-                },
-
-                renameFile ({name, old}) {
-                    const {files, current} = this.get()
-                    files[name] = files[old]
-                    delete files[old]
-
-                    const c = current === old ? name : current
-                    this.set({files, current: c})
-                },
-
-                run ({changed}) {
-                    this.set({changed})
-                },
-
-                changeExample ({code}) {
-                    console.log(code)
-                    if (!code || !examples[code]) code = 'hello-world'
-                    const c = examples[code]
-                    this.set({files: c.files, json: c.json})
+            updateCode ({code}) {
+                const files = this.get('files')
+                try {
+                    compile(code, {
+                        defaultPlugin: 'drizzle',
+                        plugins: {drizzle: SleetDrizzle.plugin}
+                    }).code
+                } catch (e) {
+                    console.log(e)
                 }
-            }
-        },
-
-        computed: {
-            tabs ({files}) {
-                return Object.keys(files)
+                files[this.get('current')] = code
+                this.set({files, changed: true})
             },
-            code ({files, current}) {
-                return files[current]
+
+            updateJson ({detail}) {
+                this.set({json: detail})
+            },
+
+            renameFile ({name, old}) {
+                const {files, current} = this.get()
+                files[name] = files[old]
+                delete files[old]
+
+                const c = current === old ? name : current
+                this.set({files, current: c})
+            },
+
+            run ({changed}) {
+                this.set({changed})
+            },
+
+            changeExample ({code}) {
+                if (!code || !examples[code]) code = 'hello-world'
+                const c = examples[code]
+                this.set({files: c.files, json: c.json})
             }
         }
+    },
+
+    computed: {
+        tabs ({files}) {
+            return Object.keys(files)
+        },
+        code ({files, current}) {
+            return files[current]
+        }
     }
+}

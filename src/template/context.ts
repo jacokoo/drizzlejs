@@ -14,7 +14,34 @@ export type CustomHelper = (...args: any[]) => any
 export const helpers: {[name: string]: CustomHelper} = {}
 
 export type CustomEvent = (name: Node, cb: (event: any) => void) => Disposable
-export const customEvents: {[name: string]: CustomEvent} = {}
+export const customEvents: {[name: string]: CustomEvent} = {
+    enter (node: HTMLElement, cb: (any) => void): Disposable {
+        const ee = function (this: HTMLElement, e) {
+            if (e.keyCode !== 13) return
+            e.preventDefault()
+            cb.call(this, e)
+        }
+        node.addEventListener('keypress', ee, false)
+        return {
+            dispose () {
+                node.removeEventListener('keypress', ee, false)
+            }
+        }
+    },
+
+    escape (node: HTMLElement, cb: (any) => void): Disposable {
+        const ee = function (this: HTMLElement, e) {
+            if (e.keyCode !== 27) return
+            cb.call(this, e)
+        }
+        node.addEventListener('keyup', ee, false)
+        return {
+            dispose () {
+                node.removeEventListener('keyup', ee, false)
+            }
+        }
+    }
+}
 
 export interface BindingGroup {
     type: 'checkbox' | 'radio'
@@ -25,6 +52,7 @@ export interface BindingGroup {
 export interface Context {
     groups: {[name: string]: BindingGroup}
 
+    name (): string
     create (name: string, state?: object): Promise<Module | View>
 
     helper (name: string): CustomHelper | undefined
@@ -51,17 +79,21 @@ export interface DataContext extends Context {
 abstract class AbstractDataContext implements DataContext {
     groups = {}
     data = {}
-    busy: Promise<any>
+    busy: Promise<any>[]
     root: Module | View
 
     constructor (
         root: Module | View, data?: {[name: string]: any},
-        groups?: {[name: string]: BindingGroup}, busy?: Promise<any>
+        groups?: {[name: string]: BindingGroup}, busy?: Promise<any>[]
     ) {
         this.root = root
         this.data = data || {}
         this.groups = groups || {}
-        this.busy = busy || Promise.resolve()
+        this.busy = busy || []
+    }
+
+    name () {
+        return this.root._options._file
     }
 
     update (data: object): void {
@@ -86,15 +118,18 @@ abstract class AbstractDataContext implements DataContext {
     }
 
     delay (p: Promise<any>): void {
-        this.busy = this.busy.then(() => p)
+        this.busy.push(p)
     }
 
     end (): Promise<any> {
-        return this.busy
+        const p = this.busy.slice(0)
+        this.busy = []
+        return Promise.all(p)
     }
 
     event (name: string): CustomEvent | undefined {
-        return this.root._options.customEvents[name] || customEvents[name]
+        const ce = this.root._options.customEvents
+        return (ce && ce[name]) || customEvents[name]
     }
 
     abstract sub (data: {[name: string]: any}): DataContext
@@ -115,11 +150,13 @@ export class ViewDataContext extends AbstractDataContext {
     }
 
     helper (name: string): CustomHelper | undefined {
-        return (this.root as View)._options.helpers[name] || helpers[name]
+        const h = (this.root as View)._options.helpers
+        return (h && h[name]) || helpers[name]
     }
 
     component (name: string): Component | undefined {
-        return (this.root as View)._options.components[name] || components[name]
+        const c = (this.root as View)._options.components
+        return (c && c[name]) || components[name]
     }
 }
 

@@ -3,6 +3,7 @@ import fs from 'fs'
 import {compile} from 'sleet'
 import {generate} from 'escodegen'
 import walk from 'acorn/dist/walk'
+import {plugin as drizzle} from 'sleet-drizzle'
 
 /*
  * three types of modules could be included
@@ -162,7 +163,11 @@ export default function(options) {
             }
 
             if (path.extname(id) === '.sleet') {
-                const content = compile(source).content
+                const content = compile(source, {
+                    defaultPlugin: 'drizzle',
+                    plugins: {drizzle},
+                    sourceFile: id
+                }).code
 
                 if (path.basename(id) !== 'index.sleet') return content
                 return transformIndex(this.parse(content))

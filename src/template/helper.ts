@@ -14,9 +14,6 @@ export abstract class Helper {
         this.check()
     }
 
-    clear () {
-    }
-
     render (context: DataContext): HelperResult {
         if (!this.current) return [ChangeType.CHANGED, this.renderIt(context)]
 
@@ -30,6 +27,7 @@ export abstract class Helper {
     }
 
     arg (idx: number, context: DataContext): any {
+        if (!this.args[idx]) return ''
         return getAttributeValue(this.args[idx], context)
     }
 

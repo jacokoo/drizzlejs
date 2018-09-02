@@ -5,7 +5,7 @@ import { IfBlock, UnlessBlock } from './template/if-block'
 import { EachBlock } from './template/each-block'
 import { Loader } from './loader'
 import {
-    customEvents, Attribute, AttributeValue, ModuleTemplate,
+    Attribute, AttributeValue, ModuleTemplate,
     ViewTemplate, NormalValue, ValueType,
 } from './template/template'
 import { components, helpers } from './template/context'
@@ -17,6 +17,7 @@ import { ReferenceNode } from './template/reference-node'
 import { RegionNode } from './template/region-node'
 import { Node } from './template/node'
 import { TransformerItem, Transformer } from './template/transformer'
+import { customEvents } from './template/context'
 
 export interface Disposable {
     dispose (): void

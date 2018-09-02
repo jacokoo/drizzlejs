@@ -142,7 +142,7 @@ const attributes: Attr = ps.reduce((acc: Attr, item) => {
 export function setAttribute(el: SVGElement | HTMLElement, name: string, value: any) {
     const n = name.toLowerCase()
     const t = el.tagName.toLowerCase()
-    if (attributes[n] && attributes[name].tags[t]) {
+    if (attributes[n] && (!attributes[n].tags || attributes[n].tags[t])) {
         el[attributes[n].name || n] = value
     } else {
         el.setAttribute(name, value)

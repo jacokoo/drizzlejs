@@ -12,6 +12,7 @@ export interface RenderOptions extends Lifecycle {
     template?: ModuleTemplate
     computed?: {[name: string]: (any) => any}
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
+    _file?: string
 }
 
 export enum ComponentState {

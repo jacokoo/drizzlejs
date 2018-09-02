@@ -185,6 +185,7 @@ export class Router {
             },
 
             update: (args: object) => {
+                if (!args) return Promise.resolve()
                 const o = h.model ? {[h.model]: args} : args
                 if (item && (item instanceof Module)) return item.set(o)
                 return Promise.resolve()

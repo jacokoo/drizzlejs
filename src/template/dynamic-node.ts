@@ -169,8 +169,4 @@ export class DynamicNode extends StaticNode {
         this.componentHooks = []
     }
 
-    clearHelper () {
-        Object.keys(this.dynamicAttributes).forEach(it => this.dynamicAttributes[it].forEach(h => h.clear()))
-        super.clearHelper()
-    }
 }

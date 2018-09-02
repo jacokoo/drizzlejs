@@ -76,14 +76,16 @@ export class ReferenceNode extends AnchorNode {
             acc[item[1]] = getValue(item[0], context)
             return acc
         }, {})))
-        context.delay(this.item._render(this.newParent).then(() => {
+
+        // TODO why blocks?
+        this.item._render(this.newParent).then(() => {
             return Promise.all(Object.keys(this.grouped).map(k => {
                 if (!this.item.regions[k]) return
                 return this.item.regions[k]._showNode(this.grouped[k], context)
             }).concat(Object.keys(this.item.regions).map(it => {
                 if (!this.grouped[it] || !this.grouped[it].length) return this.item.regions[it]._showChildren()
             })))
-        }))
+        })
 
         this.context = context
         let cbs = []
@@ -121,23 +123,24 @@ export class ReferenceNode extends AnchorNode {
     }
 
     update (context: DataContext) {
-        context.delay(this.item.set(this.mappings.reduce((acc, item) => {
+        const p = this.item.set(this.mappings.reduce((acc, item) => {
             acc[item[1]] = getValue(item[0], context)
             return acc
-        }, {})))
+        }, {}))
+        context.delay(p)
 
         this.context = context
         this.children.forEach(it => it.update(context))
     }
 
-    destroy (delay: Context) {
+    destroy (context: Context) {
         if (!this.rendered) return
-        super.destroy(delay)
+        super.destroy(context)
 
-        this.context.delay(this.item.destroy())
+        context.delay(this.item.destroy())
         this.hooks.forEach(it => it.dispose())
         this.hooks = []
-        this.context.delay(Promise.all(Object.keys(this.grouped).map(it => {
+        context.delay(Promise.all(Object.keys(this.grouped).map(it => {
             if (!this.item.regions[it]) return
             return this.item.regions[it].close()
         })))

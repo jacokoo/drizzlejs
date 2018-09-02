@@ -2,7 +2,7 @@ import { Disposable } from '../drizzle'
 import { Node as MNode } from './node'
 import { Renderable } from '../renderable'
 import { Transformer } from './transformer'
-import { DataContext, ViewDataContext, ModuleDataContext } from './context'
+import { DataContext, ViewDataContext, ModuleDataContext, BindingGroup } from './context'
 import { Module } from '../module'
 import { View } from '../view'
 
@@ -28,53 +28,27 @@ export interface Appendable {
     before (anchor: Node): Appendable
 }
 
-export const customEvents = {
-    enter (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
-            if (e.keyCode !== 13) return
-            e.preventDefault()
-            cb.call(this, e)
-        }
-        node.addEventListener('keypress', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keypress', ee, false)
-            }
-        }
-    },
-
-    escape (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
-            if (e.keyCode !== 27) return
-            cb.call(this, e)
-        }
-        node.addEventListener('keyup', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keyup', ee, false)
-            }
-        }
-    }
-}
-
+let i = 0
 export abstract class Template {
     creator: () => MNode[]
 
     createLife () {
         const me = this
         const o = {
+            id: i ++,
             stage: 'template',
             nodes: [] as MNode[],
+            groups: {} as {[name: string]: BindingGroup},
 
             init (this: Renderable<any>) {
                 o.nodes = me.creator()
-                const context = me.create(this)
+                const context = me.create(this, o.groups)
                 o.nodes.forEach(it => it.init(context))
                 return context.end()
             },
 
             beforeRender (this: Renderable<any>) {
-                const context = me.create(this)
+                const context = me.create(this, o.groups)
                 o.nodes.forEach(it => {
                     it.parent = this._target
                     it.render(context)
@@ -83,13 +57,13 @@ export abstract class Template {
             },
 
             updated (this: Renderable<any>) {
-                const context = me.create(this)
+                const context = me.create(this, o.groups)
                 o.nodes.forEach(it => it.update(context))
                 return context.end()
             },
 
             destroyed (this: Renderable<any>) {
-                const context = me.create(this)
+                const context = me.create(this, o.groups)
                 o.nodes.forEach(it => it.destroy(context))
                 return context.end()
             }
@@ -98,12 +72,12 @@ export abstract class Template {
         return o
     }
 
-    abstract create (root: Renderable<any>): DataContext
+    abstract create (root: Renderable<any>, groups): DataContext
 }
 
 export class ViewTemplate extends Template {
-    create (root: View): DataContext {
-        return new ViewDataContext(root, root._context())
+    create (root: View, groups: {[name: string]: BindingGroup}): DataContext {
+        return new ViewDataContext(root, root._context(), groups)
     }
 }
 

@@ -2,21 +2,20 @@
 
 view(c-dropdown) > .tabs#tabs > ul
     li(
-        class=if(i eq current 'is-active')
+        class=if(i == current 'is-active')
         action:click=active(i)
-    )&each(tabs as tab i) > a
+    )@each(tabs as tab i) > a
         c-dropdown(
             closeWhenMenuClicked = true
             on:show=onShow
             on:hide=onHide
-        )&if(haveDropdown)
-            span(region='trigger') > echo(tab '.sleet')
+        )@if(haveDropdown)
+            span(region='trigger') $(tab).sleet
             .dropdown-item > .field.has-addons
                 .control > input.input.rename(bind:value=name)
                 .control > span.button.is-static .sleet
                 .control > span.button(action:click=rename(tabs name i)) 重命名
-        span(a=1)&else(a)
-            echo(tab '.sleet')
+        span@else $(tab).sleet
         span.delete.is-small
 
 script.

@@ -19,7 +19,7 @@ export default {
     output: {
         file: 'dist/drizzle.js',
         format: 'umd',
-        name: 'drizzlejs',
+        name: 'Drizzle',
         sourcemap: true
     }
 }

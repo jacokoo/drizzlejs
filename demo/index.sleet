@@ -12,16 +12,24 @@ html
         link(rel=stylesheet href='./node_modules/bulma/css/bulma.css')
         link(rel=stylesheet href='./styles/todo-app.css')
         link(rel=stylesheet href='./styles/main.css')
+        script(src='//cdn.jsdelivr.net/bluebird/3.5.0/bluebird.js')
+        script.
+            Promise.config({longStackTraces: true, monitoring: true})
+            window.addEventListener("unhandledrejection", function(e) {
+                e.preventDefault();
+                var reason = e.detail.reason;
+                var promise = e.detail.promise;
+                console.log(reason, e.detail)
+            });
         script(src='./node_modules/drizzlejs/dist/drizzle.js')
-        script(src='./node_modules/sleet-drizzle/dist/sleet-drizzle.js')
+        script(src='./node_modules/sleet/dist/sleet.min.js')
+        script(src='./node_modules/sleet-drizzle/dist/sleet-drizzle.min.js')
         script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/ace.js')
         script(src='https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.1/mode-javascript.js')
-        script(src='https://unpkg.com/babel-standalone@6.26.0/babel.js')
+        script(src='https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js')
         script(src='./scripts/vendors/sleet-mode.js')
         script.
-            window.fs = {}
-            window.path = {}
-            window.require1 = function(name) { return name === 'drizzlejs' ? drizzlejs : null }
+            window.require1 = function(name) { return name === 'drizzlejs' ? Drizzle : null }
 
     body
         script(src='./dist/bundle.js')

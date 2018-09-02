@@ -2,28 +2,36 @@ const index = `#! drizzle
 
 module(names) > view-a(names)
 
-script.
-    export default {
-        items: { views: ['view-a'] },
-        store: {
-            models: {
-                names: () => []
-            }
+script..
+export default {
+    items: { views: ['view-a'] },
+    store: {
+        models: {
+            names: () => []
         }
     }
+}
 `
 
 const view = `#! drizzle
 
 view
     .control
-        label(class='checkbox') > input(type='checkbox' bind:group=names value='a') + echo('A checked')
-        label(class='checkbox') > input(type='checkbox' bind:group=names value='b') + echo('B checked')
-        label(class='checkbox') > input(type='checkbox' bind:group=names value='c') + echo('C checked')
-    h3 > echo('hello ' names '!')
-script.
-    export default {
-    }
+        label(class='checkbox')
+            input(type='checkbox' bind:group=names value='a')
+            | A checked
+        label(class='checkbox')
+            input(type='checkbox' bind:group=names value='b')
+            | B checked
+        label(class='checkbox')
+            input(type='checkbox' bind:group=names value='c')
+            | C checked
+
+    h3 hello $names !
+
+script..
+export default {
+}
 `
 
 const json = `{

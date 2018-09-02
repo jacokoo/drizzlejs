@@ -126,25 +126,21 @@ export class Module extends Renderable<ModuleOptions> {
     }
 
     _render (target: Appendable) {
-        const busy = super._render(target)
-
-        if (busy === this._busy) {
-            this._busy = this._busy.then(() => {
+        return super._render(target).then(() => {
+            if (this._status === ComponentState.RENDERED) {
                 const {store} = this._options
                 if (store && store.actions && store.actions.init) {
                     return this._dispatch('init')
                 }
-            })
-            return this._busy
-        }
-
-        return busy
+            }
+        })
     }
 
     _init () {
         this._store = new Store(this, this._options.store || {}, UPDATE_ACTION)
         this.set(Object.assign({}, this._options.state, this._extraState))
-        return this._loadItems().then(() => super._init())
+        const p = this._loadItems().then(() => super._init())
+        return p
     }
 
     private _loadItems (): Promise<any> {

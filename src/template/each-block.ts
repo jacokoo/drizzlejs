@@ -59,7 +59,7 @@ export class EachBlock extends AnchorNode {
         n.parent = this.newParent
         this.nodes[i] = n
         n.init(context)
-        context.delay(context.end().then(() => n.render(context)))
+        context.end().then(() => n.render(context))
     }
 
     renderKeyValue (arr: [any, any][], context: DataContext) {
@@ -112,7 +112,6 @@ export class EachBlock extends AnchorNode {
             const sub = this.sub(context, i)
 
             if (this.nodes[i]) {
-                this.nodes[i].clearHelper()
                 this.nodes[i].update(sub)
             } else {
                 this.createTrueNode(i, sub)

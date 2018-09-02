@@ -1,7 +1,7 @@
 import { Loader } from './loader'
 import { Disposable } from './drizzle'
 import { Module, ModuleOptions } from './module'
-import { createAppendable } from './template/template'
+import { createAppendable } from './template/util'
 
 interface ApplicationOptions {
     stages?: string[],

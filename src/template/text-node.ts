@@ -47,10 +47,6 @@ class DynamicTextNode extends StaticTextNode {
         }
     }
 
-    clearHelper () {
-        this.helper.clear()
-        super.clearHelper()
-    }
 }
 
 export class TextNode extends Node {
@@ -85,7 +81,4 @@ export class TextNode extends Node {
         this.nodes.forEach(it => it.destroy(context))
     }
 
-    clearHelper () {
-        this.nodes.forEach(it => it.clearHelper())
-    }
 }

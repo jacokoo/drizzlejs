@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-    typeof define === 'function' && define.amd ? define(factory) :
-    (global.drizzlejs = factory());
-}(this, (function () { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+    typeof define === 'function' && define.amd ? define(['exports'], factory) :
+    (factory((global.Drizzle = {})));
+}(this, (function (exports) { 'use strict';
 
     var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
       return typeof obj;
@@ -146,115 +146,8 @@
       }
     };
 
-    var ValueType;
-    (function (ValueType) {
-        ValueType[ValueType["STATIC"] = 0] = "STATIC";
-        ValueType[ValueType["DYNAMIC"] = 1] = "DYNAMIC";
-    })(ValueType || (ValueType = {}));
-    var ChangeType;
-    (function (ChangeType) {
-        ChangeType[ChangeType["CHANGED"] = 0] = "CHANGED";
-        ChangeType[ChangeType["NOT_CHANGED"] = 1] = "NOT_CHANGED";
-    })(ChangeType || (ChangeType = {}));
-    function createAppendable(target) {
-        if (!target) return null;
-        var remove = function remove(el) {
-            return target.removeChild(el);
-        };
-        var append = function append(el) {
-            return target.appendChild(el);
-        };
-        var before = function before(anchor) {
-            return { remove: remove, before: before, append: function append(el) {
-                    return target.insertBefore(el, anchor);
-                } };
-        };
-        return { append: append, remove: remove, before: before };
-    }
-
-    var Delay = function () {
-        function Delay() {
-            classCallCheck(this, Delay);
-
-            this.busy = Promise.resolve();
-        }
-
-        createClass(Delay, [{
-            key: "add",
-            value: function add(p) {
-                this.busy = this.busy.then(function () {
-                    return p;
-                });
-            }
-        }, {
-            key: "execute",
-            value: function execute() {
-                return this.busy;
-            }
-        }], [{
-            key: "also",
-            value: function also(fn) {
-                var d = new Delay();
-                fn(d);
-                return d.execute();
-            }
-        }]);
-        return Delay;
-    }();
-
-    function getValue(key, context) {
-        var ks = key.split('.');
-        var first = ks.shift();
-        var ctx = void 0;
-        if (context._computed && first in context._computed) {
-            ctx = context._computed[first](context);
-        } else {
-            ctx = context[first];
-        }
-        if (ks.length) {
-            ctx = ks.reduce(function (acc, item) {
-                if (acc == null) return null;
-                return acc[item];
-            }, ctx);
-        }
-        return ctx;
-    }
-    function getAttributeValue(attr, context) {
-        if (attr[0] === ValueType.STATIC) return attr[1];
-        return getValue(attr[1], context);
-    }
-    function resolveEventArgument(me, context, args, event) {
-        var values = args.map(function (_ref) {
-            var _ref2 = slicedToArray(_ref, 2),
-                name = _ref2[0],
-                v = _ref2[1];
-
-            if (v[0] === ValueType.STATIC) return v[1];
-            var it = v[1];
-            if (it === 'event') return event;
-            if (it === 'this') return me;
-            if (it.slice(0, 6) === 'event.') return event[it.slice(6)];
-            if (it.slice(0, 5) === 'this.') return me[it.slice(5)];
-            return getValue(it, context);
-        });
-        var obj = {};
-        var result = [obj];
-        var keys = 0;
-        args.forEach(function (_ref3, i) {
-            var _ref4 = slicedToArray(_ref3, 2),
-                name = _ref4[0],
-                v = _ref4[1];
-
-            if (name) {
-                keys++;
-                obj[name] = values[i];
-                return;
-            }
-            result.push(values[i]);
-        });
-        if (keys === 0) result.shift();
-        return result;
-    }
+    var components = {};
+    var helpers = {};
     var customEvents = {
         enter: function enter(node, cb) {
             var ee = function ee(e) {
@@ -282,7 +175,165 @@
             };
         }
     };
-    var components = {};
+
+    var AbstractDataContext = function () {
+        function AbstractDataContext(root, data, groups, busy) {
+            classCallCheck(this, AbstractDataContext);
+
+            this.groups = {};
+            this.data = {};
+            this.root = root;
+            this.data = data || {};
+            this.groups = groups || {};
+            this.busy = busy || [];
+        }
+
+        createClass(AbstractDataContext, [{
+            key: 'name',
+            value: function name() {
+                return this.root._options._file;
+            }
+        }, {
+            key: 'update',
+            value: function update(data) {
+                this.root.set(data);
+            }
+        }, {
+            key: 'trigger',
+            value: function trigger(name) {
+                var _root;
+
+                for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+                    args[_key - 1] = arguments[_key];
+                }
+
+                (_root = this.root)._event.apply(_root, [name].concat(args));
+            }
+        }, {
+            key: 'dispatch',
+            value: function dispatch(name) {
+                var _root2;
+
+                for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+                    args[_key2 - 1] = arguments[_key2];
+                }
+
+                (_root2 = this.root)._action.apply(_root2, [name].concat(args));
+            }
+        }, {
+            key: 'ref',
+            value: function ref(id, node) {
+                if (node) this.root.ids[id] = node;else delete this.root.ids[id];
+            }
+        }, {
+            key: 'region',
+            value: function region(id, _region) {
+                this.root.regions[id] = _region;
+            }
+        }, {
+            key: 'delay',
+            value: function delay(p) {
+                this.busy.push(p);
+            }
+        }, {
+            key: 'end',
+            value: function end() {
+                var p = this.busy.slice(0);
+                this.busy = [];
+                return Promise.all(p);
+            }
+        }, {
+            key: 'event',
+            value: function event(name) {
+                var ce = this.root._options.customEvents;
+                return ce && ce[name] || customEvents[name];
+            }
+        }]);
+        return AbstractDataContext;
+    }();
+
+    var ViewDataContext = function (_AbstractDataContext) {
+        inherits(ViewDataContext, _AbstractDataContext);
+
+        function ViewDataContext() {
+            classCallCheck(this, ViewDataContext);
+            return possibleConstructorReturn(this, (ViewDataContext.__proto__ || Object.getPrototypeOf(ViewDataContext)).apply(this, arguments));
+        }
+
+        createClass(ViewDataContext, [{
+            key: 'sub',
+            value: function sub(data) {
+                return new ViewDataContext(this.root, data, this.groups, this.busy);
+            }
+        }, {
+            key: 'create',
+            value: function create(name, state) {
+                var p = this.root._module._createItem(name, state);
+                this.delay(p);
+                return p;
+            }
+        }, {
+            key: 'helper',
+            value: function helper(name) {
+                var h = this.root._options.helpers;
+                return h && h[name] || helpers[name];
+            }
+        }, {
+            key: 'component',
+            value: function component(name) {
+                var c = this.root._options.components;
+                return c && c[name] || components[name];
+            }
+        }]);
+        return ViewDataContext;
+    }(AbstractDataContext);
+
+    var ModuleDataContext = function (_AbstractDataContext2) {
+        inherits(ModuleDataContext, _AbstractDataContext2);
+
+        function ModuleDataContext() {
+            classCallCheck(this, ModuleDataContext);
+            return possibleConstructorReturn(this, (ModuleDataContext.__proto__ || Object.getPrototypeOf(ModuleDataContext)).apply(this, arguments));
+        }
+
+        createClass(ModuleDataContext, [{
+            key: 'sub',
+            value: function sub(data) {
+                return new ModuleDataContext(this.root, data, this.groups, this.busy);
+            }
+        }, {
+            key: 'create',
+            value: function create(name, state) {
+                var p = this.root._createItem(name, state);
+                this.delay(p);
+                return p;
+            }
+        }, {
+            key: 'helper',
+            value: function helper(name) {
+                return;
+            }
+        }, {
+            key: 'component',
+            value: function component(name) {
+                return;
+            }
+        }]);
+        return ModuleDataContext;
+    }(AbstractDataContext);
+
+    var ValueType;
+    (function (ValueType) {
+        ValueType[ValueType["STATIC"] = 0] = "STATIC";
+        ValueType[ValueType["DYNAMIC"] = 1] = "DYNAMIC";
+        ValueType[ValueType["TRANSFORMER"] = 2] = "TRANSFORMER";
+    })(ValueType || (ValueType = {}));
+    var ChangeType;
+    (function (ChangeType) {
+        ChangeType[ChangeType["CHANGED"] = 0] = "CHANGED";
+        ChangeType[ChangeType["NOT_CHANGED"] = 1] = "NOT_CHANGED";
+    })(ChangeType || (ChangeType = {}));
+    var i = 0;
 
     var Template = function () {
         function Template() {
@@ -294,43 +345,41 @@
             value: function createLife() {
                 var me = this;
                 var o = {
+                    id: i++,
                     stage: 'template',
                     nodes: [],
+                    groups: {},
                     init: function init() {
-                        var _this = this;
-
                         o.nodes = me.creator();
-                        return Delay.also(function (d) {
-                            return o.nodes.forEach(function (it) {
-                                return it.init(_this, d);
-                            });
+                        var context = me.create(this, o.groups);
+                        o.nodes.forEach(function (it) {
+                            return it.init(context);
                         });
+                        return context.end();
                     },
                     beforeRender: function beforeRender() {
-                        var _this2 = this;
+                        var _this = this;
 
-                        return Delay.also(function (d) {
-                            return o.nodes.forEach(function (it) {
-                                it.parent = _this2._target;
-                                it.render(_this2._context(), d);
-                            });
+                        var context = me.create(this, o.groups);
+                        o.nodes.forEach(function (it) {
+                            it.parent = _this._target;
+                            it.render(context);
                         });
+                        return context.end();
                     },
                     updated: function updated() {
-                        var _this3 = this;
-
-                        return Delay.also(function (d) {
-                            return o.nodes.forEach(function (it) {
-                                return it.update(_this3._context(), d);
-                            });
+                        var context = me.create(this, o.groups);
+                        o.nodes.forEach(function (it) {
+                            return it.update(context);
                         });
+                        return context.end();
                     },
                     destroyed: function destroyed() {
-                        return Delay.also(function (d) {
-                            return o.nodes.forEach(function (it) {
-                                return it.destroy(d);
-                            });
+                        var context = me.create(this, o.groups);
+                        o.nodes.forEach(function (it) {
+                            return it.destroy(context);
                         });
+                        return context.end();
                     }
                 };
                 return o;
@@ -347,6 +396,12 @@
             return possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).apply(this, arguments));
         }
 
+        createClass(ViewTemplate, [{
+            key: "create",
+            value: function create(root, groups) {
+                return new ViewDataContext(root, root._context(), groups);
+            }
+        }]);
         return ViewTemplate;
     }(Template);
 
@@ -356,15 +411,126 @@
         function ModuleTemplate(exportedModels) {
             classCallCheck(this, ModuleTemplate);
 
-            var _this5 = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
+            var _this3 = possibleConstructorReturn(this, (ModuleTemplate.__proto__ || Object.getPrototypeOf(ModuleTemplate)).call(this));
 
-            _this5.exportedModels = [];
-            _this5.exportedModels = exportedModels;
-            return _this5;
+            _this3.exportedModels = [];
+            _this3.exportedModels = exportedModels;
+            return _this3;
         }
 
+        createClass(ModuleTemplate, [{
+            key: "create",
+            value: function create(root) {
+                return new ModuleDataContext(root, root._context());
+            }
+        }]);
         return ModuleTemplate;
     }(Template);
+
+    function tokenize(input) {
+        var token = '';
+        var result = [];
+        var inString = false;
+        var push = function push() {
+            if (token) result.push(token);
+            token = '';
+        };
+        for (var i = 0; i < input.length; i++) {
+            var t = input[i];
+            if (inString) {
+                if (t === '\\' && input[i + 1] === ']') {
+                    token += ']';
+                    i++;
+                    continue;
+                }
+                if (t === ']') {
+                    push();
+                    inString = false;
+                    continue;
+                }
+                token += t;
+                continue;
+            }
+            if (t === '[') {
+                push();
+                inString = true;
+                continue;
+            }
+            if (t === '.') {
+                push();
+                continue;
+            }
+            token += t;
+        }
+        if (token) result.push(token);
+        return result;
+    }
+    function getValue(key, context) {
+        var ks = tokenize(key);
+        var first = ks.shift();
+        var ctx = void 0;
+        var data = context.data;
+        if (data._computed && first in data._computed) {
+            ctx = data._computed[first](data);
+        } else {
+            ctx = data[first];
+        }
+        if (ks.length) {
+            ctx = ks.reduce(function (acc, item) {
+                if (acc == null) return null;
+                return acc[item];
+            }, ctx);
+        }
+        return ctx;
+    }
+    function getAttributeValue(attr, context) {
+        if (attr[0] === ValueType.STATIC) return attr[1];
+        if (attr[0] === ValueType.DYNAMIC) return getValue(attr[1], context);
+        return attr[1].render(context);
+    }
+    function resolveEventArgument(me, context, args, event) {
+        var o = Object.assign({}, context.data, { event: event, this: me });
+        var sub = context.sub(o);
+        var values = args.map(function (_ref) {
+            var _ref2 = slicedToArray(_ref, 2),
+                name = _ref2[0],
+                v = _ref2[1];
+
+            return getAttributeValue(v, sub);
+        });
+        var obj = {};
+        var result = [obj];
+        var keys = 0;
+        args.forEach(function (_ref3, i) {
+            var _ref4 = slicedToArray(_ref3, 2),
+                name = _ref4[0],
+                v = _ref4[1];
+
+            if (name) {
+                keys++;
+                obj[name] = values[i];
+                return;
+            }
+            result.push(values[i]);
+        });
+        if (keys === 0) result.shift();
+        return result;
+    }
+    function createAppendable(target) {
+        if (!target) return null;
+        var remove = function remove(el) {
+            return target.removeChild(el);
+        };
+        var append = function append(el) {
+            return target.appendChild(el);
+        };
+        var before = function before(anchor) {
+            return { remove: remove, before: before, append: function append(el) {
+                    return target.insertBefore(el, anchor);
+                } };
+        };
+        return { append: append, remove: remove, before: before };
+    }
 
     var Node = function () {
         function Node(id) {
@@ -378,30 +544,29 @@
 
         createClass(Node, [{
             key: 'init',
-            value: function init(root, delay) {
-                this.root = root;
+            value: function init(context) {
                 this.element = this.create();
                 var a = createAppendable(this.element);
                 this.children.forEach(function (it) {
                     it.parent = a;
-                    it.init(root, delay);
+                    it.init(context);
                 });
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
-                if (this.id && this.element) this.root.ids[this.id] = this.element;
+            value: function render(context) {
+                if (this.id && this.element) context.ref(this.id, this.element);
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {}
+            value: function update(context) {}
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 this.children.forEach(function (it) {
-                    return it.destroy(delay);
+                    return it.destroy(context);
                 });
-                if (this.id) delete this.root.ids[this.id];
+                if (this.id) context.ref(this.id);
             }
         }, {
             key: 'setChildren',
@@ -417,13 +582,6 @@
                 this.inSvg = true;
                 this.children.forEach(function (it) {
                     return it.inSvg = true;
-                });
-            }
-        }, {
-            key: 'clearHelper',
-            value: function clearHelper() {
-                this.children.forEach(function (it) {
-                    return it.clearHelper();
                 });
             }
         }, {
@@ -449,8 +607,8 @@
 
         createClass(AnchorNode, [{
             key: 'render',
-            value: function render(context, delay) {
-                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'render', this).call(this, context, delay);
+            value: function render(context) {
+                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'render', this).call(this, context);
                 if (!this.newParent) {
                     this.parent.append(this.anchor);
                     this.newParent = this.parent.before(this.anchor);
@@ -458,8 +616,8 @@
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
-                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'destroy', this).call(this, delay);
+            value: function destroy(context) {
+                get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'destroy', this).call(this, context);
                 this.parent.remove(this.anchor);
                 this.newParent = null;
             }
@@ -468,22 +626,22 @@
     }(Node);
 
     var Compare = {
-        eq: function eq(v1, v2) {
+        '==': function _(v1, v2) {
             return v1 === v2;
         },
-        ne: function ne(v1, v2) {
+        '!=': function _(v1, v2) {
             return v1 !== v2;
         },
-        gt: function gt(v1, v2) {
+        '>': function _(v1, v2) {
             return v1 > v2;
         },
-        lt: function lt(v1, v2) {
+        '<': function _(v1, v2) {
             return v1 < v2;
         },
-        gte: function gte(v1, v2) {
+        '>=': function _(v1, v2) {
             return v1 >= v2;
         },
-        lte: function lte(v1, v2) {
+        '<=': function _(v1, v2) {
             return v1 <= v2;
         }
     };
@@ -504,11 +662,10 @@
 
         createClass(IfBlock, [{
             key: 'init',
-            value: function init(root, delay) {
-                this.root = root;
-                this.trueNode.init(root, delay);
+            value: function init(context) {
+                this.trueNode.init(context);
                 if (this.falseNode) {
-                    this.falseNode.init(root, delay);
+                    this.falseNode.init(context);
                 }
             }
         }, {
@@ -523,7 +680,7 @@
             value: function useCompare(context) {
                 var op = this.args[1][1];
                 if (!Compare[op]) {
-                    throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
+                    throw Error(op + ' is not a valid compare operator, use: ==, !=, >, <, >=, <=');
                 }
                 return Compare[op](getAttributeValue(this.args[0], context), getAttributeValue(this.args[2], context));
             }
@@ -531,45 +688,44 @@
             key: 'useSingle',
             value: function useSingle(context) {
                 if (this.args[0][0] === ValueType.STATIC) {
-                    // TODO throw
-                    return false;
+                    return !!this.args[0][1];
                 }
                 return !!getAttributeValue(this.args[0], context);
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 if (this.rendered) return;
                 this.rendered = true;
-                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'render', this).call(this, context, delay);
+                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'render', this).call(this, context);
                 this.trueNode.parent = this.newParent;
                 if (this.falseNode) {
                     this.falseNode.parent = this.newParent;
                 }
                 this.current = this.use(context) ? this.trueNode : this.falseNode;
                 if (this.current) {
-                    this.current.render(context, delay);
+                    this.current.render(context);
                 }
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 if (!this.rendered) return;
                 var use = this.use(context) ? this.trueNode : this.falseNode;
                 if (use === this.current) {
-                    if (use) use.update(context, delay);
+                    if (use) use.update(context);
                     return;
                 }
-                if (this.current) this.current.destroy(delay);
+                if (this.current) this.current.destroy(context);
                 this.current = use === this.trueNode ? this.trueNode : this.falseNode;
-                if (this.current) this.current.render(context, delay);
+                if (this.current) this.current.render(context);
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
-                if (this.current) this.current.destroy(delay);
-                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'destroy', this).call(this, delay);
+                if (this.current) this.current.destroy(context);
+                get(IfBlock.prototype.__proto__ || Object.getPrototypeOf(IfBlock.prototype), 'destroy', this).call(this, context);
                 this.rendered = false;
             }
         }]);
@@ -599,55 +755,30 @@
 
             this.name = '';
 
-            for (var _len = arguments.length, args = Array(_len), _key2 = 0; _key2 < _len; _key2++) {
-                args[_key2] = arguments[_key2];
+            for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+                args[_key] = arguments[_key];
             }
 
             this.args = args;
-            this.dynamicKeys = args.filter(function (it) {
-                return it[0] === ValueType.DYNAMIC;
-            }).map(function (it) {
-                return it[1];
-            });
             this.check();
         }
 
         createClass(Helper, [{
-            key: 'clear',
-            value: function clear() {
-                this.currentValues = null;
-            }
-        }, {
             key: 'render',
             value: function render(context) {
-                var _this = this;
-
-                if (!this.currentValues) return [ChangeType.CHANGED, this.renderIt(context)];
-                var vs = this.currentKeys.map(function (it) {
-                    return getValue(it, context);
-                }); // TODO if changed, will it do get value twice?
-                if (vs.some(function (it, i) {
-                    return it !== _this.currentValues[i];
-                })) {
-                    return [ChangeType.CHANGED, this.renderIt(context)];
+                if (!this.current) return [ChangeType.CHANGED, this.renderIt(context)];
+                var c = this.current;
+                var u = this.renderIt(context);
+                if (c !== u) {
+                    return [ChangeType.CHANGED, this.current];
                 }
                 return [ChangeType.NOT_CHANGED, this.current];
             }
         }, {
             key: 'arg',
             value: function arg(idx, context) {
-                var arg = this.args[idx];
-                if (!arg) return '';
-                if (arg[0] === ValueType.STATIC) return arg[1];
-                return this.key(arg[1], context);
-            }
-        }, {
-            key: 'key',
-            value: function key(_key, context) {
-                this.currentKeys.push(_key);
-                var v = getValue(_key, context);
-                this.currentValues.push(v);
-                return v;
+                if (!this.args[idx]) return '';
+                return getAttributeValue(this.args[idx], context);
             }
         }, {
             key: 'check',
@@ -655,14 +786,14 @@
         }, {
             key: 'assertCount',
             value: function assertCount() {
-                var _this2 = this;
+                var _this = this;
 
-                for (var _len2 = arguments.length, numbers = Array(_len2), _key3 = 0; _key3 < _len2; _key3++) {
-                    numbers[_key3] = arguments[_key3];
+                for (var _len2 = arguments.length, numbers = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+                    numbers[_key2] = arguments[_key2];
                 }
 
                 if (!numbers.some(function (it) {
-                    return it === _this2.args.length;
+                    return it === _this.args.length;
                 })) {
                     throw new Error(name + ' helper should have ' + numbers.join(' or ') + ' arguments');
                 }
@@ -670,14 +801,14 @@
         }, {
             key: 'assertDynamic',
             value: function assertDynamic() {
-                var _this3 = this;
+                var _this2 = this;
 
-                for (var _len3 = arguments.length, numbers = Array(_len3), _key4 = 0; _key4 < _len3; _key4++) {
-                    numbers[_key4] = arguments[_key4];
+                for (var _len3 = arguments.length, numbers = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+                    numbers[_key3] = arguments[_key3];
                 }
 
                 numbers.forEach(function (it) {
-                    if (_this3.args[it][0] !== ValueType.DYNAMIC) {
+                    if (_this2.args[it][0] === ValueType.STATIC) {
                         throw new Error('the ' + it + 'th argument of ' + name + ' helper should be dynamic');
                     }
                 });
@@ -685,8 +816,6 @@
         }, {
             key: 'renderIt',
             value: function renderIt(context) {
-                this.currentKeys = [];
-                this.currentValues = [];
                 this.current = this.doRender(context);
                 return this.current;
             }
@@ -694,65 +823,38 @@
         return Helper;
     }();
 
-    var Transfromer = function (_Helper) {
-        inherits(Transfromer, _Helper);
+    var DelayHelper = function (_Helper) {
+        inherits(DelayHelper, _Helper);
 
-        function Transfromer(fn) {
+        function DelayHelper(name) {
             var _ref;
 
-            classCallCheck(this, Transfromer);
+            classCallCheck(this, DelayHelper);
 
-            for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key5 = 1; _key5 < _len4; _key5++) {
-                args[_key5 - 1] = arguments[_key5];
+            for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+                args[_key4 - 1] = arguments[_key4];
             }
 
-            var _this4 = possibleConstructorReturn(this, (_ref = Transfromer.__proto__ || Object.getPrototypeOf(Transfromer)).call.apply(_ref, [this].concat(args)));
+            var _this3 = possibleConstructorReturn(this, (_ref = DelayHelper.__proto__ || Object.getPrototypeOf(DelayHelper)).call.apply(_ref, [this, null].concat(args)));
 
-            _this4.fn = fn;
-            return _this4;
+            _this3.name = name;
+            return _this3;
         }
 
-        createClass(Transfromer, [{
+        createClass(DelayHelper, [{
             key: 'doRender',
             value: function doRender(context) {
-                var _this5 = this;
+                var _this4 = this;
 
-                return this.fn.apply(null, this.args.map(function (it, i) {
-                    return _this5.arg(i, context);
+                var fn = context.helper(this.name);
+                if (!fn) throw new Error('no helper found: ' + this.name);
+                return fn.apply(null, this.args.map(function (it, i) {
+                    return _this4.arg(i, context);
                 }));
             }
         }]);
-        return Transfromer;
+        return DelayHelper;
     }(Helper);
-
-    var DelayTransfomer = function (_Transfromer) {
-        inherits(DelayTransfomer, _Transfromer);
-
-        function DelayTransfomer(name) {
-            var _ref2;
-
-            classCallCheck(this, DelayTransfomer);
-
-            for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key6 = 1; _key6 < _len5; _key6++) {
-                args[_key6 - 1] = arguments[_key6];
-            }
-
-            var _this6 = possibleConstructorReturn(this, (_ref2 = DelayTransfomer.__proto__ || Object.getPrototypeOf(DelayTransfomer)).call.apply(_ref2, [this, null].concat(args)));
-
-            _this6.name = name;
-            return _this6;
-        }
-
-        createClass(DelayTransfomer, [{
-            key: 'init',
-            value: function init(root) {
-                var helpers = root._options.helpers;
-
-                if (helpers && helpers[this.name]) this.fn = helpers[this.name];else throw new Error('no helper found: ' + name);
-            }
-        }]);
-        return DelayTransfomer;
-    }(Transfromer);
 
     var EchoHelper = function (_Helper2) {
         inherits(EchoHelper, _Helper2);
@@ -771,46 +873,16 @@
         return EchoHelper;
     }(Helper);
 
-    var ConcatHelper = function (_Helper3) {
-        inherits(ConcatHelper, _Helper3);
-
-        function ConcatHelper() {
-            classCallCheck(this, ConcatHelper);
-
-            var _this8 = possibleConstructorReturn(this, (ConcatHelper.__proto__ || Object.getPrototypeOf(ConcatHelper)).apply(this, arguments));
-
-            _this8.name = 'concat';
-            return _this8;
-        }
-
-        createClass(ConcatHelper, [{
-            key: 'check',
-            value: function check() {
-                this.currentKeys = this.dynamicKeys;
-            }
-        }, {
-            key: 'doRender',
-            value: function doRender(context) {
-                var _this9 = this;
-
-                return this.args.map(function (it, i) {
-                    return _this9.arg(i, context);
-                }).join(' ');
-            }
-        }]);
-        return ConcatHelper;
-    }(Helper);
-
-    var IfHelper = function (_Helper4) {
-        inherits(IfHelper, _Helper4);
+    var IfHelper = function (_Helper3) {
+        inherits(IfHelper, _Helper3);
 
         function IfHelper() {
             classCallCheck(this, IfHelper);
 
-            var _this10 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
+            var _this6 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
 
-            _this10.name = 'if';
-            return _this10;
+            _this6.name = 'if';
+            return _this6;
         }
 
         createClass(IfHelper, [{
@@ -833,14 +905,14 @@
         }, {
             key: 'useSingle',
             value: function useSingle(context) {
-                return this.key(this.dynamicKeys[0], context) ? 1 : 2;
+                return this.arg(0, context) ? 1 : 2;
             }
         }, {
             key: 'useMultiple',
             value: function useMultiple(context) {
                 var op = this.args[1][1];
                 if (!Compare[op]) {
-                    throw Error(op + ' is not a valid compare operator, use: eq(===), ne(!==), gt(>), lt(<), gte(>=), lte(<=)');
+                    throw Error(op + ' is not a valid compare operator, use: ==, !=, >, <, >=, <=');
                 }
                 return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4;
             }
@@ -854,16 +926,16 @@
         function UnlessHelper() {
             classCallCheck(this, UnlessHelper);
 
-            var _this11 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
+            var _this7 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
 
-            _this11.name = 'unless';
-            return _this11;
+            _this7.name = 'unless';
+            return _this7;
         }
 
         createClass(UnlessHelper, [{
             key: 'use',
             value: function use(context) {
-                return this.key(this.dynamicKeys[0], context) ? 2 : 1;
+                return this.arg(0, context) ? 2 : 1;
             }
         }]);
         return UnlessHelper;
@@ -886,11 +958,6 @@
         }
 
         createClass(EachBlock, [{
-            key: 'init',
-            value: function init(root, delay) {
-                this.root = root;
-            }
-        }, {
             key: 'isEmpty',
             value: function isEmpty(list) {
                 return !list || Array.isArray(list) && !list.length || (typeof list === 'undefined' ? 'undefined' : _typeof(list)) === 'object' && !Object.keys(list);
@@ -898,24 +965,24 @@
         }, {
             key: 'sub',
             value: function sub(context, i) {
-                var o = Object.assign({}, context);
+                var o = Object.assign({}, context.data);
                 if (!o._each) o._each = [];else o._each = o._each.slice(0);
                 var v = getValue(this.args[0], context);
                 o._each.push({ list: v, index: i, key: this.args[2], name: this.args[0] });
                 o[this.args[2]] = v[i];
                 if (this.args[3]) o[this.args[3]] = i;
-                return o;
+                return context.sub(o);
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 if (this.rendered) return;
                 this.rendered = true;
-                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'render', this).call(this, context, delay);
+                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'render', this).call(this, context);
                 if (this.falseNode) this.falseNode.parent = this.newParent;
                 var list = getValue(this.args[0], context);
                 if (this.isEmpty(list)) {
-                    this.renderElse(context, delay);
+                    this.renderElse(context);
                     return;
                 }
                 var kv = Array.isArray(list) ? list.map(function (it, i) {
@@ -923,54 +990,54 @@
                 }) : Object.keys(list).map(function (it) {
                     return [it, list[it]];
                 });
-                this.renderKeyValue(kv, context, delay);
+                this.renderKeyValue(kv, context);
             }
         }, {
             key: 'createTrueNode',
-            value: function createTrueNode(i, context, delay) {
+            value: function createTrueNode(i, context) {
                 var n = this.trueNode();
                 n.parent = this.newParent;
                 this.nodes[i] = n;
-                n.init(this.root, delay);
-                delay.execute().then(function () {
-                    return n.render(context, delay);
+                n.init(context);
+                context.end().then(function () {
+                    return n.render(context);
                 });
             }
         }, {
             key: 'renderKeyValue',
-            value: function renderKeyValue(arr, context, delay) {
+            value: function renderKeyValue(arr, context) {
                 var _this2 = this;
 
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
                     var sub = _this2.sub(context, i);
-                    _this2.createTrueNode(i, sub, delay);
+                    _this2.createTrueNode(i, sub);
                 });
             }
         }, {
             key: 'renderElse',
-            value: function renderElse(context, delay) {
+            value: function renderElse(context) {
                 if (!this.falseNode) return;
-                this.falseNode.init(this.root, delay);
-                this.falseNode.render(context, delay);
+                this.falseNode.init(context);
+                this.falseNode.render(context);
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 if (!this.rendered) return;
                 var list = getValue(this.args[0], context);
                 var empty = this.isEmpty(list);
                 if (empty && !this.currentSize) {
-                    this.updateElse(context, delay);
+                    this.updateElse(context);
                     return;
                 }
                 if (empty) {
                     this.currentSize = 0;
                     this.nodes.forEach(function (it) {
-                        return it.destroy(delay);
+                        return it.destroy(context);
                     });
                     this.nodes = [];
-                    this.renderElse(context, delay);
+                    this.renderElse(context);
                     return;
                 }
                 var kv = Array.isArray(list) ? list.map(function (it, i) {
@@ -978,45 +1045,44 @@
                 }) : Object.keys(list).map(function (it) {
                     return [it, list[it]];
                 });
-                this.updateKeyValue(kv, context, delay);
+                this.updateKeyValue(kv, context);
             }
         }, {
             key: 'updateElse',
-            value: function updateElse(context, delay) {
-                if (this.falseNode) this.falseNode.update(context, delay);
+            value: function updateElse(context) {
+                if (this.falseNode) this.falseNode.update(context);
             }
         }, {
             key: 'updateKeyValue',
-            value: function updateKeyValue(arr, context, delay) {
+            value: function updateKeyValue(arr, context) {
                 var _this3 = this;
 
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
                     var sub = _this3.sub(context, i);
                     if (_this3.nodes[i]) {
-                        _this3.nodes[i].clearHelper();
-                        _this3.nodes[i].update(sub, delay);
+                        _this3.nodes[i].update(sub);
                     } else {
-                        _this3.createTrueNode(i, sub, delay);
+                        _this3.createTrueNode(i, sub);
                     }
                 });
                 while (this.nodes.length !== this.currentSize) {
                     var node = this.nodes.pop();
-                    node.destroy(delay);
+                    node.destroy(context);
                 }
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
-                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'destroy', this).call(this, delay);
+                get(EachBlock.prototype.__proto__ || Object.getPrototypeOf(EachBlock.prototype), 'destroy', this).call(this, context);
                 if (!this.currentSize) {
-                    if (this.falseNode) this.falseNode.destroy(delay);
+                    if (this.falseNode) this.falseNode.destroy(context);
                     return;
                 }
                 this.currentSize = 0;
                 this.nodes.forEach(function (it) {
-                    return it.destroy(delay);
+                    return it.destroy(context);
                 });
                 this.nodes = [];
                 this.rendered = false;
@@ -1342,7 +1408,6 @@
 
             var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options, options.template && options.template.createLife()));
 
-            _this._groups = {};
             _this._state = {};
             _this._module = mod;
             return _this;
@@ -1615,6 +1680,7 @@
                         });
                     },
                     update: function update(args) {
+                        if (!args) return Promise.resolve();
                         var o = h.model ? defineProperty({}, h.model, args) : args;
                         if (item && item instanceof Module) return item.set(o);
                         return Promise.resolve();
@@ -1733,18 +1799,15 @@
             value: function _render(target) {
                 var _this4 = this;
 
-                var busy = get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_render', this).call(this, target);
-                if (busy === this._busy) {
-                    this._busy = this._busy.then(function () {
+                return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_render', this).call(this, target).then(function () {
+                    if (_this4._status === ComponentState.RENDERED) {
                         var store = _this4._options.store;
 
                         if (store && store.actions && store.actions.init) {
                             return _this4._dispatch('init');
                         }
-                    });
-                    return this._busy;
-                }
-                return busy;
+                    }
+                });
             }
         }, {
             key: '_init',
@@ -1753,9 +1816,10 @@
 
                 this._store = new Store(this, this._options.store || {}, UPDATE_ACTION);
                 this.set(Object.assign({}, this._options.state, this._extraState));
-                return this._loadItems().then(function () {
+                var p = this._loadItems().then(function () {
                     return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this5).call(_this5);
                 });
+                return p;
             }
         }, {
             key: '_loadItems',
@@ -1899,7 +1963,7 @@
     function setAttribute(el, name, value) {
         var n = name.toLowerCase();
         var t = el.tagName.toLowerCase();
-        if (attributes[n] && attributes[name].tags[t]) {
+        if (attributes[n] && (!attributes[n].tags || attributes[n].tags[t])) {
             el[attributes[n].name || n] = value;
         } else {
             el.setAttribute(name, value);
@@ -1909,42 +1973,45 @@
     var StaticNode = function (_Node) {
         inherits(StaticNode, _Node);
 
-        function StaticNode(name) {
-            var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-            var id = arguments[2];
+        function StaticNode(name, id) {
             classCallCheck(this, StaticNode);
 
             var _this = possibleConstructorReturn(this, (StaticNode.__proto__ || Object.getPrototypeOf(StaticNode)).call(this, id));
 
+            _this.attributes = [];
             _this.name = name;
-            _this.attributes = attributes;
             if (name === 'svg') _this.inSvg = true;
             return _this;
         }
 
         createClass(StaticNode, [{
+            key: 'attribute',
+            value: function attribute(name, value) {
+                this.attributes.push([name, value]);
+            }
+        }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 if (this.rendered) return;
                 this.rendered = true;
-                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'render', this).call(this, context, delay);
+                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'render', this).call(this, context);
                 this.parent.append(this.element);
                 this.children.forEach(function (it) {
-                    return it.render(context, delay);
+                    return it.render(context);
                 });
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 this.children.forEach(function (it) {
-                    return it.update(context, delay);
+                    return it.update(context);
                 });
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
-                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, delay);
+                get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, context);
                 this.parent.remove(this.element);
                 this.rendered = false;
             }
@@ -1961,33 +2028,35 @@
         return StaticNode;
     }(Node);
 
-    var updateSingleKey = function updateSingleKey(view, context, to, value) {
-        if (context._each) {
-            var each = context._each.find(function (it) {
+    var updateSingleKey = function updateSingleKey(context, to, value) {
+        var data = context.data;
+        if (data._each) {
+            var each = data._each.find(function (it) {
                 return it.key === to;
             });
             if (each) {
                 each.list[each.index] = value;
-                view.set(defineProperty({}, each.name, each.list));
+                context.update(defineProperty({}, each.name, each.list));
                 return;
             }
         }
-        view.set(defineProperty({}, to, value));
+        context.update(defineProperty({}, to, value));
     };
-    var updateView = function updateView(view, context, to, value) {
-        var ps = to.split('.');
-        if (ps.length === 1) return updateSingleKey(view, context, to, value);
+    var updateView = function updateView(context, to, value) {
+        var ps = tokenize(to);
+        if (ps.length === 1) return updateSingleKey(context, to, value);
         var root = ps.shift();
         var last = ps.pop();
         var result = {};
         var obj = void 0;
         var isEach = false;
-        if (context._each) {
-            var each = context._each.find(function (it) {
+        var data = context.data;
+        if (data._each) {
+            var each = data._each.find(function (it) {
                 return it.key === root;
             });
             if (each) {
-                var first = context._each[0];
+                var first = data._each[0];
                 result[first.name] = first.list;
                 obj = each.list[each.index];
                 isEach = true;
@@ -2002,14 +2071,14 @@
             return acc[it];
         }, obj);
         obj[last] = value;
-        view.set(result);
+        context.update(result);
     };
-    var bindIt = function bindIt(context, view, to, element, event, get$$1, set$$1) {
+    var bindIt = function bindIt(context, to, element, event, get$$1, set$$1) {
         var current = void 0;
         var obj = { context: context };
         var cb = function cb() {
             current = get$$1(element);
-            updateView(view, obj.context, to, current);
+            updateView(obj.context, to, current);
         };
         element.addEventListener(event, cb, false);
         var r = {
@@ -2042,7 +2111,7 @@
             }
         }
     };
-    var bindGroup = function bindGroup(context, view, group, to, element) {
+    var bindGroup = function bindGroup(context, group, to, element) {
         var obj = { context: context };
         var current = void 0;
         var cb = function cb() {
@@ -2052,7 +2121,7 @@
             }).map(function (it) {
                 return it.element.value;
             });
-            updateView(view, obj.context, to, current);
+            updateView(obj.context, to, current);
         };
         element.addEventListener('change', cb, false);
         var r = {
@@ -2091,28 +2160,27 @@
     var bind = function bind(node, context, from, to) {
         var tag = node.name.toLowerCase();
         var element = node.element;
-        var view = node.root;
         if ((tag === 'input' || tag === 'textarea') && from === 'value') {
-            return bindIt(context, view, to, element, 'input', function (el) {
+            return bindIt(context, to, element, 'input', function (el) {
                 return el.value;
             }, function (el, value) {
                 return el.value = value == null ? '' : value;
             });
         }
         if (tag === 'input' && from === 'checked') {
-            return bindIt(context, view, to, element, 'change', function (el) {
+            return bindIt(context, to, element, 'change', function (el) {
                 return el.checked;
             }, function (el, value) {
                 return el.checked = value;
             });
         }
         if (tag === 'select' && from === 'value') {
-            return bindIt(context, view, to, element, 'change', getSelectValue, setSelectOption);
+            return bindIt(context, to, element, 'change', getSelectValue, setSelectOption);
         }
         if (tag === 'input' && from === 'group') {
             var type = element.type;
             if (type !== 'checkbox' && type !== 'radio') return null;
-            return bindGroup(context, view, view._groups[to], to, element);
+            return bindGroup(context, context.groups[to], to, element);
         }
         return null;
     };
@@ -2134,8 +2202,8 @@
         }
 
         createClass(DynamicNode, [{
-            key: 'attribute',
-            value: function attribute(name, helpers) {
+            key: 'dynamicAttribute',
+            value: function dynamicAttribute(name, helpers) {
                 this.dynamicAttributes[name] = helpers;
             }
         }, {
@@ -2164,12 +2232,10 @@
             }
         }, {
             key: 'init',
-            value: function init(root, delay) {
+            value: function init(context) {
                 var _this2 = this;
 
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'init', this).call(this, root, delay);
-                if (!(this.root instanceof View)) return;
-                var view = this.root;
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'init', this).call(this, context);
                 this.bindings.forEach(function (_ref) {
                     var _ref2 = slicedToArray(_ref, 2),
                         from = _ref2[0],
@@ -2182,30 +2248,20 @@
                     if (!attr) return;
                     var type = attr[1].toLowerCase();
                     if (type !== 'checkbox' && type !== 'radio') return;
-                    var groups = view._groups;
+                    var groups = context.groups;
                     if (!groups[to]) groups[to] = { type: type, items: [], busy: false };else if (groups[to].type !== type) {
                         throw Error('binding group can not mix up checkbox and radio');
                     }
                     groups[to].items.push(_this2); // TODO if this item is hidden by if, should it works?
                 });
-                Object.keys(this.dynamicAttributes).forEach(function (k) {
-                    _this2.dynamicAttributes[k].forEach(function (it) {
-                        if (it instanceof DelayTransfomer) it.init(view);
-                    });
-                });
-                Object.keys(this.components).forEach(function (k) {
-                    return _this2.components[k].forEach(function (it) {
-                        if (it instanceof DelayTransfomer) it.init(view);
-                    });
-                });
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 var _this3 = this;
 
                 if (this.rendered) return;
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'render', this).call(this, context, delay);
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'render', this).call(this, context);
                 this.updateAttributes(context);
                 this.context = context;
                 this.eventHooks = Object.keys(this.events).map(function (it) {
@@ -2220,8 +2276,7 @@
                     return !!it;
                 });
                 this.componentHooks = Object.keys(this.components).map(function (it) {
-                    var comp = _this3.root._options.components || {};
-                    var fn = comp[it] || components[it];
+                    var fn = context.component(it);
                     if (!fn) {
                         throw new Error('Component ' + it + ' is not found.');
                     }
@@ -2235,22 +2290,22 @@
             value: function initEvent(name, method, args) {
                 var me = this;
                 var cb = function cb(event) {
-                    var _me$root;
+                    var _me$context;
 
                     var as = resolveEventArgument(this, me.context, args, event);
-                    (_me$root = me.root)._event.apply(_me$root, [method].concat(toConsumableArray(as)));
+                    (_me$context = me.context).trigger.apply(_me$context, [method].concat(toConsumableArray(as)));
                 };
                 return this.bindEvent(name, cb);
             }
         }, {
             key: 'initAction',
             value: function initAction(name, action, args) {
-                if (!(this.root instanceof View)) return;
                 var me = this;
                 var cb = function cb(event) {
+                    var _me$context2;
+
                     var data = resolveEventArgument(this, me.context, args, event);
-                    var root = me.root;
-                    root._action.apply(root, [action].concat(toConsumableArray(data)));
+                    (_me$context2 = me.context).dispatch.apply(_me$context2, [action].concat(toConsumableArray(data)));
                 };
                 return this.bindEvent(name, cb);
             }
@@ -2259,12 +2314,8 @@
             value: function bindEvent(name, cb) {
                 var _this4 = this;
 
-                var ce = this.root._options.customEvents;
-                if (!ce || !ce[name]) ce = this.root.app.options.customEvents;
-                if (!ce || !ce[name]) ce = customEvents;
-                if (ce && ce[name]) {
-                    return ce[name](this.element, cb);
-                }
+                var ce = this.context.event(name);
+                if (ce) return ce(this.element, cb);
                 this.element.addEventListener(name, cb, false);
                 return {
                     dispose: function dispose() {
@@ -2309,7 +2360,7 @@
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 var _this6 = this;
 
                 if (!this.rendered) return;
@@ -2319,7 +2370,7 @@
                     return it.update(context);
                 });
                 this.children.forEach(function (it) {
-                    return it.update(context, delay);
+                    return it.update(context);
                 });
                 this.componentHooks.forEach(function (_ref3) {
                     var _ref4 = slicedToArray(_ref3, 2),
@@ -2333,9 +2384,9 @@
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'destroy', this).call(this, delay);
+                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'destroy', this).call(this, context);
                 this.bindingHooks.forEach(function (it) {
                     return it.dispose();
                 });
@@ -2352,18 +2403,6 @@
                 this.actionHooks = [];
                 this.eventHooks = [];
                 this.componentHooks = [];
-            }
-        }, {
-            key: 'clearHelper',
-            value: function clearHelper() {
-                var _this7 = this;
-
-                Object.keys(this.dynamicAttributes).forEach(function (it) {
-                    return _this7.dynamicAttributes[it].forEach(function (h) {
-                        return h.clear();
-                    });
-                });
-                get(DynamicNode.prototype.__proto__ || Object.getPrototypeOf(DynamicNode.prototype), 'clearHelper', this).call(this);
             }
         }]);
         return DynamicNode;
@@ -2385,16 +2424,16 @@
 
         createClass(StaticTextNode, [{
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 if (this.rendered) return;
                 this.rendered = true;
                 this.parent.append(this.node);
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
-                get(StaticTextNode.prototype.__proto__ || Object.getPrototypeOf(StaticTextNode.prototype), 'destroy', this).call(this, delay);
+                get(StaticTextNode.prototype.__proto__ || Object.getPrototypeOf(StaticTextNode.prototype), 'destroy', this).call(this, context);
                 this.parent.remove(this.node);
                 this.rendered = false;
             }
@@ -2415,31 +2454,18 @@
         }
 
         createClass(DynamicTextNode, [{
-            key: 'init',
-            value: function init(root) {
-                if (root instanceof View && this.helper instanceof DelayTransfomer) {
-                    this.helper.init(root);
-                }
-            }
-        }, {
             key: 'render',
-            value: function render(context, delay) {
-                get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'render', this).call(this, context, delay);
-                this.update(context, delay);
+            value: function render(context) {
+                get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'render', this).call(this, context);
+                this.update(context);
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 var r = this.helper.render(context);
                 if (r[0] === ChangeType.CHANGED) {
                     this.node.data = r[1] == null ? '' : r[1];
                 }
-            }
-        }, {
-            key: 'clearHelper',
-            value: function clearHelper() {
-                this.helper.clear();
-                get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'clearHelper', this).call(this);
             }
         }]);
         return DynamicTextNode;
@@ -2465,43 +2491,36 @@
 
         createClass(TextNode, [{
             key: 'init',
-            value: function init(root, delay) {
+            value: function init(context) {
                 var _this4 = this;
 
                 this.nodes.forEach(function (it) {
                     it.parent = _this4.parent;
-                    it.init(root, delay);
+                    it.init(context);
                 });
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 var _this5 = this;
 
                 this.nodes.forEach(function (it) {
                     if (!it.parent) it.parent = _this5.parent;
-                    it.render(context, delay);
+                    it.render(context);
                 });
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 this.nodes.forEach(function (it) {
-                    return it.update(context, delay);
+                    return it.update(context);
                 });
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 this.nodes.forEach(function (it) {
-                    return it.destroy(delay);
-                });
-            }
-        }, {
-            key: 'clearHelper',
-            value: function clearHelper() {
-                this.nodes.forEach(function (it) {
-                    return it.clearHelper();
+                    return it.destroy(context);
                 });
             }
         }]);
@@ -2511,26 +2530,30 @@
     var ReferenceNode = function (_AnchorNode) {
         inherits(ReferenceNode, _AnchorNode);
 
-        function ReferenceNode(name, statics, id) {
+        function ReferenceNode(name, id) {
             classCallCheck(this, ReferenceNode);
 
             var _this = possibleConstructorReturn(this, (ReferenceNode.__proto__ || Object.getPrototypeOf(ReferenceNode)).call(this, id));
 
             _this.events = {};
             _this.actions = {};
-            _this.bindings = [];
+            _this.mappings = [];
             _this.grouped = {};
             _this.statics = {};
             _this.hooks = [];
             _this.name = name;
-            _this.statics = statics;
             return _this;
         }
 
         createClass(ReferenceNode, [{
-            key: 'bind',
-            value: function bind(from, to) {
-                this.bindings.push([from, to || from]);
+            key: 'attribute',
+            value: function attribute(name, value) {
+                this.statics[name] = value;
+            }
+        }, {
+            key: 'map',
+            value: function map(from, to) {
+                this.mappings.push([from, to || from]);
             }
         }, {
             key: 'on',
@@ -2544,19 +2567,14 @@
             }
         }, {
             key: 'init',
-            value: function init(root, delay) {
+            value: function init(context) {
                 var _this2 = this;
 
-                this.root = root;
                 var fn = function fn(i) {
                     _this2.item = i;
-                    if (_this2.id) root.ids[_this2.id] = i;
+                    if (_this2.id) context.ref(_this2.id, i);
                 };
-                if (root instanceof View) {
-                    delay.add(root._module._createItem(this.name, this.statics).then(fn));
-                } else {
-                    delay.add(root._createItem(this.name, this.statics).then(fn));
-                }
+                context.create(this.name, this.statics).then(fn);
                 this.children.forEach(function (it) {
                     var name = 'default';
                     if (it instanceof StaticNode) {
@@ -2565,37 +2583,38 @@
                         });
                         if (attr) name = attr[1];
                     }
-                    it.init(root, delay);
+                    it.init(context);
                     if (!_this2.grouped[name]) _this2.grouped[name] = [];
                     _this2.grouped[name].push(it);
                 });
             }
         }, {
             key: 'render',
-            value: function render(context, delay) {
+            value: function render(context) {
                 var _this3 = this;
 
                 if (this.rendered) return;
                 this.rendered = true;
-                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context, delay);
-                delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
+                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'render', this).call(this, context);
+                context.delay(this.item.set(this.mappings.reduce(function (acc, item) {
                     acc[item[1]] = getValue(item[0], context);
                     return acc;
                 }, {})));
-                delay.add(this.item._render(this.newParent).then(function () {
+                // TODO why blocks?
+                this.item._render(this.newParent).then(function () {
                     return Promise.all(Object.keys(_this3.grouped).map(function (k) {
                         if (!_this3.item.regions[k]) return;
                         return _this3.item.regions[k]._showNode(_this3.grouped[k], context);
                     }).concat(Object.keys(_this3.item.regions).map(function (it) {
                         if (!_this3.grouped[it] || !_this3.grouped[it].length) return _this3.item.regions[it]._showChildren();
                     })));
-                }));
+                });
                 this.context = context;
                 var cbs = [];
                 if (this.item instanceof Module) {
                     var m = this.item;
-                    cbs = cbs.concat(this.bindEvents(this.root, m, context));
-                    cbs = cbs.concat(this.bindActions(this.root, m, context));
+                    cbs = cbs.concat(this.bindEvents(context));
+                    cbs = cbs.concat(this.bindActions(context));
                     this.hooks = cbs.map(function (it) {
                         return m.on(it.event, it.fn);
                     });
@@ -2603,56 +2622,54 @@
             }
         }, {
             key: 'bindEvents',
-            value: function bindEvents(root, target, context) {
+            value: function bindEvents(context) {
                 var me = this;
-                var obj = { context: context };
                 return Object.keys(this.events).map(function (it) {
                     var cb = function cb(event) {
-                        var data = resolveEventArgument(this, obj.context, me.events[it].args, event);
-                        root._event.apply(root, [me.events[it].method].concat(toConsumableArray(data)));
+                        var data = resolveEventArgument(this, me.context, me.events[it].args, event);
+                        context.trigger.apply(context, [me.events[it].method].concat(toConsumableArray(data)));
                     };
-                    return { fn: cb, event: it, update: function update(ctx) {
-                            return obj.context = ctx;
-                        } };
+                    return { fn: cb, event: it };
                 });
             }
         }, {
             key: 'bindActions',
-            value: function bindActions(root, target, context) {
+            value: function bindActions(context) {
                 var me = this;
                 return Object.keys(this.actions).map(function (it) {
                     var cb = function cb(event) {
                         var data = resolveEventArgument(this, me.context, me.actions[it].args, event);
-                        root._action.apply(root, [me.actions[it].method].concat(toConsumableArray(data)));
+                        context.dispatch.apply(context, [me.actions[it].method].concat(toConsumableArray(data)));
                     };
                     return { fn: cb, event: it };
                 });
             }
         }, {
             key: 'update',
-            value: function update(context, delay) {
-                delay.add(this.item.set(this.bindings.reduce(function (acc, item) {
+            value: function update(context) {
+                var p = this.item.set(this.mappings.reduce(function (acc, item) {
                     acc[item[1]] = getValue(item[0], context);
                     return acc;
-                }, {})));
+                }, {}));
+                context.delay(p);
                 this.context = context;
                 this.children.forEach(function (it) {
-                    return it.update(context, delay);
+                    return it.update(context);
                 });
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 var _this4 = this;
 
                 if (!this.rendered) return;
-                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'destroy', this).call(this, delay);
-                delay.add(this.item.destroy());
+                get(ReferenceNode.prototype.__proto__ || Object.getPrototypeOf(ReferenceNode.prototype), 'destroy', this).call(this, context);
+                context.delay(this.item.destroy());
                 this.hooks.forEach(function (it) {
                     return it.dispose();
                 });
                 this.hooks = [];
-                delay.add(Promise.all(Object.keys(this.grouped).map(function (it) {
+                context.delay(Promise.all(Object.keys(this.grouped).map(function (it) {
                     if (!_this4.item.regions[it]) return;
                     return _this4.item.regions[it].close();
                 })));
@@ -2671,73 +2688,63 @@
 
             var _this = possibleConstructorReturn(this, (RegionNode.__proto__ || Object.getPrototypeOf(RegionNode)).call(this));
 
-            _this.isChildren = false;
             _this.id = id;
             return _this;
         }
 
         createClass(RegionNode, [{
             key: 'init',
-            value: function init(root, delay) {
+            value: function init(context) {
                 var _this2 = this;
 
-                this.root = root;
-                this.mod = root instanceof Module ? root : root._module;
                 this.children.forEach(function (it) {
                     it.parent = _this2.parent;
-                    it.init(root, delay);
+                    it.init(context);
                 });
                 var me = this;
-                this.mod.regions[this.id] = {
+                context.region(this.id, {
                     get item() {
                         return me.item;
                     },
                     show: function show(name, state) {
-                        me.isChildren = false;
                         return me.show(name, state);
                     },
-                    _showNode: function _showNode(nodes, context) {
-                        me.isChildren = false;
-                        return me.showNode(nodes, context);
+                    _showNode: function _showNode(nodes, ctx) {
+                        return me.showNode(nodes, ctx);
                     },
                     _showChildren: function _showChildren() {
                         if (!me.context) return Promise.resolve();
-                        me.isChildren = true;
-                        return this._showNode(me.children, me.context);
+                        return me.showNode(me.children, me.context);
                     },
                     close: function close() {
-                        me.isChildren = false;
                         return me.close();
                     }
-                };
-            }
-        }, {
-            key: 'render',
-            value: function render(context, delay) {
-                if (this.rendered) return;
-                this.rendered = true;
-                this.context = context;
-                if (this.isChildren) this.nodes.forEach(function (it) {
-                    return it.render(context, delay);
                 });
             }
         }, {
+            key: 'render',
+            value: function render(context) {
+                if (this.rendered) return;
+                this.rendered = true;
+                this.context = context;
+            }
+        }, {
             key: 'update',
-            value: function update(context, delay) {
+            value: function update(context) {
                 if (!this.rendered) return;
                 this.context = context;
-                if (this.isChildren) this.nodes.forEach(function (it) {
-                    return it.update(context, delay);
+                if (this.nodes === this.children) this.nodes.forEach(function (it) {
+                    return it.update(context);
                 });
             }
         }, {
             key: 'destroy',
-            value: function destroy(delay) {
+            value: function destroy(context) {
                 if (!this.rendered) return;
                 if (this.nodes) this.nodes.forEach(function (it) {
-                    return it.destroy(delay);
+                    return it.destroy(context);
                 });
-                if (this.item) delay.add(this.item.destroy());
+                if (this.item) context.delay(this.item.destroy());
                 this.rendered = false;
             }
         }, {
@@ -2746,13 +2753,15 @@
                 var _this3 = this;
 
                 if (!this.rendered) return;
-                return this.close().then(function () {
-                    _this3.nodes = nodes;
-                    return Delay.also(function (d) {
-                        return _this3.nodes.forEach(function (it) {
+                this.context = context;
+                return context.end().then(function () {
+                    return _this3.close().then(function () {
+                        _this3.nodes = nodes;
+                        _this3.nodes.forEach(function (it) {
                             it.parent = _this3.parent;
-                            it.render(context, d);
+                            it.render(context);
                         });
+                        return context.end();
                     });
                 });
             }
@@ -2762,12 +2771,14 @@
                 var _this4 = this;
 
                 if (!this.rendered) return;
-                return this.close().then(function () {
-                    return _this4.mod._createItem(name, state);
-                }).then(function (item) {
-                    _this4.item = item;
-                    return item._render(_this4.parent).then(function () {
-                        return item;
+                return this.context.end().then(function () {
+                    return _this4.close().then(function () {
+                        return _this4.context.create(name, state);
+                    }).then(function (item) {
+                        _this4.item = item;
+                        return item._render(_this4.parent).then(function () {
+                            return item;
+                        });
                     });
                 });
             }
@@ -2778,11 +2789,12 @@
 
                 if (!this.nodes && !this.item) return Promise.resolve();
                 return Promise.resolve().then(function () {
-                    if (_this5.nodes) return Delay.also(function (d) {
-                        return _this5.nodes.forEach(function (it) {
-                            return it.destroy(d);
+                    if (_this5.nodes) {
+                        _this5.nodes.forEach(function (it) {
+                            return it.destroy(_this5.context);
                         });
-                    });
+                        return _this5.context.end();
+                    }
                 }).then(function () {
                     if (_this5.item) return _this5.item.destroy();
                 }).then(function () {
@@ -2794,63 +2806,74 @@
         return RegionNode;
     }(Node);
 
-    var helpers = {
-        echo: EchoHelper, if: IfHelper, unless: UnlessHelper, concat: ConcatHelper
-    };
-    var blocks = {
-        if: IfBlock, unless: UnlessBlock, each: EachBlock
+    var Transformer = function () {
+        function Transformer(value, items, end) {
+            classCallCheck(this, Transformer);
+
+            this.value = value;
+            this.items = items || [];
+            this.end = end;
+        }
+
+        createClass(Transformer, [{
+            key: 'render',
+            value: function render(context) {
+                var v = getValue(this.value, context);
+                v = this.items.reduce(function (acc, item) {
+                    return item.render(context, acc);
+                }, v);
+                if (v == null && this.end) {
+                    return getAttributeValue(this.end, context);
+                }
+                return v;
+            }
+        }]);
+        return Transformer;
+    }();
+
+    var TransformerItem = function () {
+        function TransformerItem(name, args) {
+            classCallCheck(this, TransformerItem);
+
+            this.name = name;
+            this.args = args || [];
+        }
+
+        createClass(TransformerItem, [{
+            key: 'render',
+            value: function render(context, v) {
+                var fn = context.helper(this.name);
+                if (!fn) {
+                    throw new Error('no helper found: ' + this.name);
+                }
+                var args = this.args.map(function (it) {
+                    return getAttributeValue(it, context);
+                }).concat(v);
+                return fn.apply(null, args);
+            }
+        }]);
+        return TransformerItem;
+    }();
+
+    var innerHelpers = {
+        echo: EchoHelper, if: IfHelper, unless: UnlessHelper
     };
     var loaders = {
         default: Loader
     };
+    // nodes
     var SN = function SN(name, id) {
-        for (var _len = arguments.length, attributes = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-            attributes[_key - 2] = arguments[_key];
-        }
-
-        return new StaticNode(name, attributes || [], id);
+        return new StaticNode(name, id);
     };
     var DN = function DN(name, id) {
-        for (var _len2 = arguments.length, attributes = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
-            attributes[_key2 - 2] = arguments[_key2];
-        }
-
-        return new DynamicNode(name, attributes || [], id);
+        return new DynamicNode(name, id);
     };
-    var DA = function DA(d, name) {
-        for (var _len3 = arguments.length, hs = Array(_len3 > 2 ? _len3 - 2 : 0), _key3 = 2; _key3 < _len3; _key3++) {
-            hs[_key3 - 2] = arguments[_key3];
-        }
-
-        d.attribute(name, hs);
-    };
-    var BD = function BD(d, from, to) {
-        d.bind(from, to);
-    };
-    var EV = function EV(d, event, method) {
-        for (var _len4 = arguments.length, attrs = Array(_len4 > 3 ? _len4 - 3 : 0), _key4 = 3; _key4 < _len4; _key4++) {
-            attrs[_key4 - 3] = arguments[_key4];
-        }
-
-        d.on(event, method, attrs);
-    };
-    var AC = function AC(d, event, method) {
-        for (var _len5 = arguments.length, attrs = Array(_len5 > 3 ? _len5 - 3 : 0), _key5 = 3; _key5 < _len5; _key5++) {
-            attrs[_key5 - 3] = arguments[_key5];
-        }
-
-        d.action(event, method, attrs);
-    };
-    var CO = function CO(d, name) {
-        for (var _len6 = arguments.length, hs = Array(_len6 > 2 ? _len6 - 2 : 0), _key6 = 2; _key6 < _len6; _key6++) {
-            hs[_key6 - 2] = arguments[_key6];
-        }
-
-        d.component(name, hs);
+    var REF = function REF(name, id) {
+        return new ReferenceNode(name, id);
     };
     var TX = function TX() {
-        for (var _len7 = arguments.length, ss = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-            ss[_key7] = arguments[_key7];
+        for (var _len = arguments.length, ss = Array(_len), _key = 0; _key < _len; _key++) {
+            ss[_key] = arguments[_key];
         }
 
         return new (Function.prototype.bind.apply(TextNode, [null].concat(ss)))();
@@ -2859,86 +2882,115 @@
         var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
         return new RegionNode(id);
     };
-    var REF = function REF(name, statics, id) {
-        var ss = statics.reduce(function (acc, it) {
-            acc[it[0]] = it[1];
-            return acc;
-        }, {});
-        return new ReferenceNode(name, ss, id);
+    // node attribute
+    var SA = function SA(d, name, value) {
+        d.attribute(name, value);
     };
-    var NDA = function NDA(v) {
-        return [null, [1, v]];
+    var DA = function DA(d, name) {
+        for (var _len2 = arguments.length, hs = Array(_len2 > 2 ? _len2 - 2 : 0), _key2 = 2; _key2 < _len2; _key2++) {
+            hs[_key2 - 2] = arguments[_key2];
+        }
+
+        return d.dynamicAttribute(name, hs);
     };
-    var NSA = function NSA(v) {
-        return [null, [0, v]];
+    var BD = function BD(d, from, to) {
+        return d.bind(from, to);
+    };
+    var MP = function MP(d, from, to) {
+        return d.map(from, to);
+    };
+    var EV = function EV(d, event, method) {
+        for (var _len3 = arguments.length, attrs = Array(_len3 > 3 ? _len3 - 3 : 0), _key3 = 3; _key3 < _len3; _key3++) {
+            attrs[_key3 - 3] = arguments[_key3];
+        }
+
+        d.on(event, method, attrs);
+    };
+    var AC = function AC(d, event, method) {
+        for (var _len4 = arguments.length, attrs = Array(_len4 > 3 ? _len4 - 3 : 0), _key4 = 3; _key4 < _len4; _key4++) {
+            attrs[_key4 - 3] = arguments[_key4];
+        }
+
+        d.action(event, method, attrs);
+    };
+    var CO = function CO(d, name) {
+        for (var _len5 = arguments.length, hs = Array(_len5 > 2 ? _len5 - 2 : 0), _key5 = 2; _key5 < _len5; _key5++) {
+            hs[_key5 - 2] = arguments[_key5];
+        }
+
+        return d.component(name, hs);
+    };
+    var C = function C(parent) {
+        for (var _len6 = arguments.length, children = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+            children[_key6 - 1] = arguments[_key6];
+        }
+
+        return parent.setChildren(children);
+    };
+    // attributes
+    var TI = function TI(name) {
+        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+            args[_key7 - 1] = arguments[_key7];
+        }
+
+        return new TransformerItem(name, args);
+    };
+    var TV = function TV(value, end) {
+        for (var _len8 = arguments.length, items = Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
+            items[_key8 - 2] = arguments[_key8];
+        }
+
+        return [ValueType.TRANSFORMER, new Transformer(value, items, end)];
     };
     var SV = function SV(v) {
-        return [0, v];
+        return [ValueType.STATIC, v];
     };
     var DV = function DV(v) {
-        return [1, v];
+        return [ValueType.DYNAMIC, v];
     };
     var AT = function AT(n, v) {
         return [n, v];
     };
-    var KV = function KV(k, v) {
-        return [k, v || k];
-    };
+    // helpers
     var H = function H(n) {
         return Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n));
     };
     var HH = function HH(n) {
-        for (var _len8 = arguments.length, args = Array(_len8 > 1 ? _len8 - 1 : 0), _key8 = 1; _key8 < _len8; _key8++) {
-            args[_key8 - 1] = arguments[_key8];
+        for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+            args[_key9 - 1] = arguments[_key9];
         }
 
-        if (helpers[n]) return new (Function.prototype.bind.apply(helpers[n], [null].concat(args)))();
-        return new (Function.prototype.bind.apply(DelayTransfomer, [null].concat([n], args)))();
+        if (innerHelpers[n]) return new (Function.prototype.bind.apply(innerHelpers[n], [null].concat(args)))();
+        return new (Function.prototype.bind.apply(DelayHelper, [null].concat([n], args)))();
     };
-    var HIF = function HIF() {
-        for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
-            args[_key9] = arguments[_key9];
-        }
-
-        return HH.apply(undefined, ['if'].concat(args));
-    };
-    var HUN = function HUN() {
-        for (var _len10 = arguments.length, args = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
-            args[_key10] = arguments[_key10];
-        }
-
-        return HH.apply(undefined, ['unless'].concat(args));
-    };
+    // block
     var EACH = function EACH(args, trueNode, falseNode) {
         return new EachBlock(args, trueNode, falseNode);
     };
-    var IF = function IF(n, trueNode, falseNode) {
-        return new IfBlock([DV(n)], trueNode, falseNode);
-    };
-    var IFC = function IFC(args, trueNode, falseNode) {
+    var IF = function IF(args, trueNode, falseNode) {
         return new IfBlock(args, trueNode, falseNode);
     };
     var UN = function UN(n, trueNode, falseNode) {
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
-    var C = function C(parent) {
-        for (var _len11 = arguments.length, children = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
-            children[_key11 - 1] = arguments[_key11];
-        }
-
-        return parent.setChildren(children);
-    };
-    var drizzle = {
-        helpers: helpers, blocks: blocks, loaders: loaders, customEvents: customEvents, components: components,
-        lifecycles: { module: [], view: [] },
-        ModuleTemplate: ModuleTemplate, ViewTemplate: ViewTemplate, Application: Application, Loader: Loader,
-        factory: {
-            SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, NDA: NDA, NSA: NSA, SV: SV, DV: DV, AT: AT, KV: KV, H: H, HH: HH, HIF: HIF, HUN: HUN,
-            EACH: EACH, IF: IF, IFC: IFC, UN: UN, C: C, DA: DA, BD: BD, EV: EV, AC: AC, CO: CO
-        }
+    var lifecycles = { module: [], view: [] };
+    var factory = {
+        SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, SV: SV, DV: DV, AT: AT, H: H, HH: HH,
+        EACH: EACH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, BD: BD, EV: EV, AC: AC, CO: CO, TI: TI, TV: TV, MP: MP
     };
 
-    return drizzle;
+    exports.lifecycles = lifecycles;
+    exports.factory = factory;
+    exports.helpers = helpers;
+    exports.loaders = loaders;
+    exports.customEvents = customEvents;
+    exports.components = components;
+    exports.ModuleTemplate = ModuleTemplate;
+    exports.ViewTemplate = ViewTemplate;
+    exports.Application = Application;
+    exports.Loader = Loader;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
 
 })));
 //# sourceMappingURL=drizzle.js.map

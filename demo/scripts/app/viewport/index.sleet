@@ -15,7 +15,7 @@ script.
         },
 
         routes: {
-            '/todos1': 'todo-app',   // use default region
+            '/todos': 'todo-app',   // use default region
             '/repl': 'repl-app'
         }
     }

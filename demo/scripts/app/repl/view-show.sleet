@@ -2,56 +2,59 @@
 
 view
     .showcase > region#showcase
-    div(action:click=run(files json))&if(changed)
+    div(action:click=run(files json))@if(changed)
         .is-overlay.has-background-dark.run-overlay
         p.click-to-run.has-text-centered.is-size-1.has-text-white 点击运行
 
-script.
-    import {compile} from 'sleet'
-    let id = 0
+script..
+import {compile} from 'sleet'
+let id = 0
 
-    const transform = (code) => {
-        const es6 = compile(code, {'drizzle': window['sleet-drizzle']}).content
-        const es5 = Babel.transform(es6, {presets: ['es2015']})
-        return eval(`(function(exports, require) {${es5.code}\nreturn exports.default })({}, require1)`)
-    }
+const transform = (code) => {
+    const es6 = compile(code, {
+        defaultPlugin: 'drizzle',
+        plugins: {drizzle: SleetDrizzle.plugin}
+    }).code
+    const es5 = Babel.transform(es6, {presets: ['es2015']})
+    return eval(`(function(exports, require) {${es5.code}\nreturn exports.default })({}, require1)`)
+}
 
-    export default {
-        updated () {
-            const {item} = this.regions.showcase
-            if (!item) return
-            item.set(JSON.parse(this.get('json')))
-        },
+export default {
+    updated () {
+        const {item} = this.regions.showcase
+        if (!item) return
+        item.set(JSON.parse(this.get('json')))
+    },
 
-        actions: {
-            run (cb, files, json) {
-                try {
-                    const mods = Object.keys(files).reduce((acc, item) => {
-                        acc[item] = transform(files[item])
-                        return acc
-                    }, {})
-                    const idx = mods.index
-                    delete mods.index
-                    idx._loadedItems = mods
+    actions: {
+        run (cb, files, json) {
+            try {
+                const mods = Object.keys(files).reduce((acc, item) => {
+                    acc[item] = transform(files[item])
+                    return acc
+                }, {})
+                const idx = mods.index
+                delete mods.index
+                idx._loadedItems = mods
 
-                    const opt = this._module._items
-                    delete opt[`_mod${id}`]
+                const opt = this._module._items
+                delete opt[`_mod${id}`]
 
-                    const name = `_mod${++id}`
-                    if (!idx.cycles) idx.cycles = []
+                const name = `_mod${++id}`
+                if (!idx.cycles) idx.cycles = []
 
-                    const me = this
-                    idx.cycles.push({
-                        updated () {
-                            console.log('updated', this.get())
-                        }
-                    })
-                    opt[name] = { options: idx, loader: this.app.createLoader('index') }
-                    this.regions.showcase.show(name, JSON.parse(json))
-                    cb({changed: false})
-                } catch (e) {
-                    console.log(e)
-                }
+                const me = this
+                idx.cycles.push({
+                    updated () {
+                        console.log('updated', this.get())
+                    }
+                })
+                opt[name] = { options: idx, loader: this.app.createLoader('index') }
+                this.regions.showcase.show(name, JSON.parse(json))
+                cb({changed: false})
+            } catch (e) {
+                console.log(e)
             }
         }
     }
+}

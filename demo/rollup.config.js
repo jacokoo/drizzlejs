@@ -5,8 +5,13 @@ import resolve from 'rollup-plugin-node-resolve'
 
 export default {
     input: 'scripts/main.js',
-    external: ['drizzlejs', 'fs', 'path'],
+    external: ['drizzlejs', 'sleet'],
     plugins: [
+        {
+            resolveId (id, name) {
+                console.log(id, name)
+            }
+        },
         drizzle({scriptRoot: 'app'}),
         resolve(),
         commonjs({
@@ -24,6 +29,10 @@ export default {
         file: 'dist/bundle.js',
         format: 'iife',
         name: 'main',
-        sourcemap: true
+        sourcemap: true,
+        globals: {
+            sleet: 'Sleet',
+            drizzlejs: 'Drizzle'
+        }
     }
 }

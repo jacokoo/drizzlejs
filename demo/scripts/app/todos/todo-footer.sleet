@@ -1,14 +1,13 @@
 #! drizzle
 view
-    footer.footer
+    footer.footer@if(todos.length)
         span.todo-count
-            strong > echo(remaining)
-            echo(if(remaining eq 1 ' item left' ' items left'))
+            strong $remaining $if(remaining == 1 ' item left' ' items left')
         ul.filters
-            li > a(href='#/todos/all' class=if(filter eq 'all' 'selected')) All
-            li > a(href='#/todos/active' class=if(filter eq 'active' 'selected')) Active
-            li > a(href='#/todos/completed' class=if(filter eq 'completed' 'selected')) Completed
-        button.clear-completed(action:click=clearCompleted)&if(haveCompleted) Clear completed
+            li > a(href='#/todos/all' class=if(filter == 'all' 'selected')) All
+            li > a(href='#/todos/active' class=if(filter == 'active' 'selected')) Active
+            li > a(href='#/todos/completed' class=if(filter == 'completed' 'selected')) Completed
+        button.clear-completed(action:click=clearCompleted)@if(haveCompleted) Clear completed
 
 script.
     export default {

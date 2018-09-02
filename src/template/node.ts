@@ -45,10 +45,6 @@ export abstract class Node {
         this.children.forEach(it => it.inSvg = true)
     }
 
-    clearHelper () {
-        this.children.forEach(it => it.clearHelper())
-    }
-
     create () {
         return null
     }
