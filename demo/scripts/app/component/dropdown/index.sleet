@@ -7,37 +7,37 @@ module(closeWhenMenuClicked) > #dropdown.dropdown(on:click=clickIt(event this))
                 g > path(d='m121.3,34.6c-1.6-1.6-4.2-1.6-5.8,0l-51,51.1-51.1-51.1c-1.6-1.6-4.2-1.6-5.8,0-1.6,1.6-1.6,4.2 0,5.8l53.9,53.9c0.8,0.8 1.8,1.2 2.9,1.2 1,0 2.1-0.4 2.9-1.2l53.9-53.9c1.7-1.6 1.7-4.2 0.1-5.8z')
     .dropdown-menu > .dropdown-content#content > region
 
-script.
-    export default {
-        store: {
-            models: {
-                closeWhenMenuClicked: () => false
-            }
-        },
-
-        events: {
-            clickIt (e, it) {
-                const closeIt = this.get('closeWhenMenuClicked')
-                e.stopPropagation();
-                if (!this.dropdownHandler) {
-                    this.dropdownHandler = (ee) => {
-                        if (closeIt && ee && this.ids.content.contains(ee.target)) return
-                        it.classList.remove('is-active')
-                        document.removeEventListener('click', this.dropdownHandler)
-                        this.dropdownHandler = null
-                        this.fire('hide')
-                    }
-                    it.classList.add('is-active')
-                    document.addEventListener('click', this.dropdownHandler, false)
-                    this.fire('show')
-                    return
-                }
-
-                this.dropdownHandler(e)
-            }
-        },
-
-        beforeDestroy () {
-            if (this.dropdownHandler) this.dropdownHandler()
+script..
+export default {
+    store: {
+        models: {
+            closeWhenMenuClicked: () => false
         }
+    },
+
+    events: {
+        clickIt (e, it) {
+            const closeIt = this.get('closeWhenMenuClicked')
+            e.stopPropagation();
+            if (!this.dropdownHandler) {
+                this.dropdownHandler = (ee) => {
+                    if (closeIt && ee && this.ids.content.contains(ee.target)) return
+                    it.classList.remove('is-active')
+                    document.removeEventListener('click', this.dropdownHandler)
+                    this.dropdownHandler = null
+                    this.fire('hide')
+                }
+                it.classList.add('is-active')
+                document.addEventListener('click', this.dropdownHandler, false)
+                this.fire('show')
+                return
+            }
+
+            this.dropdownHandler(e)
+        }
+    },
+
+    beforeDestroy () {
+        if (this.dropdownHandler) this.dropdownHandler()
     }
+}

@@ -7,72 +7,72 @@ module(todos) > .todoapp-container
         todo-list(todos filter)
         todo-footer(todos filter)
 
-script.
-    let id = 0
-    export default {
-        items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
+script..
+let id = 0
+export default {
+    items: { views: ['create-todo', 'todo-list', 'todo-footer'] },
 
-        routes: {
-            '/:filter': {
-                action: 'updateFilter'
+    routes: {
+        '/:filter': {
+            action: 'updateFilter'
+        }
+    },
+
+    store: {
+        models: {
+            todos: {
+                data: () => []
+            },
+            filter: {
+                data: () => 'all'
             }
         },
 
-        store: {
-            models: {
-                todos: {
-                    data: () => []
-                },
-                filter: {
-                    data: () => 'all'
-                }
+        actions: {
+            init () {
+                this.set({todos: [{name: 'task 1~!', completed: true, id: id++}, {name: 'task 2', id: id++}]})
+            },
+            newTodo (payload) {
+                this.set({todos: this.get('todos').concat([Object.assign(payload, {id: id++})])})
             },
 
-            actions: {
-                init () {
-                    this.set({todos: [{name: 'task 1~!', completed: true, id: id++}, {name: 'task 2', id: id++}]})
-                },
-                newTodo (payload) {
-                    this.set({todos: this.get('todos').concat([Object.assign(payload, {id: id++})])})
-                },
+            toggleAll (payload) {
+                this.set({todos: this.get('todos').map(it => Object.assign(it, payload))})
+            },
 
-                toggleAll (payload) {
-                    this.set({todos: this.get('todos').map(it => Object.assign(it, payload))})
-                },
+            toggle ({id, checked}) {
+                const todos = this.get('todos')
+                todos.find(it => it.id === id).completed = checked
+                this.set({ todos })
+            },
 
-                toggle ({id, checked}) {
-                    const todos = this.get('todos')
-                    todos.find(it => it.id === id).completed = checked
-                    this.set({ todos })
-                },
+            remove (item) {
+                this.set({todos: this.get('todos').filter(it => it.id !== item.id)})
+            },
 
-                remove (item) {
-                    this.set({todos: this.get('todos').filter(it => it.id !== item.id)})
-                },
+            update ({id, name}) {
+                console.log('update', id, name)
+                const todos = this.get('todos')
+                todos.find(it => it.id === id).name = name
+                this.set({ todos })
+            },
 
-                update ({id, name}) {
-                    console.log('update', id, name)
-                    const todos = this.get('todos')
-                    todos.find(it => it.id === id).name = name
-                    this.set({ todos })
-                },
+            commitEdit (payload) {
+                this.dispatch('update', payload)
+            },
 
-                commitEdit (payload) {
-                    this.dispatch('update', payload)
-                },
+            revertEdit (payload) {
+                this.dispatch('update', payload)
+            },
 
-                revertEdit (payload) {
-                    this.dispatch('update', payload)
-                },
+            clearCompleted (payload) {
+                this.set({todos: this.get('todos').filter(it => !it.completed)})
+            },
 
-                clearCompleted (payload) {
-                    this.set({todos: this.get('todos').filter(it => !it.completed)})
-                },
-
-                updateFilter (payload) {
-                    if (payload.filter !== 'completed' && payload.filter !== 'active') payload.filter = 'all'
-                    this.set(payload)
-                }
+            updateFilter (payload) {
+                if (payload.filter !== 'completed' && payload.filter !== 'active') payload.filter = 'all'
+                this.set(payload)
             }
         }
     }
+}

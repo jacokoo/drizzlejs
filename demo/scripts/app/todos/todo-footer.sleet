@@ -9,15 +9,15 @@ view
             li > a(href='#/todos/completed' class=if(filter == 'completed' 'selected')) Completed
         button.clear-completed(action:click=clearCompleted)@if(haveCompleted) Clear completed
 
-script.
-    export default {
-        computed: {
-            remaining ({todos}) {
-                return todos.filter(it => !it.completed).length
-            },
+script..
+export default {
+    computed: {
+        remaining ({todos}) {
+            return todos.filter(it => !it.completed).length
+        },
 
-            haveCompleted ({todos}) {
-                return todos.some(it => !!it.completed)
-            }
+        haveCompleted ({todos}) {
+            return todos.some(it => !!it.completed)
         }
     }
+}

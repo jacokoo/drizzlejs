@@ -18,47 +18,47 @@ view(c-dropdown) > .tabs#tabs > ul
         span@else $(tab).sleet
         span.delete.is-small
 
-script.
-    export default {
-        computed: {
-            haveDropdown ({tab, i, current}) {
-                return i === current && (tab !== 'index')
-            }
-        },
-        events: {
-            onShow () {
-                this.ids.tabs.style.overflow = 'unset'
-            },
-
-            onHide () {
-                this.ids.tabs.style.overflow = ''
-            }
+script..
+export default {
+    computed: {
+        haveDropdown ({tab, i, current}) {
+            return i === current && (tab !== 'index')
+        }
+    },
+    events: {
+        onShow () {
+            this.ids.tabs.style.overflow = 'unset'
         },
 
-        actions: {
-            rename (cb, tabs, name, i) {
-                if (tabs[i] === name) {
-                    this.set({name: ''})
-                    return
-                }
+        onHide () {
+            this.ids.tabs.style.overflow = ''
+        }
+    },
 
-                if (tabs.indexOf(name) !== -1) {
-                    console.log('already exists')
-                    return
-                }
-
-                if (name.indexOf('.') !== -1) {
-                    console.log('can not have extension')
-                    return
-                }
-
-                if (name.indexOf('-') === -1) {
-                    console.log('should have at least one dash(-)')
-                    return
-                }
-
+    actions: {
+        rename (cb, tabs, name, i) {
+            if (tabs[i] === name) {
                 this.set({name: ''})
-                cb(name)
+                return
             }
+
+            if (tabs.indexOf(name) !== -1) {
+                console.log('already exists')
+                return
+            }
+
+            if (name.indexOf('.') !== -1) {
+                console.log('can not have extension')
+                return
+            }
+
+            if (name.indexOf('-') === -1) {
+                console.log('should have at least one dash(-)')
+                return
+            }
+
+            this.set({name: ''})
+            cb(name)
         }
     }
+}

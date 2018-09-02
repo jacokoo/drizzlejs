@@ -2,34 +2,34 @@
 
 module(tabs) > view-tab(tabs current)
 
-script.
-    export default {
-        items: { views: ['view-tab'], modules: {
-            'c-dropdown': 'component/dropdown'
-        }},
+script..
+export default {
+    items: { views: ['view-tab'], modules: {
+        'c-dropdown': 'component/dropdown'
+    }},
 
-        store: {
-            models: {
-                tabs: () => [],
-                current: () => 0
+    store: {
+        models: {
+            tabs: () => [],
+            current: () => 0
+        },
+
+        actions: {
+            active (index) {
+                const {tabs, current} = this.get()
+                if (current === index) return
+
+                this.set({current: index})
+                this.fire('change', {from: tabs[current], to: tabs[index]})
             },
 
-            actions: {
-                active (index) {
-                    const {tabs, current} = this.get()
-                    if (current === index) return
-
-                    this.set({current: index})
-                    this.fire('change', {from: tabs[current], to: tabs[index]})
-                },
-
-                rename (name) {
-                    const {tabs, current} = this.get()
-                    const old = tabs[current]
-                    tabs[current] = name
-                    this.set({tabs})
-                    this.fire('rename', {old, name})
-                }
+            rename (name) {
+                const {tabs, current} = this.get()
+                const old = tabs[current]
+                tabs[current] = name
+                this.set({tabs})
+                this.fire('rename', {old, name})
             }
         }
     }
+}

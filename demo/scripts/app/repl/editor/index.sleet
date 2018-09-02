@@ -2,19 +2,19 @@
 
 module(code) > view-editor(code)
 
-script.
-    export default {
-        items: { views: ['view-editor'] },
+script..
+export default {
+    items: { views: ['view-editor'] },
 
-        store: {
-            models: {
-                code: () => ''
-            },
+    store: {
+        models: {
+            code: () => ''
+        },
 
-            actions: {
-                update ({detail}) {
-                    this.fire('change', {code: detail})
-                }
+        actions: {
+            update ({detail}) {
+                this.fire('change', {code: detail})
             }
         }
     }
+}

@@ -19,36 +19,36 @@ view
                     action:escape = revertEdit(todo nameCache)
                 )
 
-script.
-    export default {
-        computed: {
-            allDone ({todos}) {
-                return !todos.some(it => !it.completed)
-            },
-            filtered ({todos, filter}) {
-                if (filter === 'completed') return todos.filter(it => it.completed)
-                if (filter === 'active') return todos.filter(it => !it.completed)
-                return todos
-            }
+script..
+export default {
+    computed: {
+        allDone ({todos}) {
+            return !todos.some(it => !it.completed)
+        },
+        filtered ({todos, filter}) {
+            if (filter === 'completed') return todos.filter(it => it.completed)
+            if (filter === 'active') return todos.filter(it => !it.completed)
+            return todos
+        }
+    },
+
+    events: {
+        edit (todo) {
+            this.set({nameCache: todo.name, editing: todo})
+        }
+    },
+
+    actions: {
+        revertEdit (cb, todo, cached) {
+            console.log(todo, cached)
+            this.set({editing: false, nameCache: false})
+            cb({id: todo.id, name: cached})
         },
 
-        events: {
-            edit (todo) {
-                this.set({nameCache: todo.name, editing: todo})
-            }
-        },
-
-        actions: {
-            revertEdit (cb, todo, cached) {
-                console.log(todo, cached)
-                this.set({editing: false, nameCache: false})
-                cb({id: todo.id, name: cached})
-            },
-
-            commitEdit (cb, id, name, type) {
-                console.log('commit', id, name, type)
-                this.set({nameCache: false, editing: false})
-                cb({id, name})
-            }
+        commitEdit (cb, id, name, type) {
+            console.log('commit', id, name, type)
+            this.set({nameCache: false, editing: false})
+            cb({id, name})
         }
     }
+}

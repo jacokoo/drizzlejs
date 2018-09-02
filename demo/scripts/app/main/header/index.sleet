@@ -9,6 +9,6 @@ module
         li.header-nav-item > a(href='#/repl') 在线试用
         li.header-nav-item > a(href='#/demos') 示例集合
 
-script.
-    export default {
-    }
+script..
+export default {
+}

@@ -2,15 +2,15 @@
 
 view > #editor.code-editor(comp:ace-editor=options + code action:codeChange=update(event))
 
-script.
-    export default {
-        state: {
-            options: {
-                fontFamily: 'Inconsolata, monospace',
-                fontSize: '13px',
-                showPrintMargin: false,
-                mode: 'ace/mode/sleet',
-                theme: 'ace/theme/xcode'
-            }
+script..
+export default {
+    state: {
+        options: {
+            fontFamily: 'Inconsolata, monospace',
+            fontSize: '13px',
+            showPrintMargin: false,
+            mode: 'ace/mode/sleet',
+            theme: 'ace/theme/xcode'
         }
     }
+}

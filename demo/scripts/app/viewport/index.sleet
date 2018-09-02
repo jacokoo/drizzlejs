@@ -3,19 +3,19 @@ module
     app-header
     region
 
-script.
-    export default {
-        items: {
-            modules: {
-                'todo-app': 'todos',
-                'app-menu': 'main/menu',
-                'repl-app': 'repl',
-                'app-header': 'main/header'
-            }
-        },
-
-        routes: {
-            '/todos': 'todo-app',   // use default region
-            '/repl': 'repl-app'
+script..
+export default {
+    items: {
+        modules: {
+            'todo-app': 'todos',
+            'app-menu': 'main/menu',
+            'repl-app': 'repl',
+            'app-header': 'main/header'
         }
+    },
+
+    routes: {
+        '/todos': 'todo-app',   // use default region
+        '/repl': 'repl-app'
     }
+}

@@ -6,6 +6,6 @@ module > .sidebar
         li.menu-item1 > a hello
         li.menu-item1 > a hello
 
-script.
-    export default {
-    }
+script..
+export default {
+}
