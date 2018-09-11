@@ -23,7 +23,11 @@ export default {
     updated () {
         const {item} = this.regions.showcase
         if (!item) return
-        item.set(JSON.parse(this.get('json')))
+        try {
+            item.set(JSON.parse(this.get('json')))
+        } catch (e) {
+            console.log(e)
+        }
     },
 
     actions: {

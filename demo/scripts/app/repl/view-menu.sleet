@@ -1,0 +1,8 @@
+#! drizzle
+
+view(c-dropdown) > .operators > c-dropdown
+    a.dropdown-item(href='#/repl/' + key)@each(examples as value key) $value.name
+
+script..
+export default {
+}

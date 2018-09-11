@@ -1010,7 +1010,7 @@
 
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
-                    var sub = _this2.sub(context, i);
+                    var sub = _this2.sub(context, it[0]);
                     _this2.createTrueNode(i, sub);
                 });
             }
@@ -1059,7 +1059,7 @@
 
                 this.currentSize = arr.length;
                 arr.forEach(function (it, i) {
-                    var sub = _this3.sub(context, i);
+                    var sub = _this3.sub(context, it[0]);
                     if (_this3.nodes[i]) {
                         _this3.nodes[i].update(sub);
                     } else {

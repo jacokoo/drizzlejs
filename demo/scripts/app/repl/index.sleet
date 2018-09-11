@@ -9,7 +9,7 @@ module > .main-content > .tile.is-ancestor.h100
                 action:rename=renameFile(event)
             )
             code-editor(code action:change=updateCode(event))
-            .operators > c-dropdown > .dropdown-item > p a
+            view-menu(examples)
 
     ad.tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child.is-relative > view-show(files json changed)
@@ -19,15 +19,11 @@ script..
 import {compile} from 'sleet'
 import hw from '../../examples/hello-world'
 import bg from '../../examples/bind-group'
-
-const examples = {
-    [hw.code]: hw,
-    [bg.code]: bg
-}
+import ib from '../../examples/if-block'
 
 export default {
     items: {
-        views: ['view-json', 'view-show'],
+        views: ['view-json', 'view-show', 'view-menu'],
         modules: {
             'file-tab': 'repl/tab',
             'code-editor': 'repl/editor',
@@ -44,7 +40,10 @@ export default {
             files: () => { return {} },
             current: () => 'index',
             json: () => '',
-            changed: () => true
+            changed: () => true,
+            examples: () => { return {
+                [hw.code]: hw, [bg.code]: bg, [ib.code]: ib
+            }}
         },
 
         actions: {
@@ -84,6 +83,7 @@ export default {
             },
 
             changeExample ({code}) {
+                const examples = this.get('examples')
                 if (!code || !examples[code]) code = 'hello-world'
                 const c = examples[code]
                 this.set({files: c.files, json: c.json})

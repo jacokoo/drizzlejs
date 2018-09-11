@@ -9,45 +9,6 @@ const indent = num => {
     return idt
 }
 
-const format = (json) => {
-    let idt = 0
-    let result = ''
-    let inStr = false
-    json.split('').forEach(it => {
-        if (it === '"' && result.slice(-1) !== '\\') inStr = !inStr
-
-        if (inStr) {
-            result += it
-            return
-        }
-
-        if (it === '{' || it === '[') {
-            idt ++
-            result += it + '\n' + indent(idt)
-            return
-        }
-
-        if (it === '}' || it === ']') {
-            idt --
-            result += '\n' + indent(idt) + it
-            return
-        }
-
-        if (it === ',') {
-            result += ',\n' + indent(idt)
-            return
-        }
-
-        if (it === ':') {
-            result += ': '
-            return
-        }
-
-        result += it
-    })
-    return result
-}
-
 export default {
     state: {
         options: {

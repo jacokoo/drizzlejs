@@ -48,8 +48,8 @@ export class EachBlock extends AnchorNode {
         }
 
         const kv = Array.isArray(list) ?
-            list.map((it, i) => [i, it]) as [any, any] :
-            Object.keys(list).map(it => [it, list[it]] as [any, any])
+            list.map((it, i) => [i, it]) as [number | string, any] :
+            Object.keys(list).map(it => [it, list[it]] as [number | string, any])
 
         this.renderKeyValue(kv, context)
     }
@@ -62,10 +62,10 @@ export class EachBlock extends AnchorNode {
         context.end().then(() => n.render(context))
     }
 
-    renderKeyValue (arr: [any, any][], context: DataContext) {
+    renderKeyValue (arr: [number | string, any][], context: DataContext) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
-            const sub = this.sub(context, i)
+            const sub = this.sub(context, it[0])
             this.createTrueNode(i, sub)
         })
     }
@@ -109,7 +109,7 @@ export class EachBlock extends AnchorNode {
     updateKeyValue (arr: [any, any][], context: DataContext) {
         this.currentSize = arr.length
         arr.forEach((it, i) => {
-            const sub = this.sub(context, i)
+            const sub = this.sub(context, it[0])
 
             if (this.nodes[i]) {
                 this.nodes[i].update(sub)
