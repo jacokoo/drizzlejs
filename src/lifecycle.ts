@@ -4,19 +4,23 @@ export interface Lifecycle {
     stage?: string
     init? (): any
 
+    collect? (data: object): object
+
     beforeRender? (): any
-    rendered? (): any
+    rendered? (data: object): any
 
     beforeUpdate? (): any
-    updated? (): any
+    updated? (data: object): any
 
     beforeDestroy? (): any
     destroyed? (): any
 }
 
-const callIt = (ctx: LifecycleContainer, cycles: Lifecycle[], method: string, reverse = false): Promise<any> => {
+const callIt = (
+    ctx: LifecycleContainer, cycles: Lifecycle[], method: string, reverse = false, args: any[] = []
+): Promise<any> => {
     return cycles.filter(it => it[method])[reverse ? 'reduceRight' : 'reduce']((acc, it) => {
-        return acc.then(() => it[method].apply(ctx))
+        return acc.then(() => it[method].apply(ctx, args))
     }, Promise.resolve())
 }
 
@@ -41,20 +45,24 @@ export class LifecycleContainer {
         return callIt(this, this._cycles, 'init')
     }
 
+    protected _doCollect (data: object): object {
+        return this._cycles.filter(it => !!it.collect).reduce((acc, item) => item.collect(acc), data)
+    }
+
     protected _doBeforeRender () {
         return callIt(this, this._cycles, 'beforeRender')
     }
 
-    protected _doRendered () {
-        return callIt(this, this._cycles, 'rendered')
+    protected _doRendered (data: object) {
+        return callIt(this, this._cycles, 'rendered', false, [data])
     }
 
     protected _doBeforeUpdate () {
         return callIt(this, this._cycles, 'beforeUpdate')
     }
 
-    protected _doUpdated () {
-        return callIt(this, this._cycles, 'updated')
+    protected _doUpdated (data: object) {
+        return callIt(this, this._cycles, 'updated', false, [data])
     }
 
     protected _doBeforeDestroy () {

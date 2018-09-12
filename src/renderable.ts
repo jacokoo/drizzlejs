@@ -6,7 +6,6 @@ import { Appendable, ModuleTemplate } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
-    state?: object,
     customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
     events?: {[name: string]: (...args) => void}
     template?: ModuleTemplate
@@ -22,9 +21,10 @@ export enum ComponentState {
 export interface Region {
     item: Renderable<any>
     show (name: string, state: object): Promise<Renderable<any>>
+    close (): Promise<any>
+
     _showNode (nodes: Node[], context: object): Promise<any>
     _showChildren ()
-    close (): Promise<any>
 }
 
 export abstract class Renderable<T extends RenderOptions> extends LifecycleContainer {
@@ -47,7 +47,8 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
         this._target = target
         this._busy = this._busy
             .then(() => this._doBeforeRender())
-            .then(() => this._doRendered())
+            .then(() => this._doCollect(this.get()))
+            .then(data => this._doRendered(data))
             .then(() => this._status = ComponentState.RENDERED)
 
         return this._busy
@@ -73,14 +74,6 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
     _event (name, ...args: any[]) {
         const {events} = this._options
         if (events && events[name]) events[name].apply(this, args)
-    }
-
-    _context () {
-        const c = Object.assign({}, this.get() as {[name: string]: any})
-        if (this._options.computed) {
-            c._computed = this._options.computed
-        }
-        return c
     }
 
     _action (name: string, ...data: any[]) {

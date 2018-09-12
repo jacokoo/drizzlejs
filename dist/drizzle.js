@@ -248,6 +248,12 @@
                 var ce = this.root._options.customEvents;
                 return ce && ce[name] || customEvents[name];
             }
+        }, {
+            key: 'computed',
+            value: function computed(name) {
+                var c = this.root._options.computed;
+                return c && c[name];
+            }
         }]);
         return AbstractDataContext;
     }();
@@ -357,18 +363,18 @@
                         });
                         return context.end();
                     },
-                    beforeRender: function beforeRender() {
+                    rendered: function rendered(data) {
                         var _this = this;
 
-                        var context = me.create(this, o.groups);
+                        var context = me.create(this, o.groups, data);
                         o.nodes.forEach(function (it) {
                             it.parent = _this._target;
                             it.render(context);
                         });
                         return context.end();
                     },
-                    updated: function updated() {
-                        var context = me.create(this, o.groups);
+                    updated: function updated(data) {
+                        var context = me.create(this, o.groups, data);
                         o.nodes.forEach(function (it) {
                             return it.update(context);
                         });
@@ -399,7 +405,9 @@
         createClass(ViewTemplate, [{
             key: "create",
             value: function create(root, groups) {
-                return new ViewDataContext(root, root._context(), groups);
+                var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+                return new ViewDataContext(root, data, groups);
             }
         }]);
         return ViewTemplate;
@@ -420,8 +428,10 @@
 
         createClass(ModuleTemplate, [{
             key: "create",
-            value: function create(root) {
-                return new ModuleDataContext(root, root._context());
+            value: function create(root, groups) {
+                var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+                return new ModuleDataContext(root, data);
             }
         }]);
         return ModuleTemplate;
@@ -470,8 +480,9 @@
         var first = ks.shift();
         var ctx = void 0;
         var data = context.data;
-        if (data._computed && first in data._computed) {
-            ctx = data._computed[first](data);
+        var computed = context.computed(first);
+        if (computed) {
+            ctx = computed(data);
         } else {
             ctx = data[first];
         }
@@ -1111,12 +1122,13 @@
 
     var callIt = function callIt(ctx, cycles, method) {
         var reverse = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+        var args = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
 
         return cycles.filter(function (it) {
             return it[method];
         })[reverse ? 'reduceRight' : 'reduce'](function (acc, it) {
             return acc.then(function () {
-                return it[method].apply(ctx);
+                return it[method].apply(ctx, args);
             });
         }, Promise.resolve());
     };
@@ -1155,14 +1167,23 @@
                 return callIt(this, this._cycles, 'init');
             }
         }, {
+            key: '_doCollect',
+            value: function _doCollect(data) {
+                return this._cycles.filter(function (it) {
+                    return !!it.collect;
+                }).reduce(function (acc, item) {
+                    return item.collect(acc);
+                }, data);
+            }
+        }, {
             key: '_doBeforeRender',
             value: function _doBeforeRender() {
                 return callIt(this, this._cycles, 'beforeRender');
             }
         }, {
             key: '_doRendered',
-            value: function _doRendered() {
-                return callIt(this, this._cycles, 'rendered');
+            value: function _doRendered(data) {
+                return callIt(this, this._cycles, 'rendered', false, [data]);
             }
         }, {
             key: '_doBeforeUpdate',
@@ -1171,8 +1192,8 @@
             }
         }, {
             key: '_doUpdated',
-            value: function _doUpdated() {
-                return callIt(this, this._cycles, 'updated');
+            value: function _doUpdated(data) {
+                return callIt(this, this._cycles, 'updated', false, [data]);
             }
         }, {
             key: '_doBeforeDestroy',
@@ -1226,7 +1247,9 @@
                 this._busy = this._busy.then(function () {
                     return _this2._doBeforeRender();
                 }).then(function () {
-                    return _this2._doRendered();
+                    return _this2._doCollect(_this2.get());
+                }).then(function (data) {
+                    return _this2._doRendered(data);
                 }).then(function () {
                     return _this2._status = ComponentState.RENDERED;
                 });
@@ -1268,15 +1291,6 @@
                 }
 
                 if (events && events[name]) events[name].apply(this, args);
-            }
-        }, {
-            key: "_context",
-            value: function _context() {
-                var c = Object.assign({}, this.get());
-                if (this._options.computed) {
-                    c._computed = this._options.computed;
-                }
-                return c;
             }
         }, {
             key: "_action",
@@ -1444,7 +1458,9 @@
                 }).then(function () {
                     return Object.assign(_this2._state, data);
                 }).then(function () {
-                    return _this2._doUpdated();
+                    return _this2._doCollect(_this2.get());
+                }).then(function (d) {
+                    return _this2._doUpdated(d);
                 });
                 return this._busy;
             }
@@ -1790,7 +1806,9 @@
                 }).then(function () {
                     return _this3._store.dispatch(name, payload);
                 }).then(function () {
-                    return _this3._doUpdated();
+                    return _this3._doCollect(_this3.get());
+                }).then(function (data) {
+                    return _this3._doUpdated(data);
                 });
                 return this._busy;
             }

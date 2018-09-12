@@ -52,8 +52,9 @@ export function getValue (key: string, context: DataContext): any {
     const first = ks.shift()
     let ctx
     const data = context.data
-    if (data._computed && first in data._computed) {
-        ctx = data._computed[first](data)
+    const computed = context.computed(first)
+    if (computed) {
+        ctx = computed(data)
     } else {
         ctx = data[first]
     }

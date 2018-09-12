@@ -1,10 +1,10 @@
 import { RenderOptions, Renderable, ComponentState } from './renderable'
 import { Module } from './module'
-import { DynamicNode } from './template/dynamic-node'
 import { Component } from './template/context'
 
 export interface ViewOptions extends RenderOptions {
     helpers?: {[name: string]: (...any) => any},
+    state?: object,
     components?: {[name: string]: Component}
 }
 
@@ -45,7 +45,8 @@ export class View extends Renderable<ViewOptions> {
         this._busy = this._busy
             .then(() => this._doBeforeUpdate())
             .then(() => Object.assign(this._state, data))
-            .then(() => this._doUpdated())
+            .then(() => this._doCollect(this.get()))
+            .then(d => this._doUpdated(d))
 
         return this._busy
     }

@@ -19,15 +19,17 @@ view
     .control
         label(class='checkbox')
             input(type='checkbox' bind:group=names value='a')
-            | A checked
+            |  a
+    .control
         label(class='checkbox')
             input(type='checkbox' bind:group=names value='b')
-            | B checked
+            |  b
+    .control
         label(class='checkbox')
             input(type='checkbox' bind:group=names value='c')
-            | C checked
+            |  c
 
-    h3 hello $names !
+    p@each(names as name) $name checked
 
 script..
 export default {

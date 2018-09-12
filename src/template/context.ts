@@ -58,6 +58,7 @@ export interface Context {
     helper (name: string): CustomHelper | undefined
     component (name: string): Component | undefined
     event (name: string): CustomEvent | undefined
+    computed (name: string): (any) => any | undefined
 
     ref (id: string, node?: HTMLElement | Renderable<any>): void
     region (id: string, region: Region): void
@@ -130,6 +131,11 @@ abstract class AbstractDataContext implements DataContext {
     event (name: string): CustomEvent | undefined {
         const ce = this.root._options.customEvents
         return (ce && ce[name]) || customEvents[name]
+    }
+
+    computed (name: string): (any) => any | undefined {
+        const c = this.root._options.computed
+        return c && c[name]
     }
 
     abstract sub (data: {[name: string]: any}): DataContext

@@ -47,8 +47,8 @@ export abstract class Template {
                 return context.end()
             },
 
-            beforeRender (this: Renderable<any>) {
-                const context = me.create(this, o.groups)
+            rendered (this: Renderable<any>, data: object) {
+                const context = me.create(this, o.groups, data)
                 o.nodes.forEach(it => {
                     it.parent = this._target
                     it.render(context)
@@ -56,8 +56,8 @@ export abstract class Template {
                 return context.end()
             },
 
-            updated (this: Renderable<any>) {
-                const context = me.create(this, o.groups)
+            updated (this: Renderable<any>, data: object) {
+                const context = me.create(this, o.groups, data)
                 o.nodes.forEach(it => it.update(context))
                 return context.end()
             },
@@ -72,12 +72,12 @@ export abstract class Template {
         return o
     }
 
-    abstract create (root: Renderable<any>, groups): DataContext
+    abstract create (root: Renderable<any>, groups: {[name: string]: BindingGroup}, data?: object): DataContext
 }
 
 export class ViewTemplate extends Template {
-    create (root: View, groups: {[name: string]: BindingGroup}): DataContext {
-        return new ViewDataContext(root, root._context(), groups)
+    create (root: View, groups: {[name: string]: BindingGroup}, data: object = {}): DataContext {
+        return new ViewDataContext(root, data, groups)
     }
 }
 
@@ -89,7 +89,7 @@ export class ModuleTemplate extends Template {
         this.exportedModels = exportedModels
     }
 
-    create (root: Module): DataContext {
-        return new ModuleDataContext(root, root._context())
+    create (root: Module, groups: {[name: string]: BindingGroup}, data: object = {}): DataContext {
+        return new ModuleDataContext(root, data)
     }
 }

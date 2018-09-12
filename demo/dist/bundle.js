@@ -548,7 +548,7 @@
 
     var index$1 = '#! drizzle\n\nmodule(names) > view-a(names)\n\nscript..\nexport default {\n    items: { views: [\'view-a\'] },\n    store: {\n        models: {\n            names: () => []\n        }\n    }\n}\n';
 
-    var view$1 = '#! drizzle\n\nview\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'a\')\n            | A checked\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'b\')\n            | B checked\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'c\')\n            | C checked\n\n    h3 hello $names !\n\nscript..\nexport default {\n}\n';
+    var view$1 = '#! drizzle\n\nview\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'a\')\n            |  a\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'b\')\n            |  b\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'c\')\n            |  c\n\n    p@each(names as name) $name checked\n\nscript..\nexport default {\n}\n';
 
     var json$1 = '{\n    "names": ["a", "b", "c"]\n}';
 

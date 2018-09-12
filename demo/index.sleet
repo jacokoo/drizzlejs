@@ -14,7 +14,12 @@ html
         link(rel=stylesheet href='./styles/main.css')
         script(src='//cdn.jsdelivr.net/bluebird/3.5.0/bluebird.js')
         script.
-            Promise.config({longStackTraces: true, monitoring: true})
+            Promise.config({
+                longStackTraces: true,
+                warnings: {
+                    wForgottenReturn: false
+                }
+            })
             window.addEventListener("unhandledrejection", function(e) {
                 e.preventDefault();
                 var reason = e.detail.reason;

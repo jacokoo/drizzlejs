@@ -120,7 +120,8 @@ export class Module extends Renderable<ModuleOptions> {
         this._busy = this._busy
             .then(() => this._doBeforeUpdate())
             .then(() => this._store.dispatch(name, payload))
-            .then(() => this._doUpdated())
+            .then(() => this._doCollect(this.get()))
+            .then(data => this._doUpdated(data))
 
         return this._busy
     }
@@ -138,7 +139,7 @@ export class Module extends Renderable<ModuleOptions> {
 
     _init () {
         this._store = new Store(this, this._options.store || {}, UPDATE_ACTION)
-        this.set(Object.assign({}, this._options.state, this._extraState))
+        this.set(Object.assign({}, this._extraState))
         const p = this._loadItems().then(() => super._init())
         return p
     }
