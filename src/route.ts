@@ -1,4 +1,6 @@
 import { Module } from './module'
+import { Lifecycle } from './lifecycle'
+import { View } from './view'
 
 interface DefaultHandler {
     enter (args: object): Promise<Router>
@@ -24,6 +26,7 @@ export interface RouteOptions {
 
 interface MatchResult {
     remain: string[]
+    consumed: string
     args?: object
 }
 
@@ -49,24 +52,30 @@ class Token {
         return this.next ? this.next.value(vv * 10) : vv
     }
 
-    protected doMatch (key: string, keys: string[]) {
+    protected doMatch (key: string, keys: string[]): MatchResult | false {
         if (key !== this.key) return false
-        if (this.next) return this.next.match(keys)
-        return {remain: keys}
+        if (this.next) {
+            const o = this.next.match(keys)
+            if (!o) return false
+            o.consumed = `${key}/${o.consumed}`
+            return o
+        }
+        return {remain: keys, consumed: key}
     }
 }
 
 // /:name
 class ArgToken extends Token {
     v = 8
-    doMatch (key: string, keys: string[]) {
+    doMatch (key: string, keys: string[]): MatchResult | false {
         const oo = {[this.key]: key}
-        if (!this.next) return {remain: keys, args: oo}
+        if (!this.next) return {remain: keys, args: oo, consumed: key}
 
         const o = this.next.match(keys)
         if (o === false) return false
 
         o.args ? Object.assign(o.args, oo) : (o.args = oo)
+        o.consumed = `${key}/${o.consumed}`
         return o
     }
 }
@@ -74,9 +83,9 @@ class ArgToken extends Token {
 // /*name
 class AllToken extends Token {
     v = 7
-    match (keys: string[]) {
+    match (keys: string[]): MatchResult | false {
         if (!keys.length) return false
-        return { args: {[this.key]: keys}, remain: []}
+        return { args: {[this.key]: keys}, remain: [], consumed: keys.join('/')}
     }
 }
 
@@ -89,7 +98,17 @@ const create = (path) => {
     }, null)
 }
 
+interface RouterContainer {
+    _router?: Router
+}
+
 export class Router {
+    static get (item: Module): Router {
+        return (item as RouterContainer)._router
+    }
+
+    _prefix: string
+
     private _module: Module
     private _keys: Token[] = []
     private _defs: DefaultHandler[] = []
@@ -101,7 +120,8 @@ export class Router {
         this.initRoutes(routes)
     }
 
-    route (keys: string[]) {
+    route (prefix: string, keys: string[]) {
+        this._prefix = prefix
         for (let i = 0; i < this._keys.length; i ++) {
             const re = this._keys[i].match(keys)
             if (re) return this.doRoute(i, re)
@@ -118,29 +138,29 @@ export class Router {
         })
     }
 
-    private enter (idx: number, args: object, keys: string[]) {
+    private enter (idx: number, result: MatchResult) {
         this._currentKey = idx
-        return this._defs[idx].enter(args).then(it => {
+        return this._defs[idx].enter(result.args).then(it => {
             this._next = it
-            if (it && keys.length) return it.route(keys)
+            if (it) return it.route(`${this._prefix}${result.consumed}/`, result.remain)
         })
     }
 
     private doRoute (idx: number, result: MatchResult): Promise<any> {
         const h = this._defs[idx]
         if (this._currentKey === -1) {
-            return this.enter(idx, result.args, result.remain)
+            return this.enter(idx, result)
         }
         if (idx === this._currentKey) {
             return Promise.resolve().then(() => {
                 if (h.update) return h.update(result.args)
             }).then(() => {
-                if (this._next) return this._next.route(result.remain)
+                if (this._next) return this._next.route(`${this._prefix}${result.consumed}/`, result.remain)
             })
         }
 
         return this.leave().then(() => {
-            return this.enter(idx, result.args, result.remain)
+            return this.enter(idx, result)
         })
     }
 
@@ -179,7 +199,7 @@ export class Router {
                 const o = h.model ? {[h.model]: args} : args
                 return this._module.regions[h.region || 'default'].show(h.ref, o).then(it => {
                     item = it
-                    if (it instanceof Module) return it._router
+                    if (it instanceof Module) return Router.get(it)
                     return null
                 })
             },
@@ -192,5 +212,30 @@ export class Router {
             }
         }
     }
+}
 
+export const RouterModuleLifecycle: Lifecycle = {
+    stage: 'init',
+    init (this: Module) {
+        const {routes} = this._options
+        if (!routes) return
+        (this as RouterContainer)._router = new Router(this, routes)
+    },
+
+    collect (this: Module, data: object): object {
+        const r = Router.get(this)
+        if (!r) return data
+
+        data['@router'] = r._prefix
+        return data
+    }
+}
+
+export const RouterViewLifecycle: Lifecycle = {
+    collect (this: View, data: object): object {
+        const r = Router.get(this._module)
+        if (!r) return data
+        data['@router'] = r._prefix
+        return data
+    }
 }

@@ -1,7 +1,7 @@
 #! drizzle
 
 view(c-dropdown) > .operators > c-dropdown
-    a.dropdown-item(href='#/repl/' + key)@each(examples as value key) $value.name
+    a.dropdown-item(href=(@router key))@each(examples as value key) $value.name - $@router
 
 script..
 export default {

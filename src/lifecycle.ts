@@ -46,7 +46,7 @@ export class LifecycleContainer {
     }
 
     protected _doCollect (data: object): object {
-        return this._cycles.filter(it => !!it.collect).reduce((acc, item) => item.collect(acc), data)
+        return this._cycles.filter(it => !!it.collect).reduce((acc, item) => item.collect.call(this, acc), data)
     }
 
     protected _doBeforeRender () {

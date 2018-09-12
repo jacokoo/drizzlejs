@@ -8,7 +8,6 @@ import {
     Attribute, AttributeValue, ModuleTemplate,
     ViewTemplate, NormalValue, ValueType,
 } from './template/template'
-import { components, helpers } from './template/context'
 import { Application } from './application'
 import { StaticNode } from './template/static-node'
 import { DynamicNode } from './template/dynamic-node'
@@ -17,7 +16,6 @@ import { ReferenceNode } from './template/reference-node'
 import { RegionNode } from './template/region-node'
 import { Node } from './template/node'
 import { TransformerItem, Transformer } from './template/transformer'
-import { customEvents } from './template/context'
 
 export interface Disposable {
     dispose (): void
@@ -25,10 +23,6 @@ export interface Disposable {
 
 const innerHelpers = {
     echo: EchoHelper, if: IfHelper, unless: UnlessHelper
-}
-
-const loaders = {
-    default: Loader
 }
 
 // nodes
@@ -75,13 +69,11 @@ const EACH = (args: string[], trueNode: () => Node, falseNode?: Node) => new Eac
 const IF = (args: AttributeValue[], trueNode: Node, falseNode?: Node) => new IfBlock(args, trueNode, falseNode)
 const UN = (n: string, trueNode: Node, falseNode?: Node) => new UnlessBlock([DV(n)], trueNode, falseNode)
 
-export const lifecycles = {module: [], view: []}
 export const factory = {
     SN, DN, TX, RG, REF, SV, DV, AT, H, HH,
     EACH, IF, UN, C, SA, DA, BD, EV, AC, CO, TI, TV, MP
 }
 
 export {
-    helpers, loaders, customEvents, components,
     ModuleTemplate, ViewTemplate, Application, Loader,
 }

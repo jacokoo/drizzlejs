@@ -4,7 +4,7 @@ import { Application } from './application'
 import { Loader } from './loader'
 import { View, ViewOptions } from './view'
 import { Disposable} from './drizzle'
-import { Router, RouteOptions } from './route'
+import { RouteOptions } from './route'
 import { Appendable } from './template/template'
 
 export interface ItemOptions {
@@ -50,7 +50,6 @@ export class Module extends Renderable<ModuleOptions> {
         options: ModuleOptions | ViewOptions
         loader: Loader
     }} = {}
-    _router: Router
 
     private _store: Store
     private _handlers: {[name: string]: ((data: any) => void)[]} = {}
@@ -58,11 +57,10 @@ export class Module extends Renderable<ModuleOptions> {
     private _extraState: object
 
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState: object = {}) {
-        super(app, options, options.template && options.template.createLife())
+        super(app, options, options.template && options.template.createLife(), ...app.options.moduleLifecycles)
         this._loader = loader
         this._extraState = extraState
         this.regions = {}
-        if (options.routes) this._router = new Router(this, options.routes)
     }
 
     set (data: object) {

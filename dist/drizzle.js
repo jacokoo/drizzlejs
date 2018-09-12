@@ -146,36 +146,6 @@
       }
     };
 
-    var components = {};
-    var helpers = {};
-    var customEvents = {
-        enter: function enter(node, cb) {
-            var ee = function ee(e) {
-                if (e.keyCode !== 13) return;
-                e.preventDefault();
-                cb.call(this, e);
-            };
-            node.addEventListener('keypress', ee, false);
-            return {
-                dispose: function dispose() {
-                    node.removeEventListener('keypress', ee, false);
-                }
-            };
-        },
-        escape: function escape(node, cb) {
-            var ee = function ee(e) {
-                if (e.keyCode !== 27) return;
-                cb.call(this, e);
-            };
-            node.addEventListener('keyup', ee, false);
-            return {
-                dispose: function dispose() {
-                    node.removeEventListener('keyup', ee, false);
-                }
-            };
-        }
-    };
-
     var AbstractDataContext = function () {
         function AbstractDataContext(root, data, groups, busy) {
             classCallCheck(this, AbstractDataContext);
@@ -246,7 +216,7 @@
             key: 'event',
             value: function event(name) {
                 var ce = this.root._options.customEvents;
-                return ce && ce[name] || customEvents[name];
+                return ce && ce[name] || this.root.app.options.customEvents[name];
             }
         }, {
             key: 'computed',
@@ -282,13 +252,13 @@
             key: 'helper',
             value: function helper(name) {
                 var h = this.root._options.helpers;
-                return h && h[name] || helpers[name];
+                return h && h[name] || this.root.app.options.helpers[name];
             }
         }, {
             key: 'component',
             value: function component(name) {
                 var c = this.root._options.components;
-                return c && c[name] || components[name];
+                return c && c[name] || this.root.app.options.components[name];
             }
         }]);
         return ViewDataContext;
@@ -1169,10 +1139,12 @@
         }, {
             key: '_doCollect',
             value: function _doCollect(data) {
+                var _this2 = this;
+
                 return this._cycles.filter(function (it) {
                     return !!it.collect;
                 }).reduce(function (acc, item) {
-                    return item.collect(acc);
+                    return item.collect.call(_this2, acc);
                 }, data);
             }
         }, {
@@ -1418,9 +1390,11 @@
         inherits(View, _Renderable);
 
         function View(mod, options) {
+            var _ref;
+
             classCallCheck(this, View);
 
-            var _this = possibleConstructorReturn(this, (View.__proto__ || Object.getPrototypeOf(View)).call(this, mod.app, options, options.template && options.template.createLife()));
+            var _this = possibleConstructorReturn(this, (_ref = View.__proto__ || Object.getPrototypeOf(View)).call.apply(_ref, [this, mod.app, options, options.template && options.template.createLife()].concat(toConsumableArray(mod.app.options.viewLifecycles))));
 
             _this._state = {};
             _this._module = mod;
@@ -1478,235 +1452,6 @@
         return View;
     }(Renderable);
 
-    // /name
-
-    var Token = function () {
-        function Token(key, next) {
-            classCallCheck(this, Token);
-
-            this.v = 9;
-            this.key = key;
-            this.next = next;
-        }
-
-        createClass(Token, [{
-            key: 'match',
-            value: function match(keys) {
-                var c = keys[0];
-                if (!c) return false;
-                return this.doMatch(c, keys.slice(1));
-            }
-        }, {
-            key: 'value',
-            value: function value() {
-                var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-                var vv = v + this.v;
-                return this.next ? this.next.value(vv * 10) : vv;
-            }
-        }, {
-            key: 'doMatch',
-            value: function doMatch(key, keys) {
-                if (key !== this.key) return false;
-                if (this.next) return this.next.match(keys);
-                return { remain: keys };
-            }
-        }]);
-        return Token;
-    }();
-    // /:name
-
-
-    var ArgToken = function (_Token) {
-        inherits(ArgToken, _Token);
-
-        function ArgToken() {
-            classCallCheck(this, ArgToken);
-
-            var _this = possibleConstructorReturn(this, (ArgToken.__proto__ || Object.getPrototypeOf(ArgToken)).apply(this, arguments));
-
-            _this.v = 8;
-            return _this;
-        }
-
-        createClass(ArgToken, [{
-            key: 'doMatch',
-            value: function doMatch(key, keys) {
-                var oo = defineProperty({}, this.key, key);
-                if (!this.next) return { remain: keys, args: oo };
-                var o = this.next.match(keys);
-                if (o === false) return false;
-                o.args ? Object.assign(o.args, oo) : o.args = oo;
-                return o;
-            }
-        }]);
-        return ArgToken;
-    }(Token);
-    // /*name
-
-
-    var AllToken = function (_Token2) {
-        inherits(AllToken, _Token2);
-
-        function AllToken() {
-            classCallCheck(this, AllToken);
-
-            var _this2 = possibleConstructorReturn(this, (AllToken.__proto__ || Object.getPrototypeOf(AllToken)).apply(this, arguments));
-
-            _this2.v = 7;
-            return _this2;
-        }
-
-        createClass(AllToken, [{
-            key: 'match',
-            value: function match(keys) {
-                if (!keys.length) return false;
-                return { args: defineProperty({}, this.key, keys), remain: [] };
-            }
-        }]);
-        return AllToken;
-    }(Token);
-
-    var create = function create(path) {
-        var ts = path.trim().split('/').filter(function (it) {
-            return !!it;
-        });
-        return ts.reduceRight(function (acc, item) {
-            if (item.charAt(0) === '*') return new AllToken(item.slice(1), acc);
-            if (item.charAt(0) === ':') return new ArgToken(item.slice(1), acc);
-            return new Token(item, acc);
-        }, null);
-    };
-
-    var Router = function () {
-        function Router(module, routes) {
-            classCallCheck(this, Router);
-
-            this._keys = [];
-            this._defs = [];
-            this._currentKey = -1;
-            this._module = module;
-            this.initRoutes(routes);
-        }
-
-        createClass(Router, [{
-            key: 'route',
-            value: function route(keys) {
-                for (var i = 0; i < this._keys.length; i++) {
-                    var re = this._keys[i].match(keys);
-                    if (re) return this.doRoute(i, re);
-                }
-                return Promise.resolve(false);
-            }
-        }, {
-            key: 'leave',
-            value: function leave() {
-                var _this3 = this;
-
-                return Promise.resolve().then(function () {
-                    if (_this3._next) return _this3._next.leave();
-                }).then(function () {
-                    var h = _this3._defs[_this3._currentKey];
-                    if (h && h.leave) return h.leave();
-                });
-            }
-        }, {
-            key: 'enter',
-            value: function enter(idx, args, keys) {
-                var _this4 = this;
-
-                this._currentKey = idx;
-                return this._defs[idx].enter(args).then(function (it) {
-                    _this4._next = it;
-                    if (it && keys.length) return it.route(keys);
-                });
-            }
-        }, {
-            key: 'doRoute',
-            value: function doRoute(idx, result) {
-                var _this5 = this;
-
-                var h = this._defs[idx];
-                if (this._currentKey === -1) {
-                    return this.enter(idx, result.args, result.remain);
-                }
-                if (idx === this._currentKey) {
-                    return Promise.resolve().then(function () {
-                        if (h.update) return h.update(result.args);
-                    }).then(function () {
-                        if (_this5._next) return _this5._next.route(result.remain);
-                    });
-                }
-                return this.leave().then(function () {
-                    return _this5.enter(idx, result.args, result.remain);
-                });
-            }
-        }, {
-            key: 'initRoutes',
-            value: function initRoutes(routes) {
-                var _this6 = this;
-
-                Object.keys(routes).map(function (key) {
-                    return { key: key, token: create(key) };
-                }).sort(function (a, b) {
-                    return b.token.value() - a.token.value();
-                }).forEach(function (it) {
-                    _this6._keys.push(it.token);
-                    _this6._defs.push(_this6.createHandler(routes[it.key]));
-                });
-            }
-        }, {
-            key: 'createHandler',
-            value: function createHandler(h) {
-                if (typeof h === 'string') return this.createModuleHandler({ ref: h });
-                if ('enter' in h) return h;
-                if ('action' in h) return this.createActionHandler(h);
-                if ('ref' in h) return this.createModuleHandler(h);
-                throw new Error('unsupported router handler');
-            }
-        }, {
-            key: 'createActionHandler',
-            value: function createActionHandler(h) {
-                var _this7 = this;
-
-                return {
-                    enter: function enter(args) {
-                        return _this7._module._dispatch(h.action, args).then(function () {
-                            return null;
-                        });
-                    },
-                    update: function update(args) {
-                        return _this7._module._dispatch(h.action, args);
-                    }
-                };
-            }
-        }, {
-            key: 'createModuleHandler',
-            value: function createModuleHandler(h) {
-                var _this8 = this;
-
-                var item = void 0;
-                return {
-                    enter: function enter(args) {
-                        var o = h.model ? defineProperty({}, h.model, args) : args;
-                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
-                            item = it;
-                            if (it instanceof Module) return it._router;
-                            return null;
-                        });
-                    },
-                    update: function update(args) {
-                        if (!args) return Promise.resolve();
-                        var o = h.model ? defineProperty({}, h.model, args) : args;
-                        if (item && item instanceof Module) return item.set(o);
-                        return Promise.resolve();
-                    }
-                };
-            }
-        }]);
-        return Router;
-    }();
-
     var UPDATE_ACTION = 'update' + +new Date();
     var clone = function clone(target) {
         if (Array.isArray(target)) {
@@ -1728,17 +1473,18 @@
         inherits(Module, _Renderable);
 
         function Module(app, loader, options) {
+            var _ref;
+
             var extraState = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
             classCallCheck(this, Module);
 
-            var _this = possibleConstructorReturn(this, (Module.__proto__ || Object.getPrototypeOf(Module)).call(this, app, options, options.template && options.template.createLife()));
+            var _this = possibleConstructorReturn(this, (_ref = Module.__proto__ || Object.getPrototypeOf(Module)).call.apply(_ref, [this, app, options, options.template && options.template.createLife()].concat(toConsumableArray(app.options.moduleLifecycles))));
 
             _this._items = {};
             _this._handlers = {};
             _this._loader = loader;
             _this._extraState = extraState;
             _this.regions = {};
-            if (options.routes) _this._router = new Router(_this, options.routes);
             return _this;
         }
 
@@ -1833,7 +1579,7 @@
                 var _this5 = this;
 
                 this._store = new Store(this, this._options.store || {}, UPDATE_ACTION);
-                this.set(Object.assign({}, this._options.state, this._extraState));
+                this.set(Object.assign({}, this._extraState));
                 var p = this._loadItems().then(function () {
                     return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this5).call(_this5);
                 });
@@ -1879,6 +1625,299 @@
         return Module;
     }(Renderable);
 
+    // /name
+
+    var Token = function () {
+        function Token(key, next) {
+            classCallCheck(this, Token);
+
+            this.v = 9;
+            this.key = key;
+            this.next = next;
+        }
+
+        createClass(Token, [{
+            key: 'match',
+            value: function match(keys) {
+                var c = keys[0];
+                if (!c) return false;
+                return this.doMatch(c, keys.slice(1));
+            }
+        }, {
+            key: 'value',
+            value: function value() {
+                var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+                var vv = v + this.v;
+                return this.next ? this.next.value(vv * 10) : vv;
+            }
+        }, {
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                if (key !== this.key) return false;
+                if (this.next) {
+                    var o = this.next.match(keys);
+                    if (!o) return false;
+                    o.consumed = key + '/' + o.consumed;
+                    return o;
+                }
+                return { remain: keys, consumed: key };
+            }
+        }]);
+        return Token;
+    }();
+    // /:name
+
+
+    var ArgToken = function (_Token) {
+        inherits(ArgToken, _Token);
+
+        function ArgToken() {
+            classCallCheck(this, ArgToken);
+
+            var _this = possibleConstructorReturn(this, (ArgToken.__proto__ || Object.getPrototypeOf(ArgToken)).apply(this, arguments));
+
+            _this.v = 8;
+            return _this;
+        }
+
+        createClass(ArgToken, [{
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                var oo = defineProperty({}, this.key, key);
+                if (!this.next) return { remain: keys, args: oo, consumed: key };
+                var o = this.next.match(keys);
+                if (o === false) return false;
+                o.args ? Object.assign(o.args, oo) : o.args = oo;
+                o.consumed = key + '/' + o.consumed;
+                return o;
+            }
+        }]);
+        return ArgToken;
+    }(Token);
+    // /*name
+
+
+    var AllToken = function (_Token2) {
+        inherits(AllToken, _Token2);
+
+        function AllToken() {
+            classCallCheck(this, AllToken);
+
+            var _this2 = possibleConstructorReturn(this, (AllToken.__proto__ || Object.getPrototypeOf(AllToken)).apply(this, arguments));
+
+            _this2.v = 7;
+            return _this2;
+        }
+
+        createClass(AllToken, [{
+            key: 'match',
+            value: function match(keys) {
+                if (!keys.length) return false;
+                return { args: defineProperty({}, this.key, keys), remain: [], consumed: keys.join('/') };
+            }
+        }]);
+        return AllToken;
+    }(Token);
+
+    var create = function create(path) {
+        var ts = path.trim().split('/').filter(function (it) {
+            return !!it;
+        });
+        return ts.reduceRight(function (acc, item) {
+            if (item.charAt(0) === '*') return new AllToken(item.slice(1), acc);
+            if (item.charAt(0) === ':') return new ArgToken(item.slice(1), acc);
+            return new Token(item, acc);
+        }, null);
+    };
+
+    var Router = function () {
+        function Router(module, routes) {
+            classCallCheck(this, Router);
+
+            this._keys = [];
+            this._defs = [];
+            this._currentKey = -1;
+            this._module = module;
+            this.initRoutes(routes);
+        }
+
+        createClass(Router, [{
+            key: 'route',
+            value: function route(prefix, keys) {
+                this._prefix = prefix;
+                for (var i = 0; i < this._keys.length; i++) {
+                    var re = this._keys[i].match(keys);
+                    if (re) return this.doRoute(i, re);
+                }
+                return Promise.resolve(false);
+            }
+        }, {
+            key: 'leave',
+            value: function leave() {
+                var _this3 = this;
+
+                return Promise.resolve().then(function () {
+                    if (_this3._next) return _this3._next.leave();
+                }).then(function () {
+                    var h = _this3._defs[_this3._currentKey];
+                    if (h && h.leave) return h.leave();
+                });
+            }
+        }, {
+            key: 'enter',
+            value: function enter(idx, result) {
+                var _this4 = this;
+
+                this._currentKey = idx;
+                return this._defs[idx].enter(result.args).then(function (it) {
+                    _this4._next = it;
+                    if (it) return it.route('' + _this4._prefix + result.consumed + '/', result.remain);
+                });
+            }
+        }, {
+            key: 'doRoute',
+            value: function doRoute(idx, result) {
+                var _this5 = this;
+
+                var h = this._defs[idx];
+                if (this._currentKey === -1) {
+                    return this.enter(idx, result);
+                }
+                if (idx === this._currentKey) {
+                    return Promise.resolve().then(function () {
+                        if (h.update) return h.update(result.args);
+                    }).then(function () {
+                        if (_this5._next) return _this5._next.route('' + _this5._prefix + result.consumed + '/', result.remain);
+                    });
+                }
+                return this.leave().then(function () {
+                    return _this5.enter(idx, result);
+                });
+            }
+        }, {
+            key: 'initRoutes',
+            value: function initRoutes(routes) {
+                var _this6 = this;
+
+                Object.keys(routes).map(function (key) {
+                    return { key: key, token: create(key) };
+                }).sort(function (a, b) {
+                    return b.token.value() - a.token.value();
+                }).forEach(function (it) {
+                    _this6._keys.push(it.token);
+                    _this6._defs.push(_this6.createHandler(routes[it.key]));
+                });
+            }
+        }, {
+            key: 'createHandler',
+            value: function createHandler(h) {
+                if (typeof h === 'string') return this.createModuleHandler({ ref: h });
+                if ('enter' in h) return h;
+                if ('action' in h) return this.createActionHandler(h);
+                if ('ref' in h) return this.createModuleHandler(h);
+                throw new Error('unsupported router handler');
+            }
+        }, {
+            key: 'createActionHandler',
+            value: function createActionHandler(h) {
+                var _this7 = this;
+
+                return {
+                    enter: function enter(args) {
+                        return _this7._module._dispatch(h.action, args).then(function () {
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        return _this7._module._dispatch(h.action, args);
+                    }
+                };
+            }
+        }, {
+            key: 'createModuleHandler',
+            value: function createModuleHandler(h) {
+                var _this8 = this;
+
+                var item = void 0;
+                return {
+                    enter: function enter(args) {
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
+                            item = it;
+                            if (it instanceof Module) return Router.get(it);
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        if (!args) return Promise.resolve();
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        if (item && item instanceof Module) return item.set(o);
+                        return Promise.resolve();
+                    }
+                };
+            }
+        }], [{
+            key: 'get',
+            value: function get$$1(item) {
+                return item._router;
+            }
+        }]);
+        return Router;
+    }();
+
+    var RouterModuleLifecycle = {
+        stage: 'init',
+        init: function init() {
+            var routes = this._options.routes;
+
+            if (!routes) return;
+            this._router = new Router(this, routes);
+        },
+        collect: function collect(data) {
+            var r = Router.get(this);
+            if (!r) return data;
+            data['@router'] = r._prefix;
+            return data;
+        }
+    };
+    var RouterViewLifecycle = {
+        collect: function collect(data) {
+            var r = Router.get(this._module);
+            if (!r) return data;
+            data['@router'] = r._prefix;
+            return data;
+        }
+    };
+
+    var customEvents = {
+        enter: function enter(node, cb) {
+            var ee = function ee(e) {
+                if (e.keyCode !== 13) return;
+                e.preventDefault();
+                cb.call(this, e);
+            };
+            node.addEventListener('keypress', ee, false);
+            return {
+                dispose: function dispose() {
+                    node.removeEventListener('keypress', ee, false);
+                }
+            };
+        },
+        escape: function escape(node, cb) {
+            var ee = function ee(e) {
+                if (e.keyCode !== 27) return;
+                cb.call(this, e);
+            };
+            node.addEventListener('keyup', ee, false);
+            return {
+                dispose: function dispose() {
+                    node.removeEventListener('keyup', ee, false);
+                }
+            };
+        }
+    };
+
     var Application = function () {
         function Application(options) {
             classCallCheck(this, Application);
@@ -1887,8 +1926,13 @@
             this.options = Object.assign({
                 stages: ['init', 'template', 'default'],
                 scriptRoot: 'app',
-                entry: 'viewport'
+                entry: 'viewport',
+                helpers: {},
+                components: {}
             }, options);
+            this.options.customEvents = Object.assign(customEvents, this.options.customEvents);
+            this.options.moduleLifecycles = [RouterModuleLifecycle].concat(this.options.moduleLifecycles || []);
+            this.options.viewLifecycles = [RouterViewLifecycle].concat(this.options.viewLifecycles || []);
             this.registerLoader(Loader);
         }
 
@@ -1947,7 +1991,8 @@
         }, {
             key: 'startRouter',
             value: function startRouter(item) {
-                if (!item._router) return;
+                var router = Router.get(item);
+                if (!router) return;
                 var doIt = function doIt() {
                     var hash = window.location.hash;
                     if (hash.slice(0, 2) !== '#/') return;
@@ -1955,7 +2000,7 @@
                         return !!it;
                     });
                     if (!hs.length) return;
-                    item._router.route(hs).then(function (it) {
+                    router.route('#/', hs).then(function (it) {
                         console.log(it);
                     });
                 };
@@ -2876,9 +2921,6 @@
     var innerHelpers = {
         echo: EchoHelper, if: IfHelper, unless: UnlessHelper
     };
-    var loaders = {
-        default: Loader
-    };
     // nodes
     var SN = function SN(name, id) {
         return new StaticNode(name, id);
@@ -2991,18 +3033,12 @@
     var UN = function UN(n, trueNode, falseNode) {
         return new UnlessBlock([DV(n)], trueNode, falseNode);
     };
-    var lifecycles = { module: [], view: [] };
     var factory = {
         SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, SV: SV, DV: DV, AT: AT, H: H, HH: HH,
         EACH: EACH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, BD: BD, EV: EV, AC: AC, CO: CO, TI: TI, TV: TV, MP: MP
     };
 
-    exports.lifecycles = lifecycles;
     exports.factory = factory;
-    exports.helpers = helpers;
-    exports.loaders = loaders;
-    exports.customEvents = customEvents;
-    exports.components = components;
     exports.ModuleTemplate = ModuleTemplate;
     exports.ViewTemplate = ViewTemplate;
     exports.Application = Application;

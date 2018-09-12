@@ -8,40 +8,8 @@ export interface ComponentHook extends Disposable {
     update (...args: any[]): void
 }
 export type Component = (node: Node, ...args: any[]) => ComponentHook
-export const components: {[name: string]: Component} = {}
-
 export type CustomHelper = (...args: any[]) => any
-export const helpers: {[name: string]: CustomHelper} = {}
-
 export type CustomEvent = (name: Node, cb: (event: any) => void) => Disposable
-export const customEvents: {[name: string]: CustomEvent} = {
-    enter (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
-            if (e.keyCode !== 13) return
-            e.preventDefault()
-            cb.call(this, e)
-        }
-        node.addEventListener('keypress', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keypress', ee, false)
-            }
-        }
-    },
-
-    escape (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
-            if (e.keyCode !== 27) return
-            cb.call(this, e)
-        }
-        node.addEventListener('keyup', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keyup', ee, false)
-            }
-        }
-    }
-}
 
 export interface BindingGroup {
     type: 'checkbox' | 'radio'
@@ -130,7 +98,7 @@ abstract class AbstractDataContext implements DataContext {
 
     event (name: string): CustomEvent | undefined {
         const ce = this.root._options.customEvents
-        return (ce && ce[name]) || customEvents[name]
+        return (ce && ce[name]) || this.root.app.options.customEvents[name]
     }
 
     computed (name: string): (any) => any | undefined {
@@ -157,12 +125,12 @@ export class ViewDataContext extends AbstractDataContext {
 
     helper (name: string): CustomHelper | undefined {
         const h = (this.root as View)._options.helpers
-        return (h && h[name]) || helpers[name]
+        return (h && h[name]) || this.root.app.options.helpers[name]
     }
 
     component (name: string): Component | undefined {
         const c = (this.root as View)._options.components
-        return (c && c[name]) || components[name]
+        return (c && c[name]) || this.root.app.options.components[name]
     }
 }
 

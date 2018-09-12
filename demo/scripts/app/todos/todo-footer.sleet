@@ -4,9 +4,9 @@ view
         span.todo-count
             strong $remaining $if(remaining == 1 ' item left' ' items left')
         ul.filters
-            li > a(href='#/todos/all' class=if(filter == 'all' 'selected')) All
-            li > a(href='#/todos/active' class=if(filter == 'active' 'selected')) Active
-            li > a(href='#/todos/completed' class=if(filter == 'completed' 'selected')) Completed
+            li > a(href=(@router 'all') class=if(filter == 'all' 'selected')) All
+            li > a(href=(@router 'active') class=if(filter == 'active' 'selected')) Active
+            li > a(href=(@router 'completed') class=if(filter == 'completed' 'selected')) Completed
         button.clear-completed(action:click=clearCompleted)@if(haveCompleted) Clear completed
 
 script..

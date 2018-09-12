@@ -383,7 +383,6 @@
         REF$3 = drizzlejs.factory.REF,
         DA$1 = drizzlejs.factory.DA,
         H$2 = drizzlejs.factory.H,
-        SV$1 = drizzlejs.factory.SV,
         DV$3 = drizzlejs.factory.DV,
         DN$3 = drizzlejs.factory.DN,
         TX$2 = drizzlejs.factory.TX,
@@ -399,8 +398,8 @@
         var o3 = function o3() {
             var o4 = DN$3('a');
             SA$4(o4, 'class', 'dropdown-item');
-            DA$1(o4, 'href', H$2(SV$1('#/repl/')), H$2(DV$3('key')));
-            var o5 = TX$2(H$2(DV$3('value.name')));
+            DA$1(o4, 'href', H$2(DV$3('@router')), H$2(DV$3('key')));
+            var o5 = TX$2(H$2(DV$3('value.name')), ' - ', H$2(DV$3('@router')));
             C$3(o4, o5);
             return o4;
         };
@@ -854,7 +853,7 @@
         H$4 = drizzlejs.factory.H,
         DV$7 = drizzlejs.factory.DV,
         HH$1 = drizzlejs.factory.HH,
-        SV$2 = drizzlejs.factory.SV,
+        SV$1 = drizzlejs.factory.SV,
         C$7 = drizzlejs.factory.C,
         DA$2 = drizzlejs.factory.DA,
         DN$6 = drizzlejs.factory.DN,
@@ -869,29 +868,29 @@
         var o2 = SN$7('span');
         SA$9(o2, 'class', 'todo-count');
         var o3 = SN$7('strong');
-        var o4 = TX$5(H$4(DV$7('remaining')), ' ', HH$1('if', DV$7('remaining'), SV$2('=='), SV$2(1), SV$2(' item left'), SV$2(' items left')));
+        var o4 = TX$5(H$4(DV$7('remaining')), ' ', HH$1('if', DV$7('remaining'), SV$1('=='), SV$1(1), SV$1(' item left'), SV$1(' items left')));
         C$7(o3, o4);
         C$7(o2, o3);
         var o5 = SN$7('ul');
         SA$9(o5, 'class', 'filters');
         var o6 = SN$7('li');
         var o7 = DN$6('a');
-        SA$9(o7, 'href', '#/todos/all');
-        DA$2(o7, 'class', HH$1('if', DV$7('filter'), SV$2('=='), SV$2('all'), SV$2('selected')));
+        DA$2(o7, 'href', H$4(DV$7('@router')), H$4(SV$1('all')));
+        DA$2(o7, 'class', HH$1('if', DV$7('filter'), SV$1('=='), SV$1('all'), SV$1('selected')));
         var o8 = TX$5('All');
         C$7(o7, o8);
         C$7(o6, o7);
         var o9 = SN$7('li');
         var o10 = DN$6('a');
-        SA$9(o10, 'href', '#/todos/active');
-        DA$2(o10, 'class', HH$1('if', DV$7('filter'), SV$2('=='), SV$2('active'), SV$2('selected')));
+        DA$2(o10, 'href', H$4(DV$7('@router')), H$4(SV$1('active')));
+        DA$2(o10, 'class', HH$1('if', DV$7('filter'), SV$1('=='), SV$1('active'), SV$1('selected')));
         var o11 = TX$5('Active');
         C$7(o10, o11);
         C$7(o9, o10);
         var o12 = SN$7('li');
         var o13 = DN$6('a');
-        SA$9(o13, 'href', '#/todos/completed');
-        DA$2(o13, 'class', HH$1('if', DV$7('filter'), SV$2('=='), SV$2('completed'), SV$2('selected')));
+        DA$2(o13, 'href', H$4(DV$7('@router')), H$4(SV$1('completed')));
+        DA$2(o13, 'class', HH$1('if', DV$7('filter'), SV$1('=='), SV$1('completed'), SV$1('selected')));
         var o14 = TX$5('Completed');
         C$7(o13, o14);
         C$7(o12, o13);
@@ -937,7 +936,7 @@
         AT$6 = drizzlejs.factory.AT,
         DN$7 = drizzlejs.factory.DN,
         HH$2 = drizzlejs.factory.HH,
-        SV$3 = drizzlejs.factory.SV,
+        SV$2 = drizzlejs.factory.SV,
         EV$2 = drizzlejs.factory.EV,
         TX$6 = drizzlejs.factory.TX,
         C$8 = drizzlejs.factory.C,
@@ -962,7 +961,7 @@
         SA$a(o4, 'class', 'todo-list');
         var o5 = function o5() {
             var o6 = DN$7('li');
-            DA$3(o6, 'class', HH$2('if', DV$8('todo.completed'), SV$3('completed')), HH$2('if', DV$8('todo'), SV$3('=='), DV$8('editing'), SV$3('editing')));
+            DA$3(o6, 'class', HH$2('if', DV$8('todo.completed'), SV$2('completed')), HH$2('if', DV$8('todo'), SV$2('=='), DV$8('editing'), SV$2('editing')));
             var o7 = SN$8('div');
             SA$a(o7, 'class', 'view');
             var o8 = DN$7('input');
@@ -981,8 +980,8 @@
             var o12 = DN$7('input');
             SA$a(o12, 'class', 'edit');
             BD$1(o12, 'value', 'todo.name');
-            AC$6(o12, 'blur', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$3('blur')));
-            AC$6(o12, 'enter', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$3('enter')));
+            AC$6(o12, 'blur', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$2('blur')));
+            AC$6(o12, 'enter', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$2('enter')));
             AC$6(o12, 'escape', 'revertEdit', AT$6('', DV$8('todo')), AT$6('', DV$8('nameCache')));
             C$8(o6, o7, o12);
             return o6;
@@ -1272,8 +1271,6 @@
         };
     }
 
-    drizzlejs.components['ace-editor'] = editor;
-
     var MLoader = function (_Loader) {
         inherits(MLoader, _Loader);
 
@@ -1294,6 +1291,7 @@
 
     var app = new drizzlejs.Application({
         container: document.body,
+        components: { 'ace-editor': editor },
         entry: _viewport
     });
     app.registerLoader(MLoader);

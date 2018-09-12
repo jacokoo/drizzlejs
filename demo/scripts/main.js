@@ -1,7 +1,5 @@
-import {Application, Loader, components} from 'drizzlejs'
+import {Application, Loader} from 'drizzlejs'
 import {editor} from './app/component/ace-editor'
-
-components['ace-editor'] = editor
 
 class MLoader extends Loader {
     load (file, mod) {
@@ -11,7 +9,8 @@ class MLoader extends Loader {
 }
 
 var app = new Application({
-    container: document.body
+    container: document.body,
+    components: {'ace-editor': editor}
 })
 
 app.registerLoader(MLoader)
