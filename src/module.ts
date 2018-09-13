@@ -4,7 +4,6 @@ import { Application } from './application'
 import { Loader } from './loader'
 import { View, ViewOptions } from './view'
 import { Disposable} from './drizzle'
-import { RouteOptions } from './route'
 import { Appendable } from './template/template'
 
 export interface ItemOptions {
@@ -16,7 +15,6 @@ export interface ItemOptions {
 export interface ModuleOptions extends RenderOptions {
     store?: StoreOptions
     items?: ItemOptions
-    routes?: RouteOptions
 }
 
 const UPDATE_ACTION = `update${+new Date()}`
@@ -50,11 +48,11 @@ export class Module extends Renderable<ModuleOptions> {
         options: ModuleOptions | ViewOptions
         loader: Loader
     }} = {}
+    _extraState: object
 
     private _store: Store
     private _handlers: {[name: string]: ((data: any) => void)[]} = {}
     private _loader: Loader
-    private _extraState: object
 
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState: object = {}) {
         super(app, options, options.template && options.template.createLife(), ...app.options.moduleLifecycles)

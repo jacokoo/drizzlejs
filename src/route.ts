@@ -1,12 +1,7 @@
 import { Module } from './module'
 import { Lifecycle } from './lifecycle'
 import { View } from './view'
-
-interface DefaultHandler {
-    enter (args: object): Promise<Router>
-    update? (args: object): Promise<any>
-    leave? (): Promise<any>
-}
+import { DrizzlePlugin, Application } from './drizzle'
 
 interface ActionHandler {
     action: string
@@ -20,8 +15,24 @@ interface ModuleHandler {
 
 type Handler = DefaultHandler | ActionHandler | ModuleHandler | string
 
-export interface RouteOptions {
+interface RouteOptions {
     [route: string]: Handler
+}
+
+declare module './module' {
+    interface Module {
+        _router?: Router
+    }
+
+    interface ModuleOptions {
+        routes?: RouteOptions
+    }
+}
+
+interface DefaultHandler {
+    enter (args: object): Promise<Router>
+    update? (args: object): Promise<any>
+    leave? (): Promise<any>
 }
 
 interface MatchResult {
@@ -98,15 +109,7 @@ const create = (path) => {
     }, null)
 }
 
-interface RouterContainer {
-    _router?: Router
-}
-
-export class Router {
-    static get (item: Module): Router {
-        return (item as RouterContainer)._router
-    }
-
+class Router {
     _prefix: string
 
     private _module: Module
@@ -115,13 +118,13 @@ export class Router {
     private _currentKey: number = -1
     private _next: Router
 
-    constructor (module: Module, routes: RouteOptions) {
+    constructor (module: Module, routes: RouteOptions, prefix: string = '#/') {
         this._module = module
+        this._prefix = prefix
         this.initRoutes(routes)
     }
 
-    route (prefix: string, keys: string[]) {
-        this._prefix = prefix
+    route (keys: string[]) {
         for (let i = 0; i < this._keys.length; i ++) {
             const re = this._keys[i].match(keys)
             if (re) return this.doRoute(i, re)
@@ -140,9 +143,10 @@ export class Router {
 
     private enter (idx: number, result: MatchResult) {
         this._currentKey = idx
-        return this._defs[idx].enter(result.args).then(it => {
+        const o = Object.assign({_router_prefix: `${this._prefix}${result.consumed}/`}, result.args)
+        return this._defs[idx].enter(o).then(it => {
             this._next = it
-            if (it) return it.route(`${this._prefix}${result.consumed}/`, result.remain)
+            if (it && result.remain.length) return it.route(result.remain)
         })
     }
 
@@ -155,7 +159,7 @@ export class Router {
             return Promise.resolve().then(() => {
                 if (h.update) return h.update(result.args)
             }).then(() => {
-                if (this._next) return this._next.route(`${this._prefix}${result.consumed}/`, result.remain)
+                if (this._next) return this._next.route(result.remain)
             })
         }
 
@@ -199,7 +203,7 @@ export class Router {
                 const o = h.model ? {[h.model]: args} : args
                 return this._module.regions[h.region || 'default'].show(h.ref, o).then(it => {
                     item = it
-                    if (it instanceof Module) return Router.get(it)
+                    if (it instanceof Module) return it._router
                     return null
                 })
             },
@@ -214,28 +218,52 @@ export class Router {
     }
 }
 
-export const RouterModuleLifecycle: Lifecycle = {
+const RouterModuleLifecycle: Lifecycle = {
     stage: 'init',
     init (this: Module) {
         const {routes} = this._options
         if (!routes) return
-        (this as RouterContainer)._router = new Router(this, routes)
+        const prefix = (this._extraState as any)._router_prefix
+        this._router = new Router(this, routes, prefix)
     },
 
     collect (this: Module, data: object): object {
-        const r = Router.get(this)
-        if (!r) return data
-
-        data['@router'] = r._prefix
+        const r = this._router
+        if (r) data['@router'] = r._prefix
         return data
     }
 }
 
-export const RouterViewLifecycle: Lifecycle = {
+const RouterViewLifecycle: Lifecycle = {
     collect (this: View, data: object): object {
-        const r = Router.get(this._module)
-        if (!r) return data
-        data['@router'] = r._prefix
+        const r = this._module._router
+        if (r) data['@router'] = r._prefix
         return data
+    }
+}
+
+export const RouterPlugin: DrizzlePlugin = {
+    moduleLifecycles: [RouterModuleLifecycle],
+    viewLifecycles: [RouterViewLifecycle],
+
+    init (app: Application) {
+
+    },
+
+    started (item: Module) {
+        const router = item._router
+        if (!router) return
+        const doIt = () => {
+            const hash = window.location.hash
+            if (hash.slice(0, 2) !== '#/') return
+            const hs = hash.slice(2).split('/').filter(it => !!it)
+            if (!hs.length) return
+            router.route(hs).then(it => {
+                console.log(it)
+            })
+        }
+
+        window.addEventListener('popstate', doIt)
+        doIt()
     }
 }

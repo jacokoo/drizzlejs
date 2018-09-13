@@ -5,13 +5,12 @@ export declare class RegionNode extends Node {
     nodes: Node[];
     item: Renderable<any>;
     context: DataContext;
-    isChildren: boolean;
     constructor(id?: string);
     init(context: Context): void;
     render(context: DataContext): void;
     update(context: DataContext): void;
     destroy(context: Context): void;
     showNode(nodes: Node[], context: DataContext): Promise<any>;
-    show(name: string, state: object): Promise<import("../view").View | import("../module").Module>;
+    show(name: string, state: object): Promise<import("../../../../../../../Users/guyong/ws/fun/drizzlejs/src/view").View | import("../../../../../../../Users/guyong/ws/fun/drizzlejs/src/module").Module>;
     close(): Promise<any>;
 }

@@ -1625,271 +1625,6 @@
         return Module;
     }(Renderable);
 
-    // /name
-
-    var Token = function () {
-        function Token(key, next) {
-            classCallCheck(this, Token);
-
-            this.v = 9;
-            this.key = key;
-            this.next = next;
-        }
-
-        createClass(Token, [{
-            key: 'match',
-            value: function match(keys) {
-                var c = keys[0];
-                if (!c) return false;
-                return this.doMatch(c, keys.slice(1));
-            }
-        }, {
-            key: 'value',
-            value: function value() {
-                var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-                var vv = v + this.v;
-                return this.next ? this.next.value(vv * 10) : vv;
-            }
-        }, {
-            key: 'doMatch',
-            value: function doMatch(key, keys) {
-                if (key !== this.key) return false;
-                if (this.next) {
-                    var o = this.next.match(keys);
-                    if (!o) return false;
-                    o.consumed = key + '/' + o.consumed;
-                    return o;
-                }
-                return { remain: keys, consumed: key };
-            }
-        }]);
-        return Token;
-    }();
-    // /:name
-
-
-    var ArgToken = function (_Token) {
-        inherits(ArgToken, _Token);
-
-        function ArgToken() {
-            classCallCheck(this, ArgToken);
-
-            var _this = possibleConstructorReturn(this, (ArgToken.__proto__ || Object.getPrototypeOf(ArgToken)).apply(this, arguments));
-
-            _this.v = 8;
-            return _this;
-        }
-
-        createClass(ArgToken, [{
-            key: 'doMatch',
-            value: function doMatch(key, keys) {
-                var oo = defineProperty({}, this.key, key);
-                if (!this.next) return { remain: keys, args: oo, consumed: key };
-                var o = this.next.match(keys);
-                if (o === false) return false;
-                o.args ? Object.assign(o.args, oo) : o.args = oo;
-                o.consumed = key + '/' + o.consumed;
-                return o;
-            }
-        }]);
-        return ArgToken;
-    }(Token);
-    // /*name
-
-
-    var AllToken = function (_Token2) {
-        inherits(AllToken, _Token2);
-
-        function AllToken() {
-            classCallCheck(this, AllToken);
-
-            var _this2 = possibleConstructorReturn(this, (AllToken.__proto__ || Object.getPrototypeOf(AllToken)).apply(this, arguments));
-
-            _this2.v = 7;
-            return _this2;
-        }
-
-        createClass(AllToken, [{
-            key: 'match',
-            value: function match(keys) {
-                if (!keys.length) return false;
-                return { args: defineProperty({}, this.key, keys), remain: [], consumed: keys.join('/') };
-            }
-        }]);
-        return AllToken;
-    }(Token);
-
-    var create = function create(path) {
-        var ts = path.trim().split('/').filter(function (it) {
-            return !!it;
-        });
-        return ts.reduceRight(function (acc, item) {
-            if (item.charAt(0) === '*') return new AllToken(item.slice(1), acc);
-            if (item.charAt(0) === ':') return new ArgToken(item.slice(1), acc);
-            return new Token(item, acc);
-        }, null);
-    };
-
-    var Router = function () {
-        function Router(module, routes) {
-            classCallCheck(this, Router);
-
-            this._keys = [];
-            this._defs = [];
-            this._currentKey = -1;
-            this._module = module;
-            this.initRoutes(routes);
-        }
-
-        createClass(Router, [{
-            key: 'route',
-            value: function route(prefix, keys) {
-                this._prefix = prefix;
-                for (var i = 0; i < this._keys.length; i++) {
-                    var re = this._keys[i].match(keys);
-                    if (re) return this.doRoute(i, re);
-                }
-                return Promise.resolve(false);
-            }
-        }, {
-            key: 'leave',
-            value: function leave() {
-                var _this3 = this;
-
-                return Promise.resolve().then(function () {
-                    if (_this3._next) return _this3._next.leave();
-                }).then(function () {
-                    var h = _this3._defs[_this3._currentKey];
-                    if (h && h.leave) return h.leave();
-                });
-            }
-        }, {
-            key: 'enter',
-            value: function enter(idx, result) {
-                var _this4 = this;
-
-                this._currentKey = idx;
-                return this._defs[idx].enter(result.args).then(function (it) {
-                    _this4._next = it;
-                    if (it) return it.route('' + _this4._prefix + result.consumed + '/', result.remain);
-                });
-            }
-        }, {
-            key: 'doRoute',
-            value: function doRoute(idx, result) {
-                var _this5 = this;
-
-                var h = this._defs[idx];
-                if (this._currentKey === -1) {
-                    return this.enter(idx, result);
-                }
-                if (idx === this._currentKey) {
-                    return Promise.resolve().then(function () {
-                        if (h.update) return h.update(result.args);
-                    }).then(function () {
-                        if (_this5._next) return _this5._next.route('' + _this5._prefix + result.consumed + '/', result.remain);
-                    });
-                }
-                return this.leave().then(function () {
-                    return _this5.enter(idx, result);
-                });
-            }
-        }, {
-            key: 'initRoutes',
-            value: function initRoutes(routes) {
-                var _this6 = this;
-
-                Object.keys(routes).map(function (key) {
-                    return { key: key, token: create(key) };
-                }).sort(function (a, b) {
-                    return b.token.value() - a.token.value();
-                }).forEach(function (it) {
-                    _this6._keys.push(it.token);
-                    _this6._defs.push(_this6.createHandler(routes[it.key]));
-                });
-            }
-        }, {
-            key: 'createHandler',
-            value: function createHandler(h) {
-                if (typeof h === 'string') return this.createModuleHandler({ ref: h });
-                if ('enter' in h) return h;
-                if ('action' in h) return this.createActionHandler(h);
-                if ('ref' in h) return this.createModuleHandler(h);
-                throw new Error('unsupported router handler');
-            }
-        }, {
-            key: 'createActionHandler',
-            value: function createActionHandler(h) {
-                var _this7 = this;
-
-                return {
-                    enter: function enter(args) {
-                        return _this7._module._dispatch(h.action, args).then(function () {
-                            return null;
-                        });
-                    },
-                    update: function update(args) {
-                        return _this7._module._dispatch(h.action, args);
-                    }
-                };
-            }
-        }, {
-            key: 'createModuleHandler',
-            value: function createModuleHandler(h) {
-                var _this8 = this;
-
-                var item = void 0;
-                return {
-                    enter: function enter(args) {
-                        var o = h.model ? defineProperty({}, h.model, args) : args;
-                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
-                            item = it;
-                            if (it instanceof Module) return Router.get(it);
-                            return null;
-                        });
-                    },
-                    update: function update(args) {
-                        if (!args) return Promise.resolve();
-                        var o = h.model ? defineProperty({}, h.model, args) : args;
-                        if (item && item instanceof Module) return item.set(o);
-                        return Promise.resolve();
-                    }
-                };
-            }
-        }], [{
-            key: 'get',
-            value: function get$$1(item) {
-                return item._router;
-            }
-        }]);
-        return Router;
-    }();
-
-    var RouterModuleLifecycle = {
-        stage: 'init',
-        init: function init() {
-            var routes = this._options.routes;
-
-            if (!routes) return;
-            this._router = new Router(this, routes);
-        },
-        collect: function collect(data) {
-            var r = Router.get(this);
-            if (!r) return data;
-            data['@router'] = r._prefix;
-            return data;
-        }
-    };
-    var RouterViewLifecycle = {
-        collect: function collect(data) {
-            var r = Router.get(this._module);
-            if (!r) return data;
-            data['@router'] = r._prefix;
-            return data;
-        }
-    };
-
     var customEvents = {
         enter: function enter(node, cb) {
             var ee = function ee(e) {
@@ -1923,16 +1658,17 @@
             classCallCheck(this, Application);
 
             this.loaders = {};
+            this._plugins = [];
             this.options = Object.assign({
                 stages: ['init', 'template', 'default'],
                 scriptRoot: 'app',
                 entry: 'viewport',
                 helpers: {},
-                components: {}
+                components: {},
+                moduleLifecycles: [],
+                viewLifecycles: []
             }, options);
             this.options.customEvents = Object.assign(customEvents, this.options.customEvents);
-            this.options.moduleLifecycles = [RouterModuleLifecycle].concat(this.options.moduleLifecycles || []);
-            this.options.viewLifecycles = [RouterViewLifecycle].concat(this.options.viewLifecycles || []);
             this.registerLoader(Loader);
         }
 
@@ -1952,13 +1688,22 @@
                 return new this.loaders.default(this, path);
             }
         }, {
+            key: 'use',
+            value: function use(plugin) {
+                plugin.init(this);
+                this.options.moduleLifecycles = this.options.moduleLifecycles.concat(plugin.moduleLifecycles);
+                this.options.viewLifecycles = this.options.viewLifecycles.concat(plugin.viewLifecycles);
+                this._plugins.push(plugin);
+            }
+        }, {
             key: 'start',
             value: function start() {
                 var _this = this;
 
                 return this.startViewport().then(function (item) {
-                    console.log(item);
-                    _this.startRouter(item);
+                    _this._plugins.forEach(function (it) {
+                        return it.started(item);
+                    });
                 });
             }
         }, {
@@ -1987,25 +1732,6 @@
                 return loader.load('index', null).then(function (opt) {
                     return create(loader, opt);
                 });
-            }
-        }, {
-            key: 'startRouter',
-            value: function startRouter(item) {
-                var router = Router.get(item);
-                if (!router) return;
-                var doIt = function doIt() {
-                    var hash = window.location.hash;
-                    if (hash.slice(0, 2) !== '#/') return;
-                    var hs = hash.slice(2).split('/').filter(function (it) {
-                        return !!it;
-                    });
-                    if (!hs.length) return;
-                    router.route('#/', hs).then(function (it) {
-                        console.log(it);
-                    });
-                };
-                window.addEventListener('popstate', doIt);
-                doIt();
             }
         }]);
         return Application;
@@ -2918,6 +2644,289 @@
         return TransformerItem;
     }();
 
+    // /name
+
+    var Token = function () {
+        function Token(key, next) {
+            classCallCheck(this, Token);
+
+            this.v = 9;
+            this.key = key;
+            this.next = next;
+        }
+
+        createClass(Token, [{
+            key: 'match',
+            value: function match(keys) {
+                var c = keys[0];
+                if (!c) return false;
+                return this.doMatch(c, keys.slice(1));
+            }
+        }, {
+            key: 'value',
+            value: function value() {
+                var v = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+
+                var vv = v + this.v;
+                return this.next ? this.next.value(vv * 10) : vv;
+            }
+        }, {
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                if (key !== this.key) return false;
+                if (this.next) {
+                    var o = this.next.match(keys);
+                    if (!o) return false;
+                    o.consumed = key + '/' + o.consumed;
+                    return o;
+                }
+                return { remain: keys, consumed: key };
+            }
+        }]);
+        return Token;
+    }();
+    // /:name
+
+
+    var ArgToken = function (_Token) {
+        inherits(ArgToken, _Token);
+
+        function ArgToken() {
+            classCallCheck(this, ArgToken);
+
+            var _this = possibleConstructorReturn(this, (ArgToken.__proto__ || Object.getPrototypeOf(ArgToken)).apply(this, arguments));
+
+            _this.v = 8;
+            return _this;
+        }
+
+        createClass(ArgToken, [{
+            key: 'doMatch',
+            value: function doMatch(key, keys) {
+                var oo = defineProperty({}, this.key, key);
+                if (!this.next) return { remain: keys, args: oo, consumed: key };
+                var o = this.next.match(keys);
+                if (o === false) return false;
+                o.args ? Object.assign(o.args, oo) : o.args = oo;
+                o.consumed = key + '/' + o.consumed;
+                return o;
+            }
+        }]);
+        return ArgToken;
+    }(Token);
+    // /*name
+
+
+    var AllToken = function (_Token2) {
+        inherits(AllToken, _Token2);
+
+        function AllToken() {
+            classCallCheck(this, AllToken);
+
+            var _this2 = possibleConstructorReturn(this, (AllToken.__proto__ || Object.getPrototypeOf(AllToken)).apply(this, arguments));
+
+            _this2.v = 7;
+            return _this2;
+        }
+
+        createClass(AllToken, [{
+            key: 'match',
+            value: function match(keys) {
+                if (!keys.length) return false;
+                return { args: defineProperty({}, this.key, keys), remain: [], consumed: keys.join('/') };
+            }
+        }]);
+        return AllToken;
+    }(Token);
+
+    var create = function create(path) {
+        var ts = path.trim().split('/').filter(function (it) {
+            return !!it;
+        });
+        return ts.reduceRight(function (acc, item) {
+            if (item.charAt(0) === '*') return new AllToken(item.slice(1), acc);
+            if (item.charAt(0) === ':') return new ArgToken(item.slice(1), acc);
+            return new Token(item, acc);
+        }, null);
+    };
+
+    var Router = function () {
+        function Router(module, routes) {
+            var prefix = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#/';
+            classCallCheck(this, Router);
+
+            this._keys = [];
+            this._defs = [];
+            this._currentKey = -1;
+            this._module = module;
+            this._prefix = prefix;
+            this.initRoutes(routes);
+        }
+
+        createClass(Router, [{
+            key: 'route',
+            value: function route(keys) {
+                for (var i = 0; i < this._keys.length; i++) {
+                    var re = this._keys[i].match(keys);
+                    if (re) return this.doRoute(i, re);
+                }
+                return Promise.resolve(false);
+            }
+        }, {
+            key: 'leave',
+            value: function leave() {
+                var _this3 = this;
+
+                return Promise.resolve().then(function () {
+                    if (_this3._next) return _this3._next.leave();
+                }).then(function () {
+                    var h = _this3._defs[_this3._currentKey];
+                    if (h && h.leave) return h.leave();
+                });
+            }
+        }, {
+            key: 'enter',
+            value: function enter(idx, result) {
+                var _this4 = this;
+
+                this._currentKey = idx;
+                var o = Object.assign({ _router_prefix: '' + this._prefix + result.consumed + '/' }, result.args);
+                return this._defs[idx].enter(o).then(function (it) {
+                    _this4._next = it;
+                    if (it && result.remain.length) return it.route(result.remain);
+                });
+            }
+        }, {
+            key: 'doRoute',
+            value: function doRoute(idx, result) {
+                var _this5 = this;
+
+                var h = this._defs[idx];
+                if (this._currentKey === -1) {
+                    return this.enter(idx, result);
+                }
+                if (idx === this._currentKey) {
+                    return Promise.resolve().then(function () {
+                        if (h.update) return h.update(result.args);
+                    }).then(function () {
+                        if (_this5._next) return _this5._next.route(result.remain);
+                    });
+                }
+                return this.leave().then(function () {
+                    return _this5.enter(idx, result);
+                });
+            }
+        }, {
+            key: 'initRoutes',
+            value: function initRoutes(routes) {
+                var _this6 = this;
+
+                Object.keys(routes).map(function (key) {
+                    return { key: key, token: create(key) };
+                }).sort(function (a, b) {
+                    return b.token.value() - a.token.value();
+                }).forEach(function (it) {
+                    _this6._keys.push(it.token);
+                    _this6._defs.push(_this6.createHandler(routes[it.key]));
+                });
+            }
+        }, {
+            key: 'createHandler',
+            value: function createHandler(h) {
+                if (typeof h === 'string') return this.createModuleHandler({ ref: h });
+                if ('enter' in h) return h;
+                if ('action' in h) return this.createActionHandler(h);
+                if ('ref' in h) return this.createModuleHandler(h);
+                throw new Error('unsupported router handler');
+            }
+        }, {
+            key: 'createActionHandler',
+            value: function createActionHandler(h) {
+                var _this7 = this;
+
+                return {
+                    enter: function enter(args) {
+                        return _this7._module._dispatch(h.action, args).then(function () {
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        return _this7._module._dispatch(h.action, args);
+                    }
+                };
+            }
+        }, {
+            key: 'createModuleHandler',
+            value: function createModuleHandler(h) {
+                var _this8 = this;
+
+                var item = void 0;
+                return {
+                    enter: function enter(args) {
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
+                            item = it;
+                            if (it instanceof Module) return it._router;
+                            return null;
+                        });
+                    },
+                    update: function update(args) {
+                        if (!args) return Promise.resolve();
+                        var o = h.model ? defineProperty({}, h.model, args) : args;
+                        if (item && item instanceof Module) return item.set(o);
+                        return Promise.resolve();
+                    }
+                };
+            }
+        }]);
+        return Router;
+    }();
+
+    var RouterModuleLifecycle = {
+        stage: 'init',
+        init: function init() {
+            var routes = this._options.routes;
+
+            if (!routes) return;
+            var prefix = this._extraState._router_prefix;
+            this._router = new Router(this, routes, prefix);
+        },
+        collect: function collect(data) {
+            var r = this._router;
+            if (r) data['@router'] = r._prefix;
+            return data;
+        }
+    };
+    var RouterViewLifecycle = {
+        collect: function collect(data) {
+            var r = this._module._router;
+            if (r) data['@router'] = r._prefix;
+            return data;
+        }
+    };
+    var RouterPlugin = {
+        moduleLifecycles: [RouterModuleLifecycle],
+        viewLifecycles: [RouterViewLifecycle],
+        init: function init(app) {},
+        started: function started(item) {
+            var router = item._router;
+            if (!router) return;
+            var doIt = function doIt() {
+                var hash = window.location.hash;
+                if (hash.slice(0, 2) !== '#/') return;
+                var hs = hash.slice(2).split('/').filter(function (it) {
+                    return !!it;
+                });
+                if (!hs.length) return;
+                router.route(hs).then(function (it) {
+                    console.log(it);
+                });
+            };
+            window.addEventListener('popstate', doIt);
+            doIt();
+        }
+    };
+
     var innerHelpers = {
         echo: EchoHelper, if: IfHelper, unless: UnlessHelper
     };
@@ -3043,6 +3052,7 @@
     exports.ViewTemplate = ViewTemplate;
     exports.Application = Application;
     exports.Loader = Loader;
+    exports.RouterPlugin = RouterPlugin;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

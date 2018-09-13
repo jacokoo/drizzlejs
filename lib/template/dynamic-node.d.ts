@@ -42,5 +42,4 @@ export declare class DynamicNode extends StaticNode {
     renderHelper(context: DataContext, helpers: Helper[]): [ChangeType, any[]];
     update(context: DataContext): void;
     destroy(context: Context): void;
-    clearHelper(): void;
 }

@@ -8,5 +8,4 @@ export declare class TextNode extends Node {
     render(context: DataContext): void;
     update(context: DataContext): void;
     destroy(context: Context): void;
-    clearHelper(): void;
 }

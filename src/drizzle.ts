@@ -16,6 +16,9 @@ import { ReferenceNode } from './template/reference-node'
 import { RegionNode } from './template/region-node'
 import { Node } from './template/node'
 import { TransformerItem, Transformer } from './template/transformer'
+import { Lifecycle } from './lifecycle'
+import { Module } from './module'
+import { RouterPlugin } from './route'
 
 export interface Disposable {
     dispose (): void
@@ -75,5 +78,12 @@ export const factory = {
 }
 
 export {
-    ModuleTemplate, ViewTemplate, Application, Loader,
+    ModuleTemplate, ViewTemplate, Application, Loader, RouterPlugin
+}
+
+export interface DrizzlePlugin {
+    moduleLifecycles: Lifecycle[]
+    viewLifecycles: Lifecycle[]
+    init (app: Application): void
+    started (item: Module): void
 }

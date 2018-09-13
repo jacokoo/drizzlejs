@@ -6,7 +6,6 @@ export declare abstract class Helper {
     args: AttributeValue[];
     current: any;
     constructor(...args: AttributeValue[]);
-    clear(): void;
     render(context: DataContext): HelperResult;
     arg(idx: number, context: DataContext): any;
     check(): void;

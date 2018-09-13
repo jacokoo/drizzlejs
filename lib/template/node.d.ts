@@ -14,6 +14,5 @@ export declare abstract class Node {
     destroy(context: Context): void;
     setChildren(children: Node[]): void;
     setToSvg(): void;
-    clearHelper(): void;
     create(): any;
 }

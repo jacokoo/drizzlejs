@@ -43,6 +43,6 @@ export declare class ReferenceNode extends AnchorNode {
     bindEvents(context: DataContext): BindResult[];
     bindActions(context: DataContext): BindResult[];
     update(context: DataContext): void;
-    destroy(delay: Context): void;
+    destroy(context: Context): void;
 }
 export {};

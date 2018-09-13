@@ -5,7 +5,6 @@ import { Node } from './template/node';
 import { Appendable, ModuleTemplate } from './template/template';
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[];
-    state?: object;
     customEvents?: {
         [name: string]: (HTMLElement: any, callback: (any: any) => void) => Disposable;
     };
@@ -19,6 +18,7 @@ export interface RenderOptions extends Lifecycle {
     actions?: {
         [name: string]: (cb: (data: any) => Promise<any>, data: object) => void;
     };
+    _file?: string;
 }
 export declare enum ComponentState {
     CREATED = 0,
@@ -28,9 +28,9 @@ export declare enum ComponentState {
 export interface Region {
     item: Renderable<any>;
     show(name: string, state: object): Promise<Renderable<any>>;
+    close(): Promise<any>;
     _showNode(nodes: Node[], context: object): Promise<any>;
     _showChildren(): any;
-    close(): Promise<any>;
 }
 export declare abstract class Renderable<T extends RenderOptions> extends LifecycleContainer {
     _target: Appendable;
@@ -48,9 +48,6 @@ export declare abstract class Renderable<T extends RenderOptions> extends Lifecy
     destroy(): Promise<any>;
     _init(): Promise<ComponentState>;
     _event(name: any, ...args: any[]): void;
-    _context(): {
-        [name: string]: any;
-    };
     _action(name: string, ...data: any[]): void;
     abstract get(name?: string): object;
     abstract _dispatch(name: string, data: any): Promise<any>;

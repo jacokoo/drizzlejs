@@ -7,17 +7,8 @@ export interface ComponentHook extends Disposable {
     update(...args: any[]): void;
 }
 export declare type Component = (node: Node, ...args: any[]) => ComponentHook;
-export declare const components: {
-    [name: string]: Component;
-};
 export declare type CustomHelper = (...args: any[]) => any;
-export declare const helpers: {
-    [name: string]: CustomHelper;
-};
 export declare type CustomEvent = (name: Node, cb: (event: any) => void) => Disposable;
-export declare const customEvents: {
-    [name: string]: CustomEvent;
-};
 export interface BindingGroup {
     type: 'checkbox' | 'radio';
     items: DynamicNode[];
@@ -27,10 +18,12 @@ export interface Context {
     groups: {
         [name: string]: BindingGroup;
     };
+    name(): string;
     create(name: string, state?: object): Promise<Module | View>;
     helper(name: string): CustomHelper | undefined;
     component(name: string): Component | undefined;
     event(name: string): CustomEvent | undefined;
+    computed(name: string): (any: any) => any | undefined;
     ref(id: string, node?: HTMLElement | Renderable<any>): void;
     region(id: string, region: Region): void;
     delay(p: Promise<any>): void;
@@ -50,13 +43,14 @@ export interface DataContext extends Context {
 declare abstract class AbstractDataContext implements DataContext {
     groups: {};
     data: {};
-    busy: Promise<any>;
+    busy: Promise<any>[];
     root: Module | View;
     constructor(root: Module | View, data?: {
         [name: string]: any;
     }, groups?: {
         [name: string]: BindingGroup;
-    }, busy?: Promise<any>);
+    }, busy?: Promise<any>[]);
+    name(): string;
     update(data: object): void;
     trigger(name: string, ...args: any[]): void;
     dispatch(name: string, ...args: any[]): void;
@@ -65,6 +59,7 @@ declare abstract class AbstractDataContext implements DataContext {
     delay(p: Promise<any>): void;
     end(): Promise<any>;
     event(name: string): CustomEvent | undefined;
+    computed(name: string): (any: any) => any | undefined;
     abstract sub(data: {
         [name: string]: any;
     }): DataContext;

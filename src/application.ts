@@ -2,11 +2,10 @@ import { Loader } from './loader'
 import { Module, ModuleOptions } from './module'
 import { createAppendable } from './template/util'
 import { CustomEvent, CustomHelper, Component } from './template/context'
-import { Disposable } from './drizzle'
+import { Disposable, DrizzlePlugin } from './drizzle'
 import { Lifecycle } from './lifecycle'
-import { Router, RouterModuleLifecycle, RouterViewLifecycle } from './route'
 
-interface ApplicationOptions {
+export interface ApplicationOptions {
     stages?: string[]
     scriptRoot?: string
     container: HTMLElement
@@ -55,6 +54,7 @@ const customEvents: {[name: string]: CustomEvent} = {
 export class Application {
     options: ApplicationOptions
     loaders: {[name: string]: LoaderConstructor} = {}
+    private _plugins: DrizzlePlugin[] = []
 
     constructor(options: ApplicationOptions) {
         this.options = Object.assign({
@@ -63,12 +63,11 @@ export class Application {
             entry: 'viewport',
             helpers: {},
             components: {},
+            moduleLifecycles: [],
+            viewLifecycles: []
         }, options)
 
         this.options.customEvents = Object.assign(customEvents, this.options.customEvents)
-        this.options.moduleLifecycles = [RouterModuleLifecycle].concat(this.options.moduleLifecycles || [])
-        this.options.viewLifecycles = [RouterViewLifecycle].concat(this.options.viewLifecycles || [])
-
         this.registerLoader(Loader)
     }
 
@@ -83,10 +82,16 @@ export class Application {
         return new this.loaders.default(this, path)
     }
 
+    use (plugin: DrizzlePlugin) {
+        plugin.init(this)
+        this.options.moduleLifecycles = this.options.moduleLifecycles.concat(plugin.moduleLifecycles)
+        this.options.viewLifecycles = this.options.viewLifecycles.concat(plugin.viewLifecycles)
+        this._plugins.push(plugin)
+    }
+
     start (): Promise<any> {
         return this.startViewport().then(item => {
-            console.log(item)
-            this.startRouter(item)
+            this._plugins.forEach(it => it.started(item))
         })
     }
 
@@ -105,22 +110,5 @@ export class Application {
         }
 
         return loader.load('index', null).then(opt => create(loader, opt))
-    }
-
-    private startRouter (item: Module) {
-        const router = Router.get(item)
-        if (!router) return
-        const doIt = () => {
-            const hash = window.location.hash
-            if (hash.slice(0, 2) !== '#/') return
-            const hs = hash.slice(2).split('/').filter(it => !!it)
-            if (!hs.length) return
-            router.route('#/', hs).then(it => {
-                console.log(it)
-            })
-        }
-
-        window.addEventListener('popstate', doIt)
-        doIt()
     }
 }

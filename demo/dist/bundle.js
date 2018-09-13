@@ -1294,6 +1294,7 @@
         components: { 'ace-editor': editor },
         entry: _viewport
     });
+    app.use(drizzlejs.RouterPlugin);
     app.registerLoader(MLoader);
     app.start();
 

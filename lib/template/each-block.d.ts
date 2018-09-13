@@ -12,7 +12,7 @@ export declare class EachBlock extends AnchorNode {
     sub(context: DataContext, i: number | string): DataContext;
     render(context: DataContext): void;
     createTrueNode(i: number, context: DataContext): void;
-    renderKeyValue(arr: [any, any][], context: DataContext): void;
+    renderKeyValue(arr: [number | string, any][], context: DataContext): void;
     renderElse(context: DataContext): void;
     update(context: DataContext): void;
     updateElse(context: DataContext): void;

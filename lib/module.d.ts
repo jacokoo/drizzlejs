@@ -4,7 +4,6 @@ import { Application } from './application';
 import { Loader } from './loader';
 import { View, ViewOptions } from './view';
 import { Disposable } from './drizzle';
-import { Router, RouteOptions } from './route';
 import { Appendable } from './template/template';
 export interface ItemOptions {
     views?: string[];
@@ -16,7 +15,6 @@ export interface ItemOptions {
 export interface ModuleOptions extends RenderOptions {
     store?: StoreOptions;
     items?: ItemOptions;
-    routes?: RouteOptions;
 }
 interface ModuleRenference {
     [name: string]: {
@@ -34,11 +32,10 @@ export declare class Module extends Renderable<ModuleOptions> {
             loader: Loader;
         };
     };
-    _router: Router;
+    _extraState: object;
     private _store;
     private _handlers;
     private _loader;
-    private _extraState;
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState?: object);
     set(data: object): Promise<any>;
     get(name?: string): any;

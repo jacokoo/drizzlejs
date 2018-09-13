@@ -5,6 +5,7 @@ export interface ViewOptions extends RenderOptions {
     helpers?: {
         [name: string]: (...any: any[]) => any;
     };
+    state?: object;
     components?: {
         [name: string]: Component;
     };
@@ -14,7 +15,7 @@ export declare class View extends Renderable<ViewOptions> {
     _state: object;
     constructor(mod: Module, options: ViewOptions);
     readonly regions: {
-        [key: string]: import("./renderable").Region;
+        [key: string]: import("../../../../../../Users/guyong/ws/fun/drizzlejs/src/renderable").Region;
     };
     _init(): Promise<ComponentState>;
     get(key?: string): any;

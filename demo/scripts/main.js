@@ -1,4 +1,4 @@
-import {Application, Loader} from 'drizzlejs'
+import {Application, Loader, RouterPlugin} from 'drizzlejs'
 import {editor} from './app/component/ace-editor'
 
 class MLoader extends Loader {
@@ -13,6 +13,6 @@ var app = new Application({
     components: {'ace-editor': editor}
 })
 
+app.use(RouterPlugin)
 app.registerLoader(MLoader)
-
 app.start()

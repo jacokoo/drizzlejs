@@ -2,7 +2,7 @@ import { Disposable } from '../drizzle';
 import { Node as MNode } from './node';
 import { Renderable } from '../renderable';
 import { Transformer } from './transformer';
-import { DataContext } from './context';
+import { DataContext, BindingGroup } from './context';
 import { Module } from '../module';
 import { View } from '../view';
 declare type StaticValue = string | number | boolean;
@@ -28,28 +28,34 @@ export interface Appendable {
     remove(el: Node): any;
     before(anchor: Node): Appendable;
 }
-export declare const customEvents: {
-    enter(node: HTMLElement, cb: (any: any) => void): Disposable;
-    escape(node: HTMLElement, cb: (any: any) => void): Disposable;
-};
 export declare abstract class Template {
     creator: () => MNode[];
     createLife(): {
+        id: number;
         stage: string;
         nodes: MNode[];
+        groups: {
+            [name: string]: BindingGroup;
+        };
         init(this: Renderable<any>): Promise<any>;
-        beforeRender(this: Renderable<any>): Promise<any>;
-        updated(this: Renderable<any>): Promise<any>;
+        rendered(this: Renderable<any>, data: object): Promise<any>;
+        updated(this: Renderable<any>, data: object): Promise<any>;
         destroyed(this: Renderable<any>): Promise<any>;
     };
-    abstract create(root: Renderable<any>): DataContext;
+    abstract create(root: Renderable<any>, groups: {
+        [name: string]: BindingGroup;
+    }, data?: object): DataContext;
 }
 export declare class ViewTemplate extends Template {
-    create(root: View): DataContext;
+    create(root: View, groups: {
+        [name: string]: BindingGroup;
+    }, data?: object): DataContext;
 }
 export declare class ModuleTemplate extends Template {
     exportedModels: string[];
     constructor(exportedModels: string[]);
-    create(root: Module): DataContext;
+    create(root: Module, groups: {
+        [name: string]: BindingGroup;
+    }, data?: object): DataContext;
 }
 export {};
