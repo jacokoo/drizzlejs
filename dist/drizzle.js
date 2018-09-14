@@ -472,27 +472,21 @@
     function resolveEventArgument(me, context, args, event) {
         var o = Object.assign({}, context.data, { event: event, this: me });
         var sub = context.sub(o);
-        var values = args.map(function (_ref) {
+        var obj = {};
+        var result = [obj];
+        var keys = 0;
+        args.forEach(function (_ref) {
             var _ref2 = slicedToArray(_ref, 2),
                 name = _ref2[0],
                 v = _ref2[1];
 
-            return getAttributeValue(v, sub);
-        });
-        var obj = {};
-        var result = [obj];
-        var keys = 0;
-        args.forEach(function (_ref3, i) {
-            var _ref4 = slicedToArray(_ref3, 2),
-                name = _ref4[0],
-                v = _ref4[1];
-
+            var value = getAttributeValue(v, sub);
             if (name) {
                 keys++;
-                obj[name] = values[i];
+                obj[name] = value;
                 return;
             }
-            result.push(values[i]);
+            result.push(value);
         });
         if (keys === 0) result.shift();
         return result;
@@ -552,9 +546,12 @@
         }, {
             key: 'setChildren',
             value: function setChildren(children) {
+                var _this = this;
+
                 this.children = children;
-                if (this.inSvg) children.forEach(function (it) {
-                    return it.setToSvg();
+                children.forEach(function (it, i) {
+                    if (_this.inSvg) it.setToSvg();
+                    it.nextSibling = children[i + 1];
                 });
             }
         }, {
@@ -579,11 +576,7 @@
 
         function AnchorNode(id) {
             classCallCheck(this, AnchorNode);
-
-            var _this = possibleConstructorReturn(this, (AnchorNode.__proto__ || Object.getPrototypeOf(AnchorNode)).call(this, id));
-
-            _this.anchor = document.createComment('');
-            return _this;
+            return possibleConstructorReturn(this, (AnchorNode.__proto__ || Object.getPrototypeOf(AnchorNode)).call(this, id));
         }
 
         createClass(AnchorNode, [{
@@ -591,15 +584,20 @@
             value: function render(context) {
                 get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'render', this).call(this, context);
                 if (!this.newParent) {
-                    this.parent.append(this.anchor);
-                    this.newParent = this.parent.before(this.anchor);
+                    if (this.nextSibling) {
+                        this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name);
+                        this.parent.append(this.anchor);
+                        this.newParent = this.parent.before(this.anchor);
+                    } else {
+                        this.newParent = this.parent;
+                    }
                 }
             }
         }, {
             key: 'destroy',
             value: function destroy(context) {
                 get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'destroy', this).call(this, context);
-                this.parent.remove(this.anchor);
+                if (this.anchor) this.parent.remove(this.anchor);
                 this.newParent = null;
             }
         }]);
@@ -939,6 +937,9 @@
         }
 
         createClass(EachBlock, [{
+            key: 'init',
+            value: function init() {}
+        }, {
             key: 'isEmpty',
             value: function isEmpty(list) {
                 return !list || Array.isArray(list) && !list.length || (typeof list === 'undefined' ? 'undefined' : _typeof(list)) === 'object' && !Object.keys(list);
@@ -2212,6 +2213,9 @@
         }
 
         createClass(StaticTextNode, [{
+            key: 'init',
+            value: function init() {}
+        }, {
             key: 'render',
             value: function render(context) {
                 if (this.rendered) return;
@@ -2243,6 +2247,9 @@
         }
 
         createClass(DynamicTextNode, [{
+            key: 'init',
+            value: function init() {}
+        }, {
             key: 'render',
             value: function render(context) {
                 get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'render', this).call(this, context);
@@ -2468,8 +2475,8 @@
         return ReferenceNode;
     }(AnchorNode);
 
-    var RegionNode = function (_Node) {
-        inherits(RegionNode, _Node);
+    var RegionNode = function (_AnchorNode) {
+        inherits(RegionNode, _AnchorNode);
 
         function RegionNode() {
             var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
@@ -2484,12 +2491,6 @@
         createClass(RegionNode, [{
             key: 'init',
             value: function init(context) {
-                var _this2 = this;
-
-                this.children.forEach(function (it) {
-                    it.parent = _this2.parent;
-                    it.init(context);
-                });
                 var me = this;
                 context.region(this.id, {
                     get item() {
@@ -2513,9 +2514,16 @@
         }, {
             key: 'render',
             value: function render(context) {
+                var _this2 = this;
+
                 if (this.rendered) return;
                 this.rendered = true;
+                get(RegionNode.prototype.__proto__ || Object.getPrototypeOf(RegionNode.prototype), 'render', this).call(this, context);
                 this.context = context;
+                this.children.forEach(function (it) {
+                    it.parent = _this2.newParent;
+                    it.init(context);
+                });
             }
         }, {
             key: 'update',
@@ -2530,6 +2538,7 @@
             key: 'destroy',
             value: function destroy(context) {
                 if (!this.rendered) return;
+                get(RegionNode.prototype.__proto__ || Object.getPrototypeOf(RegionNode.prototype), 'destroy', this).call(this, context);
                 if (this.nodes) this.nodes.forEach(function (it) {
                     return it.destroy(context);
                 });
@@ -2547,7 +2556,7 @@
                     return _this3.close().then(function () {
                         _this3.nodes = nodes;
                         _this3.nodes.forEach(function (it) {
-                            it.parent = _this3.parent;
+                            it.parent = _this3.newParent;
                             it.render(context);
                         });
                         return context.end();
@@ -2565,7 +2574,7 @@
                         return _this4.context.create(name, state);
                     }).then(function (item) {
                         _this4.item = item;
-                        return item._render(_this4.parent).then(function () {
+                        return item._render(_this4.newParent).then(function () {
                             return item;
                         });
                     });
@@ -2593,7 +2602,7 @@
             }
         }]);
         return RegionNode;
-    }(Node);
+    }(AnchorNode);
 
     var Transformer = function () {
         function Transformer(value, items, end) {

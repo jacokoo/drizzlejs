@@ -663,7 +663,7 @@
         MP$2(o7, 'examples');
         C$5(o4, o5, o6, o7);
         C$5(o3, o4);
-        var o8 = SN$5('ad');
+        var o8 = SN$5('div');
         SA$7(o8, 'class', 'tile is-6 is-vertical');
         var o9 = SN$5('div');
         SA$7(o9, 'class', 'tile is-parent');

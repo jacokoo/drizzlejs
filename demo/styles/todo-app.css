@@ -22,10 +22,10 @@
 	color: #4d4d4d;
 	min-width: 230px;
 	max-width: 550px;
-	margin: 0 auto;
+	margin: 250px auto 0;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	font-weight: 300;
+    font-weight: 300;
 }
 
 :focus {

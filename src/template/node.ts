@@ -7,6 +7,7 @@ export abstract class Node {
     element: HTMLElement
     parent: Appendable
     children: Node[] = []
+    nextSibling: Node
     rendered: boolean = false
     inSvg: boolean = false
 
@@ -37,7 +38,10 @@ export abstract class Node {
 
     setChildren (children: Node[]) {
         this.children = children
-        if (this.inSvg) children.forEach(it => it.setToSvg())
+        children.forEach((it, i) => {
+            if (this.inSvg) it.setToSvg()
+            it.nextSibling = children[i + 1]
+        })
     }
 
     setToSvg () {

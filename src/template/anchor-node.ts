@@ -8,21 +8,25 @@ export abstract class AnchorNode extends MNode {
 
     constructor (id?: string) {
         super(id)
-        this.anchor = document.createComment('')
     }
 
     render (context: DataContext) {
         super.render(context)
         if (!this.newParent) {
-            this.parent.append(this.anchor)
-            this.newParent = this.parent.before(this.anchor)
+            if (this.nextSibling) {
+                this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name)
+                this.parent.append(this.anchor)
+                this.newParent = this.parent.before(this.anchor)
+            } else {
+                this.newParent = this.parent
+            }
         }
     }
 
     destroy (context: Context) {
         super.destroy(context)
 
-        this.parent.remove(this.anchor)
+        if (this.anchor) this.parent.remove(this.anchor)
         this.newParent = null
     }
 }

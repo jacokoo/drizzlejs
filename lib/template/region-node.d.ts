@@ -1,7 +1,8 @@
 import { Node } from './node';
 import { Renderable } from '../renderable';
 import { Context, DataContext } from './context';
-export declare class RegionNode extends Node {
+import { AnchorNode } from './anchor-node';
+export declare class RegionNode extends AnchorNode {
     nodes: Node[];
     item: Renderable<any>;
     context: DataContext;

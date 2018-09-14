@@ -17,6 +17,8 @@ export class EachBlock extends AnchorNode {
         this.falseNode = falseNode
     }
 
+    init () {}
+
     isEmpty (list: any): boolean {
         return !list || (Array.isArray(list) && !list.length) || (typeof list === 'object' && !Object.keys(list))
     }

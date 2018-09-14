@@ -11,7 +11,7 @@ module > .main-content > .tile.is-ancestor.h100
             code-editor(code action:change=updateCode(event))
             view-menu(examples)
 
-    ad.tile.is-6.is-vertical
+    .tile.is-6.is-vertical
         .tile.is-parent > .tile.is-child.is-relative > view-show(files json changed)
         .tile.is-parent.bt > .tile.is-child.editor > view-json(json)
 

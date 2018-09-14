@@ -78,19 +78,19 @@ export function getAttributeValue(attr: AttributeValue, context: DataContext): a
 export function resolveEventArgument (me: any, context: DataContext, args: Attribute[], event: any): any[] {
     const o = Object.assign({}, context.data, {event, this: me})
     const sub = context.sub(o)
-    const values = args.map(([name, v]) => getAttributeValue(v, sub))
 
     const obj = {}
     const result = [obj]
     let keys = 0
 
-    args.forEach(([name, v], i) => {
+    args.forEach(([name, v]) => {
+        const value = getAttributeValue(v, sub)
         if (name) {
             keys ++
-            obj[name] = values[i]
+            obj[name] = value
             return
         }
-        result.push(values[i])
+        result.push(value)
     })
 
     if (keys === 0) result.shift()

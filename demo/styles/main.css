@@ -144,7 +144,8 @@ svg {
     height: 70px;
     line-height: 70px;
     width: 100%;
-    position: relative;
+    position: fixed;
+    top: 0;
     border-bottom: 1px solid #c7c7c7;
     padding: 0;
     overflow: hidden;
@@ -154,6 +155,7 @@ svg {
 .main-content {
     background-color: #f9fafb;
     height: calc(100vh - 70px);
+    margin-top: 70px;
 }
 
 .header-nav {

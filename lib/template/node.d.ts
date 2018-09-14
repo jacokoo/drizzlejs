@@ -5,6 +5,7 @@ export declare abstract class Node {
     element: HTMLElement;
     parent: Appendable;
     children: Node[];
+    nextSibling: Node;
     rendered: boolean;
     inSvg: boolean;
     constructor(id?: string);

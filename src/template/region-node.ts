@@ -1,8 +1,9 @@
 import { Node } from './node'
 import { Renderable } from '../renderable'
 import { Context, DataContext } from './context'
+import { AnchorNode } from './anchor-node'
 
-export class RegionNode extends Node {
+export class RegionNode extends AnchorNode {
     nodes: Node[]
     item: Renderable<any>
     context: DataContext
@@ -13,11 +14,6 @@ export class RegionNode extends Node {
     }
 
     init (context: Context) {
-        this.children.forEach(it => {
-            it.parent = this.parent
-            it.init(context)
-        })
-
         const me = this
         context.region(this.id, {
             get item () {
@@ -42,7 +38,14 @@ export class RegionNode extends Node {
     render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
+
+        super.render(context)
         this.context = context
+
+        this.children.forEach(it => {
+            it.parent = this.newParent
+            it.init(context)
+        })
     }
 
     update (context: DataContext) {
@@ -54,6 +57,7 @@ export class RegionNode extends Node {
 
     destroy (context: Context) {
         if (!this.rendered) return
+        super.destroy(context)
         if (this.nodes) this.nodes.forEach(it => it.destroy(context))
         if (this.item) context.delay(this.item.destroy())
         this.rendered = false
@@ -65,7 +69,7 @@ export class RegionNode extends Node {
         return context.end().then(() => this.close().then(() => {
             this.nodes = nodes
             this.nodes.forEach(it => {
-                it.parent = this.parent
+                it.parent = this.newParent
                 it.render(context)
             })
             return context.end()
@@ -76,7 +80,7 @@ export class RegionNode extends Node {
         if (!this.rendered) return
         return this.context.end().then(() => this.close().then(() => this.context.create(name, state)).then(item => {
             this.item = item
-            return item._render(this.parent).then(() => {
+            return item._render(this.newParent).then(() => {
                 return item
             })
         }))

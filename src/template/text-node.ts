@@ -13,6 +13,8 @@ class StaticTextNode extends Node {
         this.node = document.createTextNode(this.data)
     }
 
+    init () {}
+
     render (context: DataContext) {
         if (this.rendered) return
         this.rendered = true
@@ -34,6 +36,8 @@ class DynamicTextNode extends StaticTextNode {
         super()
         this.helper = helper
     }
+
+    init () {}
 
     render (context: DataContext) {
         super.render(context)

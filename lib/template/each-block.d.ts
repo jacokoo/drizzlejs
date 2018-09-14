@@ -8,6 +8,7 @@ export declare class EachBlock extends AnchorNode {
     currentSize: number;
     nodes: Node[];
     constructor(args: string[], trueNode: () => Node, falseNode?: Node);
+    init(): void;
     isEmpty(list: any): boolean;
     sub(context: DataContext, i: number | string): DataContext;
     render(context: DataContext): void;
