@@ -56,10 +56,8 @@ export abstract class Helper {
 }
 
 export class DelayHelper extends Helper {
-    name: string
-
     constructor(name: string, ...args: AttributeValue[]) {
-        super(null, ...args)
+        super(...args)
         this.name = name
     }
 
@@ -73,6 +71,12 @@ export class DelayHelper extends Helper {
 export class EchoHelper extends Helper {
     doRender (context) {
         return this.arg(0, context)
+    }
+}
+
+export class ConcatHelper extends Helper {
+    doRender (context) {
+        return this.args.map((it, idx) => this.arg(idx, context)).join('')
     }
 }
 

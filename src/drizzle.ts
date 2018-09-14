@@ -25,7 +25,7 @@ export interface Disposable {
 }
 
 const innerHelpers = {
-    echo: EchoHelper, if: IfHelper, unless: UnlessHelper
+    if: IfHelper, unless: UnlessHelper
 }
 
 // nodes

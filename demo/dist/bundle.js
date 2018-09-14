@@ -452,6 +452,7 @@
             plugins: { drizzle: SleetDrizzle.plugin }
         }).code;
         var es5 = Babel.transform(es6, { presets: ['es2015'] });
+        console.log(es6);
         return eval('(function(exports, require) {' + es5.code + '\nreturn exports.default })({}, require1)');
     };
     var _view_show = {

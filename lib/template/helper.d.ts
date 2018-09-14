@@ -15,12 +15,14 @@ export declare abstract class Helper {
     private renderIt;
 }
 export declare class DelayHelper extends Helper {
-    name: string;
     constructor(name: string, ...args: AttributeValue[]);
     doRender(context: DataContext): any;
 }
 export declare class EchoHelper extends Helper {
     doRender(context: any): any;
+}
+export declare class ConcatHelper extends Helper {
+    doRender(context: any): string;
 }
 export declare class IfHelper extends Helper {
     name: string;

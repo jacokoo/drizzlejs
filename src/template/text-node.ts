@@ -1,5 +1,5 @@
 import { ChangeType } from './template'
-import { Helper } from './helper'
+import { Helper, ConcatHelper } from './helper'
 import { Node } from './node'
 import { DataContext, Context } from './context'
 
@@ -37,8 +37,6 @@ class DynamicTextNode extends StaticTextNode {
         this.helper = helper
     }
 
-    init () {}
-
     render (context: DataContext) {
         super.render(context)
         this.update(context)
@@ -53,13 +51,62 @@ class DynamicTextNode extends StaticTextNode {
 
 }
 
+class HtmlDynamicTextNode extends Node {
+    helper: Helper
+    begin: HTMLElement
+    end: HTMLElement
+
+    constructor(helper: Helper) {
+        super()
+        this.helper = new ConcatHelper(...helper.args)
+    }
+
+    init () {
+        this.begin = document.createElement('noscript')
+        this.end = document.createElement('noscript')
+    }
+
+    render (context: DataContext) {
+        if (this.rendered) return
+        this.rendered = true
+        this.parent.append(this.begin)
+        this.parent.append(this.end)
+        this.update(context)
+    }
+
+    update (context: DataContext) {
+        const r = this.helper.render(context)
+        if (r[0] === ChangeType.CHANGED) {
+            this.remove()
+            this.begin.insertAdjacentHTML('afterend', r[1])
+        }
+    }
+
+    remove () {
+        while (this.begin.nextSibling && this.begin.nextSibling !== this.end) {
+            this.begin.parentNode.removeChild(this.begin.nextSibling)
+        }
+    }
+
+    destroy (context: Context) {
+        if (!this.rendered) return
+        this.rendered = false
+
+        this.remove()
+        this.parent.remove(this.end)
+        this.parent.remove(this.begin)
+    }
+}
+
 export class TextNode extends Node {
     nodes: Node[]
 
     constructor (...args: (string | Helper)[]) {
         super()
         this.nodes = args.map(it => {
-            return (typeof it === 'string') ? new StaticTextNode(it) : new DynamicTextNode(it)
+            if (typeof it === 'string') return new StaticTextNode(it)
+            if (it.name === 'html') return new HtmlDynamicTextNode(it)
+            return new DynamicTextNode(it)
         })
     }
 

@@ -814,7 +814,7 @@
                 args[_key4 - 1] = arguments[_key4];
             }
 
-            var _this3 = possibleConstructorReturn(this, (_ref = DelayHelper.__proto__ || Object.getPrototypeOf(DelayHelper)).call.apply(_ref, [this, null].concat(args)));
+            var _this3 = possibleConstructorReturn(this, (_ref = DelayHelper.__proto__ || Object.getPrototypeOf(DelayHelper)).call.apply(_ref, [this].concat(args)));
 
             _this3.name = name;
             return _this3;
@@ -852,16 +852,37 @@
         return EchoHelper;
     }(Helper);
 
-    var IfHelper = function (_Helper3) {
-        inherits(IfHelper, _Helper3);
+    var ConcatHelper = function (_Helper3) {
+        inherits(ConcatHelper, _Helper3);
+
+        function ConcatHelper() {
+            classCallCheck(this, ConcatHelper);
+            return possibleConstructorReturn(this, (ConcatHelper.__proto__ || Object.getPrototypeOf(ConcatHelper)).apply(this, arguments));
+        }
+
+        createClass(ConcatHelper, [{
+            key: 'doRender',
+            value: function doRender(context) {
+                var _this7 = this;
+
+                return this.args.map(function (it, idx) {
+                    return _this7.arg(idx, context);
+                }).join('');
+            }
+        }]);
+        return ConcatHelper;
+    }(Helper);
+
+    var IfHelper = function (_Helper4) {
+        inherits(IfHelper, _Helper4);
 
         function IfHelper() {
             classCallCheck(this, IfHelper);
 
-            var _this6 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
+            var _this8 = possibleConstructorReturn(this, (IfHelper.__proto__ || Object.getPrototypeOf(IfHelper)).apply(this, arguments));
 
-            _this6.name = 'if';
-            return _this6;
+            _this8.name = 'if';
+            return _this8;
         }
 
         createClass(IfHelper, [{
@@ -905,10 +926,10 @@
         function UnlessHelper() {
             classCallCheck(this, UnlessHelper);
 
-            var _this7 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
+            var _this9 = possibleConstructorReturn(this, (UnlessHelper.__proto__ || Object.getPrototypeOf(UnlessHelper)).apply(this, arguments));
 
-            _this7.name = 'unless';
-            return _this7;
+            _this9.name = 'unless';
+            return _this9;
         }
 
         createClass(UnlessHelper, [{
@@ -2247,9 +2268,6 @@
         }
 
         createClass(DynamicTextNode, [{
-            key: 'init',
-            value: function init() {}
-        }, {
             key: 'render',
             value: function render(context) {
                 get(DynamicTextNode.prototype.__proto__ || Object.getPrototypeOf(DynamicTextNode.prototype), 'render', this).call(this, context);
@@ -2267,41 +2285,99 @@
         return DynamicTextNode;
     }(StaticTextNode);
 
-    var TextNode = function (_Node2) {
-        inherits(TextNode, _Node2);
+    var HtmlDynamicTextNode = function (_Node2) {
+        inherits(HtmlDynamicTextNode, _Node2);
+
+        function HtmlDynamicTextNode(helper) {
+            classCallCheck(this, HtmlDynamicTextNode);
+
+            var _this3 = possibleConstructorReturn(this, (HtmlDynamicTextNode.__proto__ || Object.getPrototypeOf(HtmlDynamicTextNode)).call(this));
+
+            _this3.helper = new (Function.prototype.bind.apply(ConcatHelper, [null].concat(toConsumableArray(helper.args))))();
+            return _this3;
+        }
+
+        createClass(HtmlDynamicTextNode, [{
+            key: 'init',
+            value: function init() {
+                this.begin = document.createElement('noscript');
+                this.end = document.createElement('noscript');
+            }
+        }, {
+            key: 'render',
+            value: function render(context) {
+                if (this.rendered) return;
+                this.rendered = true;
+                this.parent.append(this.begin);
+                this.parent.append(this.end);
+                this.update(context);
+            }
+        }, {
+            key: 'update',
+            value: function update(context) {
+                var r = this.helper.render(context);
+                if (r[0] === ChangeType.CHANGED) {
+                    this.remove();
+                    this.begin.insertAdjacentHTML('afterend', r[1]);
+                }
+            }
+        }, {
+            key: 'remove',
+            value: function remove() {
+                while (this.begin.nextSibling && this.begin.nextSibling !== this.end) {
+                    this.begin.parentNode.removeChild(this.begin.nextSibling);
+                }
+            }
+        }, {
+            key: 'destroy',
+            value: function destroy(context) {
+                if (!this.rendered) return;
+                this.rendered = false;
+                this.remove();
+                this.parent.remove(this.end);
+                this.parent.remove(this.begin);
+            }
+        }]);
+        return HtmlDynamicTextNode;
+    }(Node);
+
+    var TextNode = function (_Node3) {
+        inherits(TextNode, _Node3);
 
         function TextNode() {
             classCallCheck(this, TextNode);
 
-            var _this3 = possibleConstructorReturn(this, (TextNode.__proto__ || Object.getPrototypeOf(TextNode)).call(this));
+            var _this4 = possibleConstructorReturn(this, (TextNode.__proto__ || Object.getPrototypeOf(TextNode)).call(this));
 
             for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
                 args[_key] = arguments[_key];
             }
 
-            _this3.nodes = args.map(function (it) {
-                return typeof it === 'string' ? new StaticTextNode(it) : new DynamicTextNode(it);
+            _this4.nodes = args.map(function (it) {
+                if (typeof it === 'string') return new StaticTextNode(it);
+                if (it.name === 'html') return new HtmlDynamicTextNode(it);
+                return new DynamicTextNode(it);
             });
-            return _this3;
+            return _this4;
         }
 
         createClass(TextNode, [{
             key: 'init',
             value: function init(context) {
-                var _this4 = this;
+                var _this5 = this;
 
                 this.nodes.forEach(function (it) {
-                    it.parent = _this4.parent;
+                    it.parent = _this5.parent;
                     it.init(context);
                 });
             }
         }, {
             key: 'render',
             value: function render(context) {
-                var _this5 = this;
+                var _this6 = this;
 
                 this.nodes.forEach(function (it) {
-                    if (!it.parent) it.parent = _this5.parent;
+                    if (!it.parent) it.parent = _this6.parent;
                     it.render(context);
                 });
             }
@@ -2937,7 +3013,7 @@
     };
 
     var innerHelpers = {
-        echo: EchoHelper, if: IfHelper, unless: UnlessHelper
+        if: IfHelper, unless: UnlessHelper
     };
     // nodes
     var SN = function SN(name, id) {
