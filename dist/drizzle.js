@@ -1853,7 +1853,7 @@
         }
         context.update(defineProperty({}, to, value));
     };
-    var updateView = function updateView(context, to, value) {
+    var updateContext = function updateContext(context, to, value) {
         var ps = tokenize(to);
         if (ps.length === 1) return updateSingleKey(context, to, value);
         var root = ps.shift();
@@ -1884,12 +1884,12 @@
         obj[last] = value;
         context.update(result);
     };
-    var bindIt = function bindIt(context, to, element, event, get$$1, set$$1) {
+    var createBinding = function createBinding(context, to, element, event, get$$1, set$$1) {
         var current = void 0;
         var obj = { context: context };
         var cb = function cb() {
             current = get$$1(element);
-            updateView(obj.context, to, current);
+            updateContext(obj.context, to, current);
         };
         element.addEventListener(event, cb, false);
         var r = {
@@ -1932,7 +1932,7 @@
             }).map(function (it) {
                 return it.element.value;
             });
-            updateView(obj.context, to, current);
+            updateContext(obj.context, to, current);
         };
         element.addEventListener('change', cb, false);
         var r = {
@@ -1972,21 +1972,21 @@
         var tag = node.name.toLowerCase();
         var element = node.element;
         if ((tag === 'input' || tag === 'textarea') && from === 'value') {
-            return bindIt(context, to, element, 'input', function (el) {
+            return createBinding(context, to, element, 'input', function (el) {
                 return el.value;
             }, function (el, value) {
                 return el.value = value == null ? '' : value;
             });
         }
         if (tag === 'input' && from === 'checked') {
-            return bindIt(context, to, element, 'change', function (el) {
+            return createBinding(context, to, element, 'change', function (el) {
                 return el.checked;
             }, function (el, value) {
                 return el.checked = value;
             });
         }
         if (tag === 'select' && from === 'value') {
-            return bindIt(context, to, element, 'change', getSelectValue, setSelectOption);
+            return createBinding(context, to, element, 'change', getSelectValue, setSelectOption);
         }
         if (tag === 'input' && from === 'group') {
             var type = element.type;

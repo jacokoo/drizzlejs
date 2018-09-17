@@ -11,7 +11,7 @@ define('ace/mode/sleet-highlight-rules', ['require', 'exports', 'ace/mode/javasc
                 regex: '^#!\\s*(.*)$',
                 next: 'start'
             }, {
-                regex: '\\s*#\\s+(.*)$',
+                regex: '^\\s*#\\s+(.*)$',
                 token: 'comment',
                 next: 'start'
             }, {

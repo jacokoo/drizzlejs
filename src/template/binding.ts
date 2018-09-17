@@ -17,7 +17,7 @@ const updateSingleKey = (context: DataContext, to: string, value: any) => {
     context.update({[to]: value})
 }
 
-const updateView = (context: DataContext, to: string, value: any) => {
+export const updateContext = (context: DataContext, to: string, value: any) => {
     const ps = tokenize(to)
     if (ps.length === 1) return updateSingleKey(context, to, value)
 
@@ -50,7 +50,7 @@ const updateView = (context: DataContext, to: string, value: any) => {
     context.update(result)
 }
 
-const bindIt = <T extends HTMLElement>(
+const createBinding = <T extends HTMLElement>(
     context: DataContext, to: string, element: T,
     event: string, get: (T) => any, set: (T, any) => void
 ): Updatable => {
@@ -58,7 +58,7 @@ const bindIt = <T extends HTMLElement>(
     const obj = {context}
     const cb = function(this: T) {
         current = get(element)
-        updateView(obj.context, to, current)
+        updateContext(obj.context, to, current)
     }
 
     element.addEventListener(event, cb, false)
@@ -109,7 +109,7 @@ const bindGroup = (
             .filter(it => (it.element as HTMLInputElement).checked)
             .map(it => (it.element as HTMLInputElement).value))
 
-        updateView(obj.context, to, current)
+        updateContext(obj.context, to, current)
     }
 
     element.addEventListener('change', cb, false)
@@ -149,7 +149,7 @@ export const bind = (node: DynamicNode, context: DataContext, from: string, to: 
     const tag = node.name.toLowerCase()
     const element = node.element
     if ((tag === 'input' || tag === 'textarea') && from === 'value') {
-        return bindIt(
+        return createBinding(
             context, to, element, 'input',
             el => el.value,
             (el, value) => el.value = value == null ? '' : value
@@ -157,11 +157,11 @@ export const bind = (node: DynamicNode, context: DataContext, from: string, to: 
     }
 
     if (tag === 'input' && from === 'checked') {
-        return bindIt(context, to, element, 'change', el => el.checked, (el, value) => el.checked = value)
+        return createBinding(context, to, element, 'change', el => el.checked, (el, value) => el.checked = value)
     }
 
     if (tag === 'select' && from === 'value') {
-        return bindIt(context, to, element, 'change', getSelectValue, setSelectOption)
+        return createBinding(context, to, element, 'change', getSelectValue, setSelectOption)
     }
 
     if (tag === 'input' && from === 'group') {
