@@ -19,6 +19,7 @@ import { TransformerItem, Transformer } from './template/transformer'
 import { Lifecycle } from './lifecycle'
 import { Module } from './module'
 import { RouterPlugin } from './route'
+import { WindowNode, ApplicationNode } from './template/special-nodes'
 
 export interface Disposable {
     dispose (): void
@@ -30,7 +31,11 @@ const innerHelpers = {
 
 // nodes
 const SN = (name: string, id?: string) => new StaticNode(name, id)
-const DN = (name: string, id?: string) => new DynamicNode(name, id)
+const DN = (name: string, id?: string) => {
+    if (name === 'window') return new WindowNode(id)
+    if (name === 'app') return new ApplicationNode(id)
+    return new DynamicNode(name, id)
+}
 const REF = (name: string, id?: string) => new ReferenceNode(name, id)
 const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
 const RG = (id: string = 'default') => new RegionNode(id)

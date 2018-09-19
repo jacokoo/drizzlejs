@@ -1474,6 +1474,42 @@
         return View;
     }(Renderable);
 
+    var Events = function () {
+        function Events() {
+            classCallCheck(this, Events);
+
+            this._handlers = {};
+        }
+
+        createClass(Events, [{
+            key: 'on',
+            value: function on(name, handler) {
+                if (!this._handlers[name]) this._handlers[name] = [];
+                var hs = this._handlers[name];
+                if (hs.indexOf(handler) !== -1) return { dispose: function dispose() {} };
+                hs.push(handler);
+                return {
+                    dispose: function dispose() {
+                        var idx = hs.indexOf(handler);
+                        if (idx !== -1) hs.splice(idx, 1);
+                    }
+                };
+            }
+        }, {
+            key: 'fire',
+            value: function fire(name, data) {
+                var _this = this;
+
+                if (!this._handlers[name]) return;
+                var hs = this._handlers[name].slice();
+                hs.forEach(function (it) {
+                    return it.call(_this, data);
+                });
+            }
+        }]);
+        return Events;
+    }();
+
     var UPDATE_ACTION = 'update' + +new Date();
     var clone = function clone(target) {
         if (Array.isArray(target)) {
@@ -1531,31 +1567,6 @@
                 return clone(obj);
             }
         }, {
-            key: 'on',
-            value: function on(name, handler) {
-                if (!this._handlers[name]) this._handlers[name] = [];
-                var hs = this._handlers[name];
-                if (hs.indexOf(handler) !== -1) return { dispose: function dispose() {} };
-                hs.push(handler);
-                return {
-                    dispose: function dispose() {
-                        var idx = hs.indexOf(handler);
-                        if (idx !== -1) hs.splice(idx, 1);
-                    }
-                };
-            }
-        }, {
-            key: 'fire',
-            value: function fire(name, data) {
-                var _this2 = this;
-
-                if (!this._handlers[name]) return;
-                var hs = this._handlers[name].slice();
-                hs.forEach(function (it) {
-                    return it.call(_this2, data);
-                });
-            }
-        }, {
             key: '_createItem',
             value: function _createItem(name, state) {
                 var opt = this._items[name];
@@ -1567,30 +1578,30 @@
         }, {
             key: '_dispatch',
             value: function _dispatch(name, payload) {
-                var _this3 = this;
+                var _this2 = this;
 
                 this._busy = this._busy.then(function () {
-                    return _this3._doBeforeUpdate();
+                    return _this2._doBeforeUpdate();
                 }).then(function () {
-                    return _this3._store.dispatch(name, payload);
+                    return _this2._store.dispatch(name, payload);
                 }).then(function () {
-                    return _this3._doCollect(_this3.get());
+                    return _this2._doCollect(_this2.get());
                 }).then(function (data) {
-                    return _this3._doUpdated(data);
+                    return _this2._doUpdated(data);
                 });
                 return this._busy;
             }
         }, {
             key: '_render',
             value: function _render(target) {
-                var _this4 = this;
+                var _this3 = this;
 
                 return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_render', this).call(this, target).then(function () {
-                    if (_this4._status === ComponentState.RENDERED) {
-                        var store = _this4._options.store;
+                    if (_this3._status === ComponentState.RENDERED) {
+                        var store = _this3._options.store;
 
                         if (store && store.actions && store.actions.init) {
-                            return _this4._dispatch('init');
+                            return _this3._dispatch('init');
                         }
                     }
                 });
@@ -1598,19 +1609,27 @@
         }, {
             key: '_init',
             value: function _init() {
-                var _this5 = this;
+                var _this4 = this;
 
                 this._store = new Store(this, this._options.store || {}, UPDATE_ACTION);
                 this.set(Object.assign({}, this._extraState));
                 var p = this._loadItems().then(function () {
-                    return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this5).call(_this5);
+                    return get(Module.prototype.__proto__ || Object.getPrototypeOf(Module.prototype), '_init', _this4).call(_this4);
                 });
                 return p;
             }
         }, {
+            key: 'on',
+            value: function on(name, handler) {
+                return null;
+            }
+        }, {
+            key: 'fire',
+            value: function fire(name, data) {}
+        }, {
             key: '_loadItems',
             value: function _loadItems() {
-                var _this6 = this;
+                var _this5 = this;
 
                 var items = this._options.items;
 
@@ -1618,34 +1637,38 @@
                 var ps = [];
                 if (items.views) {
                     ps = ps.concat(items.views.map(function (it) {
-                        return { name: it, type: 'view', loader: _this6._loader };
+                        return { name: it, type: 'view', loader: _this5._loader };
                     }));
                 }
                 if (items.refs) {
                     ps = ps.concat(items.refs.map(function (it) {
                         var obj = moduleReferences[it];
-                        var loader = _this6.app.createLoader(obj.path, { name: obj.loader, args: obj.args });
+                        var loader = _this5.app.createLoader(obj.path, { name: obj.loader, args: obj.args });
                         return { name: it, type: 'module', loader: loader };
                     }));
                 }
                 if (items.modules) {
                     ps = ps.concat(Object.keys(items.modules).map(function (it) {
                         var path = items.modules[it];
-                        var loader = _this6.app.createLoader(path);
+                        var loader = _this5.app.createLoader(path);
                         return { name: it, type: 'module', loader: loader };
                     }));
                 }
                 return Promise.all(ps.map(function (k, i) {
-                    return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', _this6);
+                    return ps[i].loader.load(ps[i].type === 'view' ? ps[i].name : 'index', _this5);
                 })).then(function (data) {
                     ps.forEach(function (p, i) {
-                        _this6._items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
+                        _this5._items[p.name] = { type: p.type, loader: p.loader, options: data[i] };
                     });
                 });
             }
         }]);
         return Module;
     }(Renderable);
+
+    Object.getOwnPropertyNames(Events.prototype).forEach(function (it) {
+        Module.prototype[it] = Events.prototype[it];
+    });
 
     var customEvents = {
         enter: function enter(node, cb) {
@@ -1660,28 +1683,20 @@
                     node.removeEventListener('keypress', ee, false);
                 }
             };
-        },
-        escape: function escape(node, cb) {
-            var ee = function ee(e) {
-                if (e.keyCode !== 27) return;
-                cb.call(this, e);
-            };
-            node.addEventListener('keyup', ee, false);
-            return {
-                dispose: function dispose() {
-                    node.removeEventListener('keyup', ee, false);
-                }
-            };
         }
     };
 
-    var Application = function () {
+    var Application = function (_Events) {
+        inherits(Application, _Events);
+
         function Application(options) {
             classCallCheck(this, Application);
 
-            this.loaders = {};
-            this._plugins = [];
-            this.options = Object.assign({
+            var _this = possibleConstructorReturn(this, (Application.__proto__ || Object.getPrototypeOf(Application)).call(this));
+
+            _this.loaders = {};
+            _this._plugins = [];
+            _this.options = Object.assign({
                 stages: ['init', 'template', 'default'],
                 scriptRoot: 'app',
                 entry: 'viewport',
@@ -1690,8 +1705,9 @@
                 moduleLifecycles: [],
                 viewLifecycles: []
             }, options);
-            this.options.customEvents = Object.assign(customEvents, this.options.customEvents);
-            this.registerLoader(Loader);
+            _this.options.customEvents = Object.assign(customEvents, _this.options.customEvents);
+            _this.registerLoader(Loader);
+            return _this;
         }
 
         createClass(Application, [{
@@ -1720,10 +1736,10 @@
         }, {
             key: 'start',
             value: function start() {
-                var _this = this;
+                var _this2 = this;
 
                 return this.startViewport().then(function (item) {
-                    _this._plugins.forEach(function (it) {
+                    _this2._plugins.forEach(function (it) {
                         return it.started(item);
                     });
                 });
@@ -1731,7 +1747,7 @@
         }, {
             key: 'startViewport',
             value: function startViewport() {
-                var _this2 = this;
+                var _this3 = this;
 
                 var loader = void 0;
                 var _options = this.options,
@@ -1739,7 +1755,7 @@
                     container = _options.container;
 
                 var create = function create(lo, options) {
-                    var v = new Module(_this2, lo, options);
+                    var v = new Module(_this3, lo, options);
                     return v._init().then(function () {
                         return v._render(createAppendable(container));
                     }).then(function () {
@@ -1757,7 +1773,7 @@
             }
         }]);
         return Application;
-    }();
+    }(Events);
 
     var ps = [['accept', 0, ['form', 'input']], ['accept-charset', 'acceptCharset', ['form']], ['accesskey', 'accessKey', 0], ['action', 0, ['form']], ['align', 0, ['applet', 'caption', 'col', 'colgroup', 'hr', 'iframe', 'img', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr']], ['allowfullscreen', 'allowFullscreen', ['iframe']], ['alt', 0, ['applet', 'area', 'img', 'input']], ['async', 0, ['script']], ['autocomplete', 0, ['form', 'input']], ['autofocus', 0, ['button', 'input', 'keygen', 'select', 'textarea']], ['autoplay', 0, ['audio', 'video']], ['autosave', 0, ['input']], ['bgcolor', 'bgColor', ['body', 'col', 'colgroup', 'marquee', 'table', 'tbody', 'tfoot', 'td', 'th', 'tr']], ['border', 0, ['img', 'object', 'table']], ['buffered', 0, ['audio', 'video']], ['challenge', 0, ['keygen']], ['charset', 0, ['meta', 'script']], ['checked', 0, ['command', 'input']], ['cite', 0, ['blockquote', 'del', 'ins', 'q']], ['class', 'className', 0], ['code', 0, ['applet']], ['codebase', 'codeBase', ['applet']], ['color', 0, ['basefont', 'font', 'hr']], ['cols', 0, ['textarea']], ['colspan', 'colSpan', ['td', 'th']], ['content', 0, ['meta']], ['contenteditable', 'contentEditable', 0], ['contextmenu', 0, 0], ['controls', 0, ['audio', 'video']], ['coords', 0, ['area']], ['data', 0, ['object']], ['datetime', 'dateTime', ['del', 'ins', 'time']], ['default', 0, ['track']], ['defer', 0, ['script']], ['dir', 0, 0], ['dirname', 'dirName', ['input', 'textarea']], ['disabled', 0, ['button', 'command', 'fieldset', 'input', 'keygen', 'optgroup', 'option', 'select', 'textarea']], ['download', 0, ['a', 'area']], ['draggable', 0, 0], ['dropzone', 0, 0], ['enctype', 0, ['form']], ['for', 'htmlFor', ['label', 'output']], ['form', 0, ['button', 'fieldset', 'input', 'keygen', 'label', 'meter', 'object', 'output', 'progress', 'select', 'textarea']], ['formaction', 0, ['input', 'button']], ['headers', 0, ['td', 'th']], ['height', 0, ['canvas', 'embed', 'iframe', 'img', 'input', 'object', 'video']], ['hidden', 0, 0], ['high', 0, ['meter']], ['href', 0, ['a', 'area', 'base', 'link']], ['hreflang', 0, ['a', 'area', 'link']], ['http-equiv', 'httpEquiv', ['meta']], ['icon', 0, ['command']], ['id', 0, 0], ['indeterminate', 0, ['input']], ['ismap', 'isMap', ['img']], ['itemprop', 0, 0], ['keytype', 0, ['keygen']], ['kind', 0, ['track']], ['label', 0, ['track']], ['lang', 0, 0], ['language', 0, ['script']], ['loop', 0, ['audio', 'bgsound', 'marquee', 'video']], ['low', 0, ['meter']], ['manifest', 0, ['html']], ['max', 0, ['input', 'meter', 'progress']], ['maxlength', 'maxLength', ['input', 'textarea']], ['media', 0, ['a', 'area', 'link', 'source', 'style']], ['method', 0, ['form']], ['min', 0, ['input', 'meter']], ['multiple', 0, ['input', 'select']], ['muted', 0, ['audio', 'video']], ['name', 0, ['button', 'form', 'fieldset', 'iframe', 'input', 'keygen', 'object', 'output', 'select', 'textarea', 'map', 'meta', 'param']], ['novalidate', 'noValidate', ['form']], ['open', 0, ['details']], ['optimum', 0, ['meter']], ['pattern', 0, ['input']], ['ping', 0, ['a', 'area']], ['placeholder', 0, ['input', 'textarea']], ['poster', 0, ['video']], ['preload', 0, ['audio', 'video']], ['radiogroup', 0, ['command']], ['readonly', 'readOnly', ['input', 'textarea']], ['rel', 0, ['a', 'area', 'link']], ['required', 0, ['input', 'select', 'textarea']], ['reversed', 0, ['ol']], ['rows', 0, ['textarea']], ['rowspan', 'rowSpan', ['td', 'th']], ['sandbox', 0, ['iframe']], ['scope', 0, ['th']], ['scoped', 0, ['style']], ['seamless', 0, ['iframe']], ['selected', 0, ['option']], ['shape', 0, ['a', 'area']], ['size', 0, ['input', 'select']], ['sizes', 0, ['link', 'img', 'source']], ['span', 0, ['col', 'colgroup']], ['spellcheck', 0, 0], ['src', 0, ['audio', 'embed', 'iframe', 'img', 'input', 'script', 'source', 'track', 'video']], ['srcdoc', 0, ['iframe']], ['srclang', 0, ['track']], ['srcset', 0, ['img']], ['start', 0, ['ol']], ['step', 0, ['input']], ['summary', 0, ['table']], ['tabindex', 'tabIndex', 0], ['target', 0, ['a', 'area', 'base', 'form']], ['title', 0, 0], ['type', 0, ['button', 'command', 'embed', 'object', 'script', 'source', 'style', 'menu']], ['usemap', 'useMap', ['img', 'input', 'object']], ['value', 0, ['button', 'option', 'input', 'li', 'meter', 'progress', 'param', 'select', 'textarea']], ['volume', 0, ['audio', 'video']], ['width', 0, ['canvas', 'embed', 'iframe', 'img', 'input', 'object', 'video']], ['wrap', 0, ['textarea']]];
     var attributes = ps.reduce(function (acc, item) {
@@ -1806,7 +1822,7 @@
                 if (this.rendered) return;
                 this.rendered = true;
                 get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'render', this).call(this, context);
-                this.parent.append(this.element);
+                if (this.element) this.parent.append(this.element);
                 this.children.forEach(function (it) {
                     return it.render(context);
                 });
@@ -1823,7 +1839,7 @@
             value: function destroy(context) {
                 if (!this.rendered) return;
                 get(StaticNode.prototype.__proto__ || Object.getPrototypeOf(StaticNode.prototype), 'destroy', this).call(this, context);
-                this.parent.remove(this.element);
+                if (this.element) this.parent.remove(this.element);
                 this.rendered = false;
             }
         }, {
@@ -1993,6 +2009,20 @@
             if (type !== 'checkbox' && type !== 'radio') return null;
             return bindGroup(context, context.groups[to], to, element);
         }
+        if (tag === 'window' && from === 'scrollX') {
+            return createBinding(context, to, window, 'scroll', function (el) {
+                return el.pageXOffset;
+            }, function (el, value) {
+                return el.scrollTo(value, el.pageYOffset);
+            });
+        }
+        if (tag === 'window' && from === 'scrollY') {
+            return createBinding(context, to, window, 'scroll', function (el) {
+                return el.pageYOffset;
+            }, function (el, value) {
+                return el.scrollTo(el.pageXOffset, value);
+            });
+        }
         return null;
     };
 
@@ -2106,7 +2136,7 @@
                     var as = resolveEventArgument(this, me.context, args, event);
                     (_me$context = me.context).trigger.apply(_me$context, [method].concat(toConsumableArray(as)));
                 };
-                return this.bindEvent(name, cb);
+                return this.bindEvent(this.element, name, cb);
             }
         }, {
             key: 'initAction',
@@ -2118,38 +2148,36 @@
                     var data = resolveEventArgument(this, me.context, args, event);
                     (_me$context2 = me.context).dispatch.apply(_me$context2, [action].concat(toConsumableArray(data)));
                 };
-                return this.bindEvent(name, cb);
+                return this.bindEvent(this.element, name, cb);
             }
         }, {
             key: 'bindEvent',
-            value: function bindEvent(name, cb) {
-                var _this4 = this;
-
+            value: function bindEvent(el, name, cb) {
                 var ce = this.context.event(name);
-                if (ce) return ce(this.element, cb);
-                this.element.addEventListener(name, cb, false);
+                if (ce) return ce(el, cb);
+                el.addEventListener(name, cb, false);
                 return {
                     dispose: function dispose() {
-                        _this4.element.removeEventListener(name, cb, false);
+                        el.removeEventListener(name, cb, false);
                     }
                 };
             }
         }, {
             key: 'updateAttributes',
             value: function updateAttributes(context) {
-                var _this5 = this;
+                var _this4 = this;
 
                 Object.keys(this.dynamicAttributes).forEach(function (it) {
-                    var vs = _this5.renderHelper(context, _this5.dynamicAttributes[it]);
+                    var vs = _this4.renderHelper(context, _this4.dynamicAttributes[it]);
                     if (vs[0] === ChangeType.CHANGED) {
                         var vvs = vs[1].filter(function (v) {
                             return v != null;
                         });
                         if (vvs.length === 1) {
-                            setAttribute(_this5.element, it, vvs[0]);
+                            setAttribute(_this4.element, it, vvs[0]);
                         } else {
                             var v = it === 'class' ? vvs.join(' ') : vvs.join('');
-                            setAttribute(_this5.element, it, v);
+                            setAttribute(_this4.element, it, v);
                         }
                     }
                 });
@@ -2172,7 +2200,7 @@
         }, {
             key: 'update',
             value: function update(context) {
-                var _this6 = this;
+                var _this5 = this;
 
                 if (!this.rendered) return;
                 this.updateAttributes(context);
@@ -2188,7 +2216,7 @@
                         name = _ref4[0],
                         hook = _ref4[1];
 
-                    var vs = _this6.renderHelper(context, _this6.components[name]);
+                    var vs = _this5.renderHelper(context, _this5.components[name]);
                     if (vs[0] === ChangeType.NOT_CHANGED) return;
                     hook.update.apply(hook, toConsumableArray(vs[1]));
                 });
@@ -3012,6 +3040,77 @@
         }
     };
 
+    var WindowNode = function (_DynamicNode) {
+        inherits(WindowNode, _DynamicNode);
+
+        function WindowNode(id) {
+            classCallCheck(this, WindowNode);
+
+            var _this = possibleConstructorReturn(this, (WindowNode.__proto__ || Object.getPrototypeOf(WindowNode)).call(this, 'window', id));
+
+            _this.children = [];
+            return _this;
+        }
+
+        createClass(WindowNode, [{
+            key: 'init',
+            value: function init() {}
+        }, {
+            key: 'dynamicAttribute',
+            value: function dynamicAttribute() {}
+        }, {
+            key: 'component',
+            value: function component() {}
+        }, {
+            key: 'bind',
+            value: function bind(from, to) {
+                if (from !== 'scrollX' && from !== 'scrollY') {
+                    throw new Error('Can only bind scrollX and scrollY on window object');
+                }
+                get(WindowNode.prototype.__proto__ || Object.getPrototypeOf(WindowNode.prototype), 'bind', this).call(this, from, to);
+            }
+        }, {
+            key: 'bindEvent',
+            value: function bindEvent(el, name, cb) {
+                return get(WindowNode.prototype.__proto__ || Object.getPrototypeOf(WindowNode.prototype), 'bindEvent', this).call(this, window, name, cb);
+            }
+        }]);
+        return WindowNode;
+    }(DynamicNode);
+
+    var ApplicationNode = function (_DynamicNode2) {
+        inherits(ApplicationNode, _DynamicNode2);
+
+        function ApplicationNode(id) {
+            classCallCheck(this, ApplicationNode);
+
+            var _this2 = possibleConstructorReturn(this, (ApplicationNode.__proto__ || Object.getPrototypeOf(ApplicationNode)).call(this, 'app', id));
+
+            _this2.children = [];
+            return _this2;
+        }
+
+        createClass(ApplicationNode, [{
+            key: 'init',
+            value: function init() {}
+        }, {
+            key: 'dynamicAttribute',
+            value: function dynamicAttribute() {}
+        }, {
+            key: 'component',
+            value: function component() {}
+        }, {
+            key: 'bind',
+            value: function bind() {}
+        }, {
+            key: 'bindEvent',
+            value: function bindEvent(el, name, cb) {
+                return this.context.root.app.on(name, cb);
+            }
+        }]);
+        return ApplicationNode;
+    }(DynamicNode);
+
     var innerHelpers = {
         if: IfHelper, unless: UnlessHelper
     };
@@ -3020,6 +3119,8 @@
         return new StaticNode(name, id);
     };
     var DN = function DN(name, id) {
+        if (name === 'window') return new WindowNode(id);
+        if (name === 'app') return new ApplicationNode(id);
         return new DynamicNode(name, id);
     };
     var REF = function REF(name, id) {

@@ -3,8 +3,9 @@ import { StoreOptions } from './store';
 import { Application } from './application';
 import { Loader } from './loader';
 import { View, ViewOptions } from './view';
-import { Disposable } from './drizzle';
 import { Appendable } from './template/template';
+import { Events } from './event';
+import { Disposable } from './drizzle';
 export interface ItemOptions {
     views?: string[];
     refs?: string[];
@@ -24,7 +25,7 @@ interface ModuleRenference {
     };
 }
 export declare const moduleReferences: ModuleRenference;
-export declare class Module extends Renderable<ModuleOptions> {
+export declare class Module extends Renderable<ModuleOptions> implements Events {
     _items: {
         [key: string]: {
             type: 'view' | 'module';
@@ -33,18 +34,18 @@ export declare class Module extends Renderable<ModuleOptions> {
         };
     };
     _extraState: object;
+    _handlers: {};
     private _store;
-    private _handlers;
     private _loader;
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState?: object);
     set(data: object): Promise<any>;
     get(name?: string): any;
-    on(name: string, handler: (data: any) => void): Disposable;
-    fire(name: string, data: any): void;
     _createItem(name: string, state?: object): Promise<View | Module>;
     _dispatch(name: string, payload?: any): Promise<any>;
     _render(target: Appendable): Promise<any>;
     _init(): Promise<ComponentState>;
+    on(name: string, handler: (data: any) => void): Disposable;
+    fire(name: string, data: any): void;
     private _loadItems;
 }
 export {};

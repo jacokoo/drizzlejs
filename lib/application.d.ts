@@ -3,6 +3,7 @@ import { ModuleOptions } from './module';
 import { CustomEvent, CustomHelper, Component } from './template/context';
 import { DrizzlePlugin } from './drizzle';
 import { Lifecycle } from './lifecycle';
+import { Events } from './event';
 export interface ApplicationOptions {
     stages?: string[];
     scriptRoot?: string;
@@ -24,7 +25,7 @@ export interface ApplicationOptions {
 interface LoaderConstructor {
     new (app: Application, path: string, args?: any): Loader;
 }
-export declare class Application {
+export declare class Application extends Events {
     options: ApplicationOptions;
     loaders: {
         [name: string]: LoaderConstructor;

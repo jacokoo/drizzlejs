@@ -9,7 +9,7 @@ export interface ComponentHook extends Disposable {
 }
 export type Component = (node: Node, ...args: any[]) => ComponentHook
 export type CustomHelper = (...args: any[]) => any
-export type CustomEvent = (name: Node, cb: (event: any) => void) => Disposable
+export type CustomEvent = (name: EventTarget, cb: (event: any) => void) => Disposable
 
 export interface BindingGroup {
     type: 'checkbox' | 'radio'
@@ -45,7 +45,7 @@ export interface DataContext extends Context {
     sub (data: {[name: string]: any}): DataContext
 }
 
-abstract class AbstractDataContext implements DataContext {
+export abstract class AbstractDataContext implements DataContext {
     groups = {}
     data = {}
     busy: Promise<any>[]

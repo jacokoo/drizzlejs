@@ -3,8 +3,9 @@ import { StoreOptions, Store } from './store'
 import { Application } from './application'
 import { Loader } from './loader'
 import { View, ViewOptions } from './view'
-import { Disposable} from './drizzle'
 import { Appendable } from './template/template'
+import { Events } from './event'
+import { Disposable } from './drizzle'
 
 export interface ItemOptions {
     views?: string[]
@@ -42,16 +43,16 @@ interface ModuleRenference {
 
 export const moduleReferences: ModuleRenference = {}
 
-export class Module extends Renderable<ModuleOptions> {
+export class Module extends Renderable<ModuleOptions> implements Events {
     _items: {[key: string]: {
         type: 'view' | 'module'
         options: ModuleOptions | ViewOptions
         loader: Loader
     }} = {}
     _extraState: object
+    _handlers = {}
 
     private _store: Store
-    private _handlers: {[name: string]: ((data: any) => void)[]} = {}
     private _loader: Loader
 
     constructor(app: Application, loader: Loader, options: ModuleOptions, extraState: object = {}) {
@@ -81,27 +82,6 @@ export class Module extends Renderable<ModuleOptions> {
 
         // TODO only works in dev mode
         return clone(obj)
-    }
-
-    on (name: string, handler: (data: any) => void): Disposable {
-        if (!this._handlers[name]) this._handlers[name] = []
-        const hs = this._handlers[name]
-
-        if (hs.indexOf(handler) !== -1) return {dispose: () => {}}
-        hs.push(handler)
-
-        return {
-            dispose: () => {
-                const idx = hs.indexOf(handler)
-                if (idx !== -1) hs.splice(idx, 1)
-            }
-        }
-    }
-
-    fire (name: string, data: any) {
-        if (!this._handlers[name]) return
-        const hs = this._handlers[name].slice()
-        hs.forEach(it => it.call(this, data))
     }
 
     _createItem (name: string, state?: object) {
@@ -140,6 +120,13 @@ export class Module extends Renderable<ModuleOptions> {
         return p
     }
 
+    on (name: string, handler: (data: any) => void): Disposable {
+        return null
+    }
+
+    fire (name: string, data: any) {
+    }
+
     private _loadItems (): Promise<any> {
         const {items} = this._options
         if (!items) return Promise.resolve()
@@ -176,3 +163,7 @@ export class Module extends Renderable<ModuleOptions> {
             })
     }
 }
+
+Object.getOwnPropertyNames(Events.prototype).forEach(it => {
+    Module.prototype[it] = Events.prototype[it]
+})

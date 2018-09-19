@@ -51,7 +51,7 @@ export const updateContext = (context: DataContext, to: string, value: any) => {
 }
 
 const createBinding = <T extends HTMLElement>(
-    context: DataContext, to: string, element: T,
+    context: DataContext, to: string, element: T | Window,
     event: string, get: (T) => any, set: (T, any) => void
 ): Updatable => {
     let current
@@ -168,6 +168,22 @@ export const bind = (node: DynamicNode, context: DataContext, from: string, to: 
         const type = (element as HTMLInputElement).type
         if (type !== 'checkbox' && type !== 'radio') return null
         return bindGroup(context, context.groups[to], to, (element as HTMLInputElement))
+    }
+
+    if (tag === 'window' && from === 'scrollX') {
+        return createBinding(
+            context, to, window, 'scroll',
+            el => el.pageXOffset,
+            (el, value) => el.scrollTo(value, el.pageYOffset)
+        )
+    }
+
+    if (tag === 'window' && from === 'scrollY') {
+        return createBinding(
+            context, to, window, 'scroll',
+            el => el.pageYOffset,
+            (el, value) => el.scrollTo(el.pageXOffset, value)
+        )
     }
 
     return null

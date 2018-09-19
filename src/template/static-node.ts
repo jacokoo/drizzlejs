@@ -21,7 +21,7 @@ export class StaticNode extends Node {
         this.rendered = true
 
         super.render(context)
-        this.parent.append(this.element)
+        if (this.element) this.parent.append(this.element)
         this.children.forEach(it => it.render(context))
     }
 
@@ -33,7 +33,7 @@ export class StaticNode extends Node {
         if (!this.rendered) return
         super.destroy(context)
 
-        this.parent.remove(this.element)
+        if (this.element) this.parent.remove(this.element)
         this.rendered = false
     }
 

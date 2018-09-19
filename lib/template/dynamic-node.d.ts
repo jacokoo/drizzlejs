@@ -37,7 +37,7 @@ export declare class DynamicNode extends StaticNode {
     render(context: DataContext): void;
     initEvent(name: string, method: string, args: Attribute[]): Disposable;
     initAction(name: string, action: string, args: Attribute[]): Disposable;
-    bindEvent(name: string, cb: (event: any) => void): Disposable;
+    bindEvent(el: EventTarget, name: string, cb: (event: any) => void): Disposable;
     updateAttributes(context: DataContext): void;
     renderHelper(context: DataContext, helpers: Helper[]): [ChangeType, any[]];
     update(context: DataContext): void;

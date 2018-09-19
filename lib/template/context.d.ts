@@ -8,7 +8,7 @@ export interface ComponentHook extends Disposable {
 }
 export declare type Component = (node: Node, ...args: any[]) => ComponentHook;
 export declare type CustomHelper = (...args: any[]) => any;
-export declare type CustomEvent = (name: Node, cb: (event: any) => void) => Disposable;
+export declare type CustomEvent = (name: EventTarget, cb: (event: any) => void) => Disposable;
 export interface BindingGroup {
     type: 'checkbox' | 'radio';
     items: DynamicNode[];
@@ -40,7 +40,7 @@ export interface DataContext extends Context {
         [name: string]: any;
     }): DataContext;
 }
-declare abstract class AbstractDataContext implements DataContext {
+export declare abstract class AbstractDataContext implements DataContext {
     groups: {};
     data: {};
     busy: Promise<any>[];
@@ -83,4 +83,3 @@ export declare class ModuleDataContext extends AbstractDataContext {
     helper(name: string): CustomHelper | undefined;
     component(name: string): Component | undefined;
 }
-export {};

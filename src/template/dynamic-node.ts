@@ -92,7 +92,7 @@ export class DynamicNode extends StaticNode {
             me.context.trigger(method, ...as)
         }
 
-        return this.bindEvent(name, cb)
+        return this.bindEvent(this.element, name, cb)
     }
 
     initAction (name: string, action: string, args: Attribute[]): Disposable {
@@ -102,17 +102,17 @@ export class DynamicNode extends StaticNode {
             me.context.dispatch(action, ...data)
         }
 
-        return this.bindEvent(name, cb)
+        return this.bindEvent(this.element, name, cb)
     }
 
-    bindEvent (name: string, cb: (event: any) => void): Disposable {
+    bindEvent (el: EventTarget, name: string, cb: (event: any) => void): Disposable {
         const ce = this.context.event(name)
-        if (ce) return ce(this.element, cb)
+        if (ce) return ce(el, cb)
 
-        this.element.addEventListener(name, cb, false)
+        el.addEventListener(name, cb, false)
         return {
             dispose: () => {
-                this.element.removeEventListener(name, cb, false)
+                el.removeEventListener(name, cb, false)
             }
         }
     }

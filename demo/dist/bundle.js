@@ -546,16 +546,18 @@
         json: json
     };
 
-    var index$1 = '#! drizzle\n\nmodule(names) > view-a(names)\n\nscript..\nexport default {\n    items: { views: [\'view-a\'] },\n    store: {\n        models: {\n            names: () => []\n        }\n    }\n}\n';
+    var index$1 = '#! drizzle\n\nmodule(names color) > .columns\n    .column > view-a(names)\n    .column > view-b(color)\n\nscript..\nexport default {\n    items: { views: [\'view-a\', \'view-b\'] },\n    store: {\n        models: {\n            names: () => [],\n            color: () => \'red\'\n        }\n    }\n}\n';
 
     var view$1 = '#! drizzle\n\nview\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'a\')\n            |  a\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'b\')\n            |  b\n    .control\n        label(class=\'checkbox\')\n            input(type=\'checkbox\' bind:group=names value=\'c\')\n            |  c\n\n    p@each(names as name) $name checked\n\nscript..\nexport default {\n}\n';
 
-    var json$1 = '{\n    "names": ["a", "b", "c"]\n}';
+    var viewB = '#! drizzle\n\nview\n    .control\n        label(class=\'radio\')\n            input(type=\'radio\' bind:group=color value=\'red\')\n            |  Red\n    .control\n        label(class=\'radio\')\n            input(type=\'radio\' bind:group=color value=\'green\')\n            |  Green\n    .control\n        label(class=\'radio\')\n            input(type=\'radio\' bind:group=color value=\'blue\')\n            |  Blue\n\n    span(style=\'color:\' + color + \';\') Selected color: $color\n\nscript..\nexport default {\n}\n';
+
+    var json$1 = '{\n    "names": ["a", "b", "c"],\n    "color": "red"\n}';
 
     var bg = {
         code: 'bind-group',
         name: 'Group binding',
-        files: { index: index$1, 'view-a': view$1 },
+        files: { index: index$1, 'view-a': view$1, 'view-b': viewB },
         json: json$1
     };
 
@@ -1014,6 +1016,20 @@
                     return !it.completed;
                 });
                 return todos;
+            }
+        },
+        customEvents: {
+            escape: function escape(node, cb) {
+                var ee = function ee(e) {
+                    if (e.keyCode !== 27) return;
+                    cb.call(this, e);
+                };
+                node.addEventListener('keyup', ee, false);
+                return {
+                    dispose: function dispose() {
+                        node.removeEventListener('keyup', ee, false);
+                    }
+                };
             }
         },
         events: {

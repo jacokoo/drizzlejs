@@ -4,6 +4,7 @@ import { createAppendable } from './template/util'
 import { CustomEvent, CustomHelper, Component } from './template/context'
 import { Disposable, DrizzlePlugin } from './drizzle'
 import { Lifecycle } from './lifecycle'
+import { Events } from './event'
 
 export interface ApplicationOptions {
     stages?: string[]
@@ -35,28 +36,16 @@ const customEvents: {[name: string]: CustomEvent} = {
                 node.removeEventListener('keypress', ee, false)
             }
         }
-    },
-
-    escape (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
-            if (e.keyCode !== 27) return
-            cb.call(this, e)
-        }
-        node.addEventListener('keyup', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keyup', ee, false)
-            }
-        }
     }
 }
 
-export class Application {
+export class Application extends Events {
     options: ApplicationOptions
     loaders: {[name: string]: LoaderConstructor} = {}
     private _plugins: DrizzlePlugin[] = []
 
     constructor(options: ApplicationOptions) {
+        super()
         this.options = Object.assign({
             stages: ['init', 'template', 'default'],
             scriptRoot: 'app',

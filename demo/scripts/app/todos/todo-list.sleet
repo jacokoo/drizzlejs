@@ -32,6 +32,21 @@ export default {
         }
     },
 
+    customEvents: {
+        escape (node, cb) {
+            const ee = function (e) {
+                if (e.keyCode !== 27) return
+                cb.call(this, e)
+            }
+            node.addEventListener('keyup', ee, false)
+            return {
+                dispose () {
+                    node.removeEventListener('keyup', ee, false)
+                }
+            }
+        }
+    },
+
     events: {
         edit (todo) {
             this.set({nameCache: todo.name, editing: todo})
