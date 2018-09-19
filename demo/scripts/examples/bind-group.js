@@ -33,6 +33,7 @@ view
             |  c
 
     p@each(names as name) $name checked
+    p@else Nothing is checked
 
 script..
 export default {

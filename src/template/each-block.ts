@@ -97,6 +97,10 @@ export class EachBlock extends AnchorNode {
             return
         }
 
+        if (!this.currentSize && this.falseNode) {
+            this.falseNode.destroy(context)
+        }
+
         const kv = Array.isArray(list) ?
             list.map((it, i) => [i, it] as [any, any]) :
             Object.keys(list).map(it => [it, list[it]] as [any, any])

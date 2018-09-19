@@ -1043,6 +1043,9 @@
                     this.renderElse(context);
                     return;
                 }
+                if (!this.currentSize && this.falseNode) {
+                    this.falseNode.destroy(context);
+                }
                 var kv = Array.isArray(list) ? list.map(function (it, i) {
                     return [i, it];
                 }) : Object.keys(list).map(function (it) {
