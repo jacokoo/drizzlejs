@@ -1,27 +1,21 @@
 export interface ModelOptions {
-    url?: string
-    root?: string
-    data: () => any
-    parser?: (data: any) => any
+    data: Supplier
 }
 
-export class Model {
-    private _options: ModelOptions
-    private _data: any
+type Supplier = () => any
 
-    constructor(options: ModelOptions) {
-        const opt = typeof options === 'function' ? { data: options} : options
+export class Model {
+    protected _options: ModelOptions
+    protected _data: any
+
+    constructor(options: ModelOptions | Supplier) {
+        const opt = typeof options === 'function' ? { data: options } : options
         this._options = opt
         this.set(opt.data())
     }
 
     set (data: any) {
-        let d = data
-        const {parser, root} = this._options
-        if (parser) d = parser(d)
-        if (root && d) d = d[root]
-
-        this._data = d
+        this._data = data
     }
 
     get () {

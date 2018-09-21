@@ -1,5 +1,5 @@
 import { Node } from './node'
-import { Renderable } from '../renderable'
+import { Renderable, Region } from '../renderable'
 import { Context, DataContext } from './context'
 import { AnchorNode } from './anchor-node'
 
@@ -14,25 +14,7 @@ export class RegionNode extends AnchorNode {
     }
 
     init (context: Context) {
-        const me = this
-        context.region(this.id, {
-            get item () {
-                return me.item
-            },
-            show (name: string, state: object): Promise<any> {
-                return me.show(name, state)
-            },
-            _showNode (nodes: Node[], ctx: DataContext): Promise<any> {
-                return me.showNode(nodes, ctx)
-            },
-            _showChildren () {
-                if (!me.context) return Promise.resolve()
-                return me.showNode(me.children, me.context)
-            },
-            close () {
-                return me.close()
-            }
-        })
+        context.region(this.id, this.createRegion())
     }
 
     render (context: DataContext) {
@@ -99,5 +81,27 @@ export class RegionNode extends AnchorNode {
             this.nodes = null
             this.item = null
         })
+    }
+
+    protected createRegion (): Region {
+        const me = this
+        return {
+            get item () {
+                return me.item
+            },
+            show (name: string, state: object): Promise<any> {
+                return me.show(name, state)
+            },
+            _showNode (nodes: Node[], ctx: DataContext): Promise<any> {
+                return me.showNode(nodes, ctx)
+            },
+            _showChildren () {
+                if (!me.context) return Promise.resolve()
+                return me.showNode(me.children, me.context)
+            },
+            close () {
+                return me.close()
+            }
+        }
     }
 }

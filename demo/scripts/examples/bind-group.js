@@ -10,7 +10,7 @@ export default {
     store: {
         models: {
             names: () => [],
-            color: () => 'red'
+            color: () => 'blue'
         }
     }
 }
@@ -65,7 +65,7 @@ export default {
 
 const json = `{
     "names": ["a", "b", "c"],
-    "color": "red"
+    "color": "green"
 }`
 
 export default {

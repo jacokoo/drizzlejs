@@ -1,4 +1,4 @@
-import { NormalValue, ValueType } from './template'
+import { NormalValue } from './template'
 import { DataContext } from './context'
 import { getValue, getAttributeValue } from './util'
 

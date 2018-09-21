@@ -29,16 +29,45 @@ const innerHelpers = {
     if: IfHelper, unless: UnlessHelper
 }
 
+interface NodeConstructor {
+    new (id?: string): DynamicNode
+}
+
+const nodes: {[name: string]: NodeConstructor} = {
+    window: WindowNode,
+    app: ApplicationNode
+}
+
+function createNode(name: string, id?: string): DynamicNode | undefined {
+    if (nodes[name]) return new nodes[name](id)
+}
+
+interface RegionConstructor {
+    new (id: string): RegionNode
+}
+
+const regions: {[name: string]: RegionConstructor} = {
+}
+
+function createRegion(name: string, id: string): RegionNode | undefined {
+    if (regions[name]) return new regions[name](id)
+}
+
 // nodes
-const SN = (name: string, id?: string) => new StaticNode(name, id)
+const SN = (name: string, id?: string) => {
+    const node = createNode(name, id)
+    return node ? node : new StaticNode(name, id)
+}
 const DN = (name: string, id?: string) => {
-    if (name === 'window') return new WindowNode(id)
-    if (name === 'app') return new ApplicationNode(id)
-    return new DynamicNode(name, id)
+    const node = createNode(name, id)
+    return node ? node : new DynamicNode(name, id)
 }
 const REF = (name: string, id?: string) => new ReferenceNode(name, id)
 const TX = (...ss: (string | Helper)[]) => new TextNode(...ss)
-const RG = (id: string = 'default') => new RegionNode(id)
+const RG = (name: string, id: string = 'default') => {
+    const region = createRegion(name, id)
+    return region ? region : new RegionNode(id)
+}
 
 // node attribute
 const SA = (d: StaticNode | DynamicNode | ReferenceNode, name: string, value: any) => {
@@ -84,6 +113,14 @@ export const factory = {
 
 export {
     ModuleTemplate, ViewTemplate, Application, Loader, RouterPlugin
+}
+
+export function registerNode(name: string, type: NodeConstructor) {
+    nodes[name] = type
+}
+
+export function registerRegion(name: string, type: RegionConstructor) {
+    regions[name] = type
 }
 
 export interface DrizzlePlugin {

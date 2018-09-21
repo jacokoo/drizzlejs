@@ -583,14 +583,13 @@
             key: 'render',
             value: function render(context) {
                 get(AnchorNode.prototype.__proto__ || Object.getPrototypeOf(AnchorNode.prototype), 'render', this).call(this, context);
-                if (!this.newParent) {
-                    if (this.nextSibling) {
-                        this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name);
-                        this.parent.append(this.anchor);
-                        this.newParent = this.parent.before(this.anchor);
-                    } else {
-                        this.newParent = this.parent;
-                    }
+                if (this.newParent) return;
+                if (this.nextSibling) {
+                    this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name);
+                    this.parent.append(this.anchor);
+                    this.newParent = this.parent.before(this.anchor);
+                } else {
+                    this.newParent = this.parent;
                 }
             }
         }, {
@@ -1326,14 +1325,7 @@
         createClass(Model, [{
             key: 'set',
             value: function set$$1(data) {
-                var d = data;
-                var _options = this._options,
-                    parser = _options.parser,
-                    root = _options.root;
-
-                if (parser) d = parser(d);
-                if (root && d) d = d[root];
-                this._data = d;
+                this._data = data;
             }
         }, {
             key: 'get',
@@ -2598,25 +2590,7 @@
         createClass(RegionNode, [{
             key: 'init',
             value: function init(context) {
-                var me = this;
-                context.region(this.id, {
-                    get item() {
-                        return me.item;
-                    },
-                    show: function show(name, state) {
-                        return me.show(name, state);
-                    },
-                    _showNode: function _showNode(nodes, ctx) {
-                        return me.showNode(nodes, ctx);
-                    },
-                    _showChildren: function _showChildren() {
-                        if (!me.context) return Promise.resolve();
-                        return me.showNode(me.children, me.context);
-                    },
-                    close: function close() {
-                        return me.close();
-                    }
-                });
+                context.region(this.id, this.createRegion());
             }
         }, {
             key: 'render',
@@ -2706,6 +2680,29 @@
                     _this5.nodes = null;
                     _this5.item = null;
                 });
+            }
+        }, {
+            key: 'createRegion',
+            value: function createRegion() {
+                var me = this;
+                return {
+                    get item() {
+                        return me.item;
+                    },
+                    show: function show(name, state) {
+                        return me.show(name, state);
+                    },
+                    _showNode: function _showNode(nodes, ctx) {
+                        return me.showNode(nodes, ctx);
+                    },
+                    _showChildren: function _showChildren() {
+                        if (!me.context) return Promise.resolve();
+                        return me.showNode(me.children, me.context);
+                    },
+                    close: function close() {
+                        return me.close();
+                    }
+                };
             }
         }]);
         return RegionNode;
@@ -3117,14 +3114,25 @@
     var innerHelpers = {
         if: IfHelper, unless: UnlessHelper
     };
+    var nodes = {
+        window: WindowNode,
+        app: ApplicationNode
+    };
+    function createNode(name, id) {
+        if (nodes[name]) return new nodes[name](id);
+    }
+    var regions = {};
+    function createRegion(name, id) {
+        if (regions[name]) return new regions[name](id);
+    }
     // nodes
     var SN = function SN(name, id) {
-        return new StaticNode(name, id);
+        var node = createNode(name, id);
+        return node ? node : new StaticNode(name, id);
     };
     var DN = function DN(name, id) {
-        if (name === 'window') return new WindowNode(id);
-        if (name === 'app') return new ApplicationNode(id);
-        return new DynamicNode(name, id);
+        var node = createNode(name, id);
+        return node ? node : new DynamicNode(name, id);
     };
     var REF = function REF(name, id) {
         return new ReferenceNode(name, id);
@@ -3136,9 +3144,11 @@
 
         return new (Function.prototype.bind.apply(TextNode, [null].concat(ss)))();
     };
-    var RG = function RG() {
-        var id = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'default';
-        return new RegionNode(id);
+    var RG = function RG(name) {
+        var id = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'default';
+
+        var region = createRegion(name, id);
+        return region ? region : new RegionNode(id);
     };
     // node attribute
     var SA = function SA(d, name, value) {
@@ -3235,6 +3245,12 @@
         SN: SN, DN: DN, TX: TX, RG: RG, REF: REF, SV: SV, DV: DV, AT: AT, H: H, HH: HH,
         EACH: EACH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, BD: BD, EV: EV, AC: AC, CO: CO, TI: TI, TV: TV, MP: MP
     };
+    function registerNode(name, type) {
+        nodes[name] = type;
+    }
+    function registerRegion(name, type) {
+        regions[name] = type;
+    }
 
     exports.factory = factory;
     exports.ModuleTemplate = ModuleTemplate;
@@ -3242,6 +3258,8 @@
     exports.Application = Application;
     exports.Loader = Loader;
     exports.RouterPlugin = RouterPlugin;
+    exports.registerNode = registerNode;
+    exports.registerRegion = registerRegion;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

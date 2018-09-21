@@ -12,14 +12,14 @@ export abstract class AnchorNode extends MNode {
 
     render (context: DataContext) {
         super.render(context)
-        if (!this.newParent) {
-            if (this.nextSibling) {
-                this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name)
-                this.parent.append(this.anchor)
-                this.newParent = this.parent.before(this.anchor)
-            } else {
-                this.newParent = this.parent
-            }
+        if (this.newParent) return
+
+        if (this.nextSibling) {
+            this.anchor = document.createComment(Object.getPrototypeOf(this).constructor.name)
+            this.parent.append(this.anchor)
+            this.newParent = this.parent.before(this.anchor)
+        } else {
+            this.newParent = this.parent
         }
     }
 
