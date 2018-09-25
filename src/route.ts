@@ -7,13 +7,17 @@ interface ActionHandler {
     action: string
 }
 
+interface EventHandler {
+    event: string
+}
+
 interface ModuleHandler {
     ref: string
     region?: string
     model?: string
 }
 
-type Handler = DefaultHandler | ActionHandler | ModuleHandler | string
+type Handler = DefaultHandler | ActionHandler | EventHandler | ModuleHandler | string
 
 interface RouteOptions {
     [route: string]: Handler
@@ -54,7 +58,6 @@ class Token {
 
     match (keys: string[]): MatchResult | false {
         const c = keys[0]
-        if (!c) return false
         return this.doMatch(c, keys.slice(1))
     }
 
@@ -68,7 +71,7 @@ class Token {
         if (this.next) {
             const o = this.next.match(keys)
             if (!o) return false
-            o.consumed = `${key}/${o.consumed}`
+            o.consumed = o.consumed ? `${key}/${o.consumed}` : key
             return o
         }
         return {remain: keys, consumed: key}
@@ -86,7 +89,8 @@ class ArgToken extends Token {
         if (o === false) return false
 
         o.args ? Object.assign(o.args, oo) : (o.args = oo)
-        o.consumed = `${key}/${o.consumed}`
+        if (key && o.consumed) o.consumed = `${key}/${o.consumed}`
+        else if (key) o.consumed = key
         return o
     }
 }
@@ -117,6 +121,7 @@ class Router {
     private _defs: DefaultHandler[] = []
     private _currentKey: number = -1
     private _next: Router
+    private _previous: string[]
 
     constructor (module: Module, routes: RouteOptions, prefix: string = '#/') {
         this._module = module
@@ -127,12 +132,18 @@ class Router {
     route (keys: string[]) {
         for (let i = 0; i < this._keys.length; i ++) {
             const re = this._keys[i].match(keys)
-            if (re) return this.doRoute(i, re)
+            if (re) {
+                return this.doRoute(i, re).then(d => {
+                    this._previous = keys
+                    return d
+                })
+            }
         }
         return Promise.resolve(false)
     }
 
     private leave (): Promise<any> {
+        this._previous = undefined
         return Promise.resolve().then(() => {
             if (this._next) return this._next.leave()
         }).then(() => {
@@ -146,7 +157,7 @@ class Router {
         const o = Object.assign({_router_prefix: `${this._prefix}${result.consumed}/`}, result.args)
         return this._defs[idx].enter(o).then(it => {
             this._next = it
-            if (it && result.remain.length) return it.route(result.remain)
+            if (it) return it.route(result.remain)
         })
     }
 
@@ -181,6 +192,7 @@ class Router {
         if (typeof h === 'string') return this.createModuleHandler({ref: h})
         if ('enter' in h) return h as DefaultHandler
         if ('action' in h) return this.createActionHandler(h as ActionHandler)
+        if ('event' in h) return this.createEventHandler(h as EventHandler)
         if ('ref' in h) return this.createModuleHandler(h as ModuleHandler)
         throw new Error('unsupported router handler')
     }
@@ -192,6 +204,19 @@ class Router {
             },
             update: (args: object) => {
                 return this._module._dispatch(h.action, args)
+            }
+        }
+    }
+
+    private createEventHandler (h: EventHandler) {
+        return {
+            enter: (args: object) => {
+                this._module._event(h.event, args, this._previous)
+                return Promise.resolve(null)
+            },
+            update: (args: object) => {
+                this._module._event(h.event, args, this._previous)
+                return Promise.resolve()
             }
         }
     }

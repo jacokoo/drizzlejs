@@ -13,10 +13,10 @@ view
                     )
                     label(on:dblclick=edit(todo)) $todo.name
                     button.destroy(action:click=remove(id=todo.id))
-                input.edit(bind:value=todo.name)(
-                    action:blur = commitEdit(todo.id this.value 'blur')
-                    action:enter = commitEdit(todo.id this.value 'enter')
-                    action:escape = revertEdit(todo nameCache)
+                input.edit(value=todo.name)(
+                    action:blur = commitEdit(todo this.value)
+                    action:enter = commitEdit(todo this.value)
+                    on:escape = revertEdit(this todo)
                 )
 
 script..
@@ -36,12 +36,13 @@ export default {
         escape (node, cb) {
             const ee = function (e) {
                 if (e.keyCode !== 27) return
+                e.preventDefault()
                 cb.call(this, e)
             }
-            node.addEventListener('keyup', ee, false)
+            node.addEventListener('keydown', ee, false)
             return {
                 dispose () {
-                    node.removeEventListener('keyup', ee, false)
+                    node.removeEventListener('keydown', ee, false)
                 }
             }
         }
@@ -49,21 +50,19 @@ export default {
 
     events: {
         edit (todo) {
-            this.set({nameCache: todo.name, editing: todo})
+            this.set({editing: todo})
+        },
+        revertEdit (el, todo) {
+            el.value = todo.name
+            this.set({editing: false})
         }
     },
 
     actions: {
-        revertEdit (cb, todo, cached) {
-            console.log(todo, cached)
-            this.set({editing: false, nameCache: false})
-            cb({id: todo.id, name: cached})
-        },
-
-        commitEdit (cb, id, name, type) {
-            console.log('commit', id, name, type)
-            this.set({nameCache: false, editing: false})
-            cb({id, name})
+        commitEdit (cb, todo, name) {
+            this.set({editing: false})
+            if (todo.name === name) return
+            cb({id: todo.id, name})
         }
     }
 }

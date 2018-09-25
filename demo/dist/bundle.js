@@ -69,7 +69,7 @@
         EV(o1, 'click', 'clickIt', AT('', DV('event')), AT('', DV('this')));
         var o2 = SN$1('div');
         SA$1(o2, 'class', 'dropdown-trigger');
-        var o3 = RG('trigger');
+        var o3 = RG('', 'trigger');
         var o4 = SN$1('button');
         SA$1(o4, 'class', 'button');
         var o5 = SN$1('span');
@@ -90,7 +90,7 @@
         SA$1(o9, 'class', 'dropdown-menu');
         var o10 = SN$1('div', 'content');
         SA$1(o10, 'class', 'dropdown-content');
-        var o11 = RG();
+        var o11 = RG('');
         C$1(o10, o11);
         C$1(o9, o10);
         C$1(o1, o2, o9);
@@ -430,7 +430,7 @@
     var templateNodes$7 = function templateNodes() {
         var o1 = SN$4('div');
         SA$5(o1, 'class', 'showcase');
-        var o2 = RG$1('showcase');
+        var o2 = RG$1('', 'showcase');
         C$4(o1, o2);
         var o3 = DN$4('div');
         AC$2(o3, 'click', 'run', AT$3('', DV$4('files')), AT$3('', DV$4('json')));
@@ -943,7 +943,6 @@
         EV$2 = drizzlejs.factory.EV,
         TX$6 = drizzlejs.factory.TX,
         C$8 = drizzlejs.factory.C,
-        BD$1 = drizzlejs.factory.BD,
         EACH$2 = drizzlejs.factory.EACH,
         IF$3 = drizzlejs.factory.IF;
 
@@ -982,10 +981,10 @@
             C$8(o7, o8, o9, o11);
             var o12 = DN$7('input');
             SA$a(o12, 'class', 'edit');
-            BD$1(o12, 'value', 'todo.name');
-            AC$6(o12, 'blur', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$2('blur')));
-            AC$6(o12, 'enter', 'commitEdit', AT$6('', DV$8('todo.id')), AT$6('', DV$8('this.value')), AT$6('', SV$2('enter')));
-            AC$6(o12, 'escape', 'revertEdit', AT$6('', DV$8('todo')), AT$6('', DV$8('nameCache')));
+            DA$3(o12, 'value', H$5(DV$8('todo.name')));
+            AC$6(o12, 'blur', 'commitEdit', AT$6('', DV$8('todo')), AT$6('', DV$8('this.value')));
+            AC$6(o12, 'enter', 'commitEdit', AT$6('', DV$8('todo')), AT$6('', DV$8('this.value')));
+            EV$2(o12, 'escape', 'revertEdit', AT$6('', DV$8('this')), AT$6('', DV$8('todo')));
             C$8(o6, o7, o12);
             return o6;
         };
@@ -1022,44 +1021,32 @@
             escape: function escape(node, cb) {
                 var ee = function ee(e) {
                     if (e.keyCode !== 27) return;
+                    e.preventDefault();
                     cb.call(this, e);
                 };
-                node.addEventListener('keyup', ee, false);
+                node.addEventListener('keydown', ee, false);
                 return {
                     dispose: function dispose() {
-                        node.removeEventListener('keyup', ee, false);
+                        node.removeEventListener('keydown', ee, false);
                     }
                 };
             }
         },
         events: {
             edit: function edit(todo) {
-                this.set({
-                    nameCache: todo.name,
-                    editing: todo
-                });
+                this.set({ editing: todo });
+            },
+            revertEdit: function revertEdit(el, todo) {
+                el.value = todo.name;
+                this.set({ editing: false });
             }
         },
         actions: {
-            revertEdit: function revertEdit(cb, todo, cached) {
-                console.log(todo, cached);
-                this.set({
-                    editing: false,
-                    nameCache: false
-                });
+            commitEdit: function commitEdit(cb, todo, name) {
+                this.set({ editing: false });
+                if (todo.name === name) return;
                 cb({
                     id: todo.id,
-                    name: cached
-                });
-            },
-            commitEdit: function commitEdit(cb, id, name, type) {
-                console.log('commit', id, name, type);
-                this.set({
-                    nameCache: false,
-                    editing: false
-                });
-                cb({
-                    id: id,
                     name: name
                 });
             }
@@ -1146,7 +1133,7 @@
                 init: function init() {
                     this.set({
                         todos: [{
-                            name: 'task 1~!',
+                            name: 'task 1',
                             completed: true,
                             id: id$1++
                         }, {
@@ -1182,7 +1169,6 @@
                     var id = _ref2.id,
                         name = _ref2.name;
 
-                    console.log('update', id, name);
                     var todos = this.get('todos');
                     todos.find(function (it) {
                         return it.id === id;
@@ -1190,9 +1176,6 @@
                     this.set({ todos: todos });
                 },
                 commitEdit: function commitEdit(payload) {
-                    this.dispatch('update', payload);
-                },
-                revertEdit: function revertEdit(payload) {
                     this.dispatch('update', payload);
                 },
                 clearCompleted: function clearCompleted(payload) {
@@ -1221,7 +1204,7 @@
     var template$f = new drizzlejs.ModuleTemplate([]);
     var templateNodes$f = function templateNodes() {
         var o1 = REF$6('app-header');
-        var o2 = RG$2();
+        var o2 = RG$2('');
         return [o1, o2];
     };
     template$f.creator = templateNodes$f;

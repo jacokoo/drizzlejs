@@ -43,7 +43,10 @@ export abstract class Template {
             init (this: Renderable<any>) {
                 o.nodes = me.creator()
                 const context = me.create(this, o.groups)
-                o.nodes.forEach(it => it.init(context))
+                o.nodes.forEach((it, idx) => {
+                    it.nextSibling = o.nodes[idx + 1]
+                    it.init(context)
+                })
                 return context.end()
             },
 

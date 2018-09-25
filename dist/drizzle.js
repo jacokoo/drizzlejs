@@ -328,8 +328,9 @@
                     init: function init() {
                         o.nodes = me.creator();
                         var context = me.create(this, o.groups);
-                        o.nodes.forEach(function (it) {
-                            return it.init(context);
+                        o.nodes.forEach(function (it, idx) {
+                            it.nextSibling = o.nodes[idx + 1];
+                            it.init(context);
                         });
                         return context.end();
                     },
@@ -2772,7 +2773,6 @@
             key: 'match',
             value: function match(keys) {
                 var c = keys[0];
-                if (!c) return false;
                 return this.doMatch(c, keys.slice(1));
             }
         }, {
@@ -2790,7 +2790,7 @@
                 if (this.next) {
                     var o = this.next.match(keys);
                     if (!o) return false;
-                    o.consumed = key + '/' + o.consumed;
+                    o.consumed = o.consumed ? key + '/' + o.consumed : key;
                     return o;
                 }
                 return { remain: keys, consumed: key };
@@ -2821,7 +2821,7 @@
                 var o = this.next.match(keys);
                 if (o === false) return false;
                 o.args ? Object.assign(o.args, oo) : o.args = oo;
-                o.consumed = key + '/' + o.consumed;
+                if (key && o.consumed) o.consumed = key + '/' + o.consumed;else if (key) o.consumed = key;
                 return o;
             }
         }]);
@@ -2879,40 +2879,48 @@
         createClass(Router, [{
             key: 'route',
             value: function route(keys) {
+                var _this3 = this;
+
                 for (var i = 0; i < this._keys.length; i++) {
                     var re = this._keys[i].match(keys);
-                    if (re) return this.doRoute(i, re);
+                    if (re) {
+                        return this.doRoute(i, re).then(function (d) {
+                            _this3._previous = keys;
+                            return d;
+                        });
+                    }
                 }
                 return Promise.resolve(false);
             }
         }, {
             key: 'leave',
             value: function leave() {
-                var _this3 = this;
+                var _this4 = this;
 
+                this._previous = undefined;
                 return Promise.resolve().then(function () {
-                    if (_this3._next) return _this3._next.leave();
+                    if (_this4._next) return _this4._next.leave();
                 }).then(function () {
-                    var h = _this3._defs[_this3._currentKey];
+                    var h = _this4._defs[_this4._currentKey];
                     if (h && h.leave) return h.leave();
                 });
             }
         }, {
             key: 'enter',
             value: function enter(idx, result) {
-                var _this4 = this;
+                var _this5 = this;
 
                 this._currentKey = idx;
                 var o = Object.assign({ _router_prefix: '' + this._prefix + result.consumed + '/' }, result.args);
                 return this._defs[idx].enter(o).then(function (it) {
-                    _this4._next = it;
-                    if (it && result.remain.length) return it.route(result.remain);
+                    _this5._next = it;
+                    if (it) return it.route(result.remain);
                 });
             }
         }, {
             key: 'doRoute',
             value: function doRoute(idx, result) {
-                var _this5 = this;
+                var _this6 = this;
 
                 var h = this._defs[idx];
                 if (this._currentKey === -1) {
@@ -2922,25 +2930,25 @@
                     return Promise.resolve().then(function () {
                         if (h.update) return h.update(result.args);
                     }).then(function () {
-                        if (_this5._next) return _this5._next.route(result.remain);
+                        if (_this6._next) return _this6._next.route(result.remain);
                     });
                 }
                 return this.leave().then(function () {
-                    return _this5.enter(idx, result);
+                    return _this6.enter(idx, result);
                 });
             }
         }, {
             key: 'initRoutes',
             value: function initRoutes(routes) {
-                var _this6 = this;
+                var _this7 = this;
 
                 Object.keys(routes).map(function (key) {
                     return { key: key, token: create(key) };
                 }).sort(function (a, b) {
                     return b.token.value() - a.token.value();
                 }).forEach(function (it) {
-                    _this6._keys.push(it.token);
-                    _this6._defs.push(_this6.createHandler(routes[it.key]));
+                    _this7._keys.push(it.token);
+                    _this7._defs.push(_this7.createHandler(routes[it.key]));
                 });
             }
         }, {
@@ -2949,35 +2957,52 @@
                 if (typeof h === 'string') return this.createModuleHandler({ ref: h });
                 if ('enter' in h) return h;
                 if ('action' in h) return this.createActionHandler(h);
+                if ('event' in h) return this.createEventHandler(h);
                 if ('ref' in h) return this.createModuleHandler(h);
                 throw new Error('unsupported router handler');
             }
         }, {
             key: 'createActionHandler',
             value: function createActionHandler(h) {
-                var _this7 = this;
+                var _this8 = this;
 
                 return {
                     enter: function enter(args) {
-                        return _this7._module._dispatch(h.action, args).then(function () {
+                        return _this8._module._dispatch(h.action, args).then(function () {
                             return null;
                         });
                     },
                     update: function update(args) {
-                        return _this7._module._dispatch(h.action, args);
+                        return _this8._module._dispatch(h.action, args);
+                    }
+                };
+            }
+        }, {
+            key: 'createEventHandler',
+            value: function createEventHandler(h) {
+                var _this9 = this;
+
+                return {
+                    enter: function enter(args) {
+                        _this9._module._event(h.event, args, _this9._previous);
+                        return Promise.resolve(null);
+                    },
+                    update: function update(args) {
+                        _this9._module._event(h.event, args, _this9._previous);
+                        return Promise.resolve();
                     }
                 };
             }
         }, {
             key: 'createModuleHandler',
             value: function createModuleHandler(h) {
-                var _this8 = this;
+                var _this10 = this;
 
                 var item = void 0;
                 return {
                     enter: function enter(args) {
                         var o = h.model ? defineProperty({}, h.model, args) : args;
-                        return _this8._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
+                        return _this10._module.regions[h.region || 'default'].show(h.ref, o).then(function (it) {
                             item = it;
                             if (it instanceof Module) return it._router;
                             return null;
