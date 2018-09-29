@@ -1,6 +1,7 @@
 import typescript from 'rollup-plugin-typescript'
 import babel from 'rollup-plugin-babel'
 import tslint from 'rollup-plugin-tslint'
+import { uglify } from 'rollup-plugin-uglify'
 
 export default {
     input: 'src/drizzle.ts',
@@ -13,7 +14,8 @@ export default {
         babel({
             babelrc: false,
             presets: ['es2015-rollup']
-        })
+	}),
+	uglify()
     ],
 
     output: {
