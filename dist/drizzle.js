@@ -1,7 +1,7 @@
 /*!
- * DrizzleJS v0.4.17
+ * DrizzleJS v0.4.19
  * -------------------------------------
- * Copyright (c) 2017 Jaco Koo <jaco.koo@guyong.in>
+ * Copyright (c) 2019 Jaco Koo <jaco.koo@guyong.in>
  * Distributed under MIT license
  */
 
@@ -778,7 +778,7 @@ extend(D.RenderableContainer, D.Renderable, {
     _initializeItems: function _initializeItems() {
         var _this15 = this;
 
-        this.chain(mapObj(this._option('items'), function () {
+        return this.chain(mapObj(this._option('items'), function () {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
             var name = arguments[1];
 
@@ -1433,7 +1433,7 @@ D.extend(D.Application, D.Base, {
         var _D$Loader$_analyse = D.Loader._analyse(name),
             moduleName = _D$Loader$_analyse.name,
             loaderName = _D$Loader$_analyse.loader,
-            loader = this._getLoader(loaderName, parent);
+            loader = this._getLoader(loaderName, parentModule);
 
         return this.chain(loader.loadModule(moduleName), function () {
             var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};

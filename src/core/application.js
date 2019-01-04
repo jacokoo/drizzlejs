@@ -68,7 +68,7 @@ D.extend(D.Application, D.Base, {
 
     _createModule (name, parentModule, moduleOptions) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
-            loader = this._getLoader(loaderName, parent);
+            loader = this._getLoader(loaderName, parentModule);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
             return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options, moduleOptions);

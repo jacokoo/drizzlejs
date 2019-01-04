@@ -19,7 +19,7 @@ extend(D.RenderableContainer, D.Renderable, {
     },
 
     _initializeItems () {
-        this.chain(mapObj(this._option('items'), (options = {}, name) => {
+        return this.chain(mapObj(this._option('items'), (options = {}, name) => {
             let opt = D.isFunction(options) ? options.call(this) : options;
             if (D.isString(opt)) opt = { region: opt };
 

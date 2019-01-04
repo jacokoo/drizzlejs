@@ -662,7 +662,7 @@ extend(D.RenderableContainer, D.Renderable, {
     },
 
     _initializeItems () {
-        this.chain(mapObj(this._option('items'), (options = {}, name) => {
+        return this.chain(mapObj(this._option('items'), (options = {}, name) => {
             let opt = D.isFunction(options) ? options.call(this) : options;
             if (D.isString(opt)) opt = { region: opt };
 
@@ -1272,7 +1272,7 @@ D.extend(D.Application, D.Base, {
 
     _createModule (name, parentModule, moduleOptions) {
         const { name: moduleName, loader: loaderName } = D.Loader._analyse(name),
-            loader = this._getLoader(loaderName, parent);
+            loader = this._getLoader(loaderName, parentModule);
 
         return this.chain(loader.loadModule(moduleName), (options = {}) => {
             return typeCache.createModule(options.type, moduleName, this, parentModule, loader, options, moduleOptions);
