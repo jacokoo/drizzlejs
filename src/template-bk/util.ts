@@ -2,7 +2,12 @@ import { AttributeValue, ValueType, Attribute, Appendable } from './template'
 import { DataContext } from './context'
 import { Transformer } from './transformer'
 
+const cache: {[key: string]: string[]} = {}
+
 export function tokenize(input: string): string[] {
+    if (cache[input]) {
+        return cache[input]
+    }
     let token = ''
     const result = [] as string[]
     let inString = false
@@ -44,6 +49,7 @@ export function tokenize(input: string): string[] {
 
     if (token) result.push(token)
 
+    cache[input] = result
     return result
 }
 

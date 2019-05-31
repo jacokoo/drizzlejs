@@ -1,120 +1,106 @@
-import { HelperResult, ChangeType } from './template'
-import { AttributeValue, ValueType } from './template'
-import { Compare } from './if-block'
-import { getAttributeValue } from './util'
-import { DataContext } from './context'
+import { Helper, DataContext } from './context'
+import { getAttributeValue } from './value'
+import { AttributeValue, EachState } from './common'
 
-export abstract class Helper {
-    name: string = ''
+export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
+    '==': (v1, v2) => v1 === v2,
+    '!=': (v1, v2) => v1 !== v2,
+    '>': (v1, v2) => v1 > v2,
+    '<': (v1, v2) => v1 < v2,
+    '>=': (v1, v2) => v1 >= v2,
+    '<=': (v1, v2) => v1 <= v2
+}
+
+abstract class AbstractHelper implements Helper {
     args: AttributeValue[]
-    current: any
 
     constructor (...args: AttributeValue[]) {
         this.args = args
-        this.check()
     }
 
-    render (context: DataContext): HelperResult {
-        if (!this.current) return [ChangeType.CHANGED, this.renderIt(context)]
-
-        const c = this.current
-        const u = this.renderIt(context)
-        if (c !== u) {
-            return [ChangeType.CHANGED, this.current]
-        }
-
-        return [ChangeType.NOT_CHANGED, this.current]
-    }
-
-    arg (idx: number, context: DataContext): any {
+    arg (idx: number, dc: DataContext, state: EachState): any {
         if (!this.args[idx]) return ''
-        return getAttributeValue(this.args[idx], context)
+        return getAttributeValue(dc, this.args[idx], state)
     }
 
-    check () {}
+    abstract get (dc: DataContext, state: EachState): any
+}
 
-    assertCount (...numbers: number[]) {
-        if (!numbers.some(it => it === this.args.length)) {
-            throw new Error(`${name} helper should have ${numbers.join(' or ')} arguments`)
+export class BoolHelper extends AbstractHelper {
+    get (dc: DataContext, state: EachState): any {
+        if (this.args.length === 1) {
+            return !!this.arg(0, dc, state)
         }
-    }
 
-    assertDynamic (...numbers: number[]) {
-        numbers.forEach(it => {
-            if (this.args[it][0] === ValueType.STATIC) {
-                throw new Error(`the ${it}th argument of ${name} helper should be dynamic`)
-            }
-        })
-    }
-
-    abstract doRender (context: DataContext): any
-
-    private renderIt (context: DataContext): any {
-        this.current = this.doRender(context)
-        return this.current
-    }
-}
-
-export class DelayHelper extends Helper {
-    constructor(name: string, ...args: AttributeValue[]) {
-        super(...args)
-        this.name = name
-    }
-
-    doRender (context: DataContext): any {
-        const fn = context.helper(this.name)
-        if (!fn) throw new Error(`no helper found: ${this.name}`)
-        return fn.apply(null, this.args.map((it, i) => this.arg(i, context)))
-    }
-}
-
-export class EchoHelper extends Helper {
-    doRender (context) {
-        return this.arg(0, context)
-    }
-}
-
-export class ConcatHelper extends Helper {
-    doRender (context) {
-        return this.args.map((it, idx) => this.arg(idx, context)).join('')
-    }
-}
-
-export class IfHelper extends Helper {
-    name = 'if'
-
-    check () {
-        this.assertCount(2, 3, 4, 5)
-        this.assertDynamic(0)
-    }
-
-    doRender (context: DataContext): any {
-        return this.arg(this.use(context), context)
-    }
-
-    use (context: DataContext): number {
-        if (this.args.length <= 3) return this.useSingle(context)
-        return this.useMultiple(context)
-    }
-
-    useSingle (context): number {
-        return this.arg(0, context) ? 1 : 2
-    }
-
-    useMultiple (context): number {
         const op = this.args[1][1] as string
         if (!Compare[op]) {
             throw Error(`${op} is not a valid compare operator, use: ==, !=, >, <, >=, <=`)
         }
 
-        return Compare[op](this.arg(0, context), this.arg(2, context)) ? 3 : 4
+        return Compare[op](this.arg(0, dc, state), this.arg(2, dc, state))
+    }
+}
+
+export class IfHelper extends AbstractHelper {
+    bool: BoolHelper
+
+    constructor (bool: BoolHelper, ...args: AttributeValue) {
+        super(args)
+        this.bool = bool
+    }
+
+    get (dc: DataContext, state: EachState): any {
+        return this.arg(this.use(dc, state), dc, state)
+    }
+
+    use (dc: DataContext, state: EachState): number {
+        return this.bool.get(dc, state) ? 0 : 1
     }
 }
 
 export class UnlessHelper extends IfHelper {
-    name = 'unless'
+    use (dc: DataContext, state: EachState): number {
+        return this.bool.get(dc, state) ? 1 : 0
+    }
+}
 
-    use (context: DataContext): number {
-        return this.arg(0, context) ? 2 : 1
+export class DelayHelper extends AbstractHelper {
+    name: string
+
+    constructor(name: string, ...args: AttributeValue[]) {
+        super(...args)
+        this.name = name
+    }
+
+    get (dc: DataContext, state: EachState): any {
+        const fn = dc.transformer(this.name)
+        if (!fn) throw new Error(`no transformer found: ${this.name}`)
+        return fn.apply(null, this.args.map((it, i) => this.arg(i, dc, state)))
+    }
+}
+
+export class EchoHelper extends AbstractHelper {
+    get (dc: DataContext, state: EachState): any {
+        return this.arg(0, dc, state)
+    }
+}
+
+export class ConcatHelper extends AbstractHelper {
+    get (dc: DataContext, state: EachState): any {
+        return this.args.map((it, idx) => this.arg(idx, dc, state)).join('')
+    }
+}
+
+export class MultiHelper implements Helper {
+    helpers: Helper[]
+    joiner: string
+
+    constructor (joiner: string, ...helpers: Helper[]) {
+        this.helpers = helpers
+        this.joiner = joiner
+    }
+
+    get (dc: DataContext, state: EachState): any {
+        return this.helpers.map(it => it.get(dc, state)).join(this.joiner)
     }
 }

@@ -1,98 +1,144 @@
-import { Disposable } from '../drizzle'
-import { Node as MNode } from './node'
+import { Tag, Tags } from './tag'
+import {
+    Helper, Context, Waiter, ViewContext, ComponentContext, ElementContainer, EventDef, EventTarget
+} from './context'
+import { Lifecycle } from '../lifecycle'
 import { Renderable } from '../renderable'
-import { Transformer } from './transformer'
-import { DataContext, ViewDataContext, ModuleDataContext, BindingGroup } from './context'
-import { Module } from '../module'
 import { View } from '../view'
+import { Component } from '../component'
 
-type StaticValue = string | number | boolean
-type DynamicValue = string
+const TargetKey = '_t_'
 
-export enum ValueType { STATIC, DYNAMIC, TRANSFORMER }
-export enum ChangeType { CHANGED, NOT_CHANGED }
+class RootParent implements ElementContainer {
+    target: ElementContainer
 
-export type NormalValue = [ValueType.STATIC, StaticValue] | [ValueType.DYNAMIC, DynamicValue]
-export type AttributeValue = NormalValue | [ValueType.TRANSFORMER, Transformer]
-export type Attribute = [string, AttributeValue]
+    append (ctx: Context, el: Element | Comment, anchor?: Comment) {
+        if (!this.target) {
+            this.target = ctx.cache.get(TargetKey)
+        }
+        this.target.append(ctx, el, anchor)
+    }
 
-export type HelperResult = [ChangeType, any]
-
-export interface Updatable extends Disposable {
-    update (context: DataContext): void
+    remove (ctx: Context, el: Element | Comment) {
+        if (!this.target) {
+            this.target = ctx.cache.get(TargetKey)
+        }
+        this.target.remove(ctx, el)
+    }
 }
 
-export interface Appendable {
-    append (el: Node)
-    remove (el: Node)
-    before (anchor: Node): Appendable
+export class ElementParent implements ElementContainer {
+    el: HTMLElement
+
+    constructor (el: HTMLElement) {
+        this.el = el
+    }
+
+    append (ctx: Context, el: Element | Comment, anchor?: Comment) {
+        if (anchor) {
+            this.el.insertBefore(el, anchor)
+            return
+        }
+
+        this.el.appendChild(el)
+    }
+
+    remove (ctx: Context, el: Element | Comment) {
+        this.el.removeChild(el)
+    }
 }
 
-let i = 0
 export abstract class Template {
-    creator: () => MNode[]
+    tags: {[id: string]: Tag} = {}
+    events: {[id: string]: EventDef} = {}
+    helpers: {[id: string]: Helper} = {}
+    root: Tags
 
-    createLife () {
+    constructor (root: Tags) {
+        this.root = root
+    }
+
+    tag (...ts: Tag[]) {
+        ts.forEach(it => this.tags[it.id] = it)
+    }
+
+    event (id: string, def: EventDef) {
+        def.fn = function (this: EventTarget, e: any) {
+            this._ctx.trigger(def, this, e)
+        }
+        def.binder = function (this: null, isUnbind: boolean, el: EventTarget) {
+            if (isUnbind) {
+                el.removeEventListener(def.name, def.fn, false)
+                return
+            }
+            el.addEventListener(def.name, def.fn, false)
+        }
+        this.events[id] = def
+    }
+
+    helper (id: string, helper: Helper) {
+        this.helpers[id] = helper
+    }
+
+    abstract context (root: Renderable<any>): Context
+
+    create (): Lifecycle {
         const me = this
         const o = {
-            id: i ++,
+            context: null,
             stage: 'template',
-            nodes: [] as MNode[],
-            groups: {} as {[name: string]: BindingGroup},
-
             init (this: Renderable<any>) {
-                o.nodes = me.creator()
-                const context = me.create(this, o.groups)
-                o.nodes.forEach((it, idx) => {
-                    it.nextSibling = o.nodes[idx + 1]
-                    it.init(context)
+                o.context = me.context(this)
+                const w = new Waiter()
+                const p = new RootParent()
+                me.root.forEach(it => {
+                    it.parent = p
+                    it.init(o.context, w)
                 })
-                return context.end()
+                return w.end()
             },
 
-            rendered (this: Renderable<any>, data: object) {
-                const context = me.create(this, o.groups, data)
-                o.nodes.forEach(it => {
-                    it.parent = this._target
-                    it.render(context)
-                })
-                return context.end()
+            rendered (this: Renderable<any>, data: any) {
+                o.context.set(data)
+                o.context.cache.set(TargetKey, this._target)
+                const w = new Waiter()
+                me.root.render(o.context, w)
+                return w.end()
             },
 
-            updated (this: Renderable<any>, data: object) {
-                const context = me.create(this, o.groups, data)
-                o.nodes.forEach(it => it.update(context))
-                return context.end()
+            updated (this: Renderable<any>, data: any) {
+                o.context.set(data)
+                const w = new Waiter()
+                me.root.update(o.context, w)
+                return w.end()
             },
 
             destroyed (this: Renderable<any>) {
-                const context = me.create(this, o.groups)
-                o.nodes.forEach(it => it.destroy(context))
-                return context.end()
+                const w = new Waiter()
+                me.root.destroy(o.context, w, true)
+                return w.end()
             }
         }
 
-        return o
+        return o as Lifecycle
     }
-
-    abstract create (root: Renderable<any>, groups: {[name: string]: BindingGroup}, data?: object): DataContext
 }
 
 export class ViewTemplate extends Template {
-    create (root: View, groups: {[name: string]: BindingGroup}, data: object = {}): DataContext {
-        return new ViewDataContext(root, data, groups)
+    context (root: Renderable<any>): Context {
+        return new ViewContext(root as View, this)
     }
 }
 
-export class ModuleTemplate extends Template {
+export class ComponentTemplate extends Template {
     exportedModels: string[] = []
 
-    constructor(exportedModels: string[]) {
-        super()
+    constructor(root: Tags, exportedModels: string[]) {
+        super(root)
         this.exportedModels = exportedModels
     }
 
-    create (root: Module, groups: {[name: string]: BindingGroup}, data: object = {}): DataContext {
-        return new ModuleDataContext(root, data)
+    context (root: Renderable<any>): Context {
+        return new ComponentContext(root as Component, this)
     }
 }

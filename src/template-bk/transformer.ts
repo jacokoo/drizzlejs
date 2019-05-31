@@ -1,6 +1,6 @@
+import { NormalValue } from './template'
 import { DataContext } from './context'
-import { getValue, getAttributeValue } from './value'
-import { EachState, NormalValue } from './common'
+import { getValue, getAttributeValue } from './util'
 
 export class Transformer {
     value: string
@@ -13,11 +13,11 @@ export class Transformer {
         this.end = end
     }
 
-    get (dc: DataContext, state: EachState): any {
-        let v = getValue(dc, this.value, state)
-        v = this.items.reduce((acc, item) => item.get(dc, state, acc), v)
+    render (context: DataContext): any {
+        let v = getValue(this.value, context)
+        v = this.items.reduce((acc, item) => item.render(context, acc), v)
         if (v == null && this.end) {
-            return getAttributeValue(dc, this.end, state)
+            return getAttributeValue(this.end, context)
         }
         return v
     }
@@ -32,12 +32,12 @@ export class TransformerItem {
         this.args = args || []
     }
 
-    get (dc: DataContext, state: EachState, v: any): any {
-        const fn = dc.transformer(this.name)
+    render (context: DataContext, v: any): any {
+        const fn = context.helper(this.name)
         if (!fn) {
             throw new Error(`no helper found: ${this.name}`)
         }
-        const args = this.args.map(it => getAttributeValue(dc, it, state)).concat(v)
+        const args = this.args.map(it => getAttributeValue(it, context)).concat(v)
         return fn.apply(null, args)
     }
 }

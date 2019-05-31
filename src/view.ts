@@ -1,24 +1,24 @@
 import { RenderOptions, Renderable, ComponentState } from './renderable'
-import { Module } from './module'
-import { Component } from './template/context'
+import { Component } from './component'
+import { CustomTransformer } from './template/common'
 
 export interface ViewOptions extends RenderOptions {
-    helpers?: {[name: string]: (...any) => any},
+    transformers?: {[name: string]: CustomTransformer},
     state?: object,
-    components?: {[name: string]: Component}
+    // components?: {[name: string]: Component}
 }
 
 export class View extends Renderable<ViewOptions> {
-    _module: Module
+    _component: Component
     _state: object = {}
 
-    constructor(mod: Module, options: ViewOptions) {
-        super(mod.app, options, options.template && options.template.createLife(), ...mod.app.options.viewLifecycles)
-        this._module = mod
+    constructor(mod: Component, options: ViewOptions) {
+        super(mod.app, options, options.template && options.template.create(), ...mod.app.options.viewLifecycles)
+        this._component = mod
     }
 
-    get regions () {
-        return this._module.regions
+    get slots () {
+        return this._component.slots
     }
 
     _init () {
@@ -52,6 +52,6 @@ export class View extends Renderable<ViewOptions> {
     }
 
     _dispatch (name: string, data: any) {
-        return this._module._dispatch(name, data)
+        return this._component._dispatch(name, data)
     }
 }

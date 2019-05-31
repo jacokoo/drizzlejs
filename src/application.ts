@@ -1,20 +1,20 @@
 import { Loader } from './loader'
-import { Module, ModuleOptions } from './module'
-import { createAppendable } from './template/util'
-import { CustomEvent, CustomHelper, Component } from './template/context'
-import { Disposable, DrizzlePlugin } from './drizzle'
+import { Component, ComponentOptions } from './component'
+import { DrizzlePlugin } from './drizzle'
 import { Lifecycle } from './lifecycle'
 import { Events } from './event'
+import { ElementParent } from './template/template'
+import { CustomTransformer, CustomEvent } from './template/common'
 
 export interface ApplicationOptions {
     stages?: string[]
     scriptRoot?: string
     container: HTMLElement
-    entry: string | ModuleOptions
+    entry: string | ComponentOptions
     customEvents?: {[name: string]: CustomEvent}
-    helpers?: {[name: string]: CustomHelper}
-    components?: {[name: string]: Component}
-    moduleLifecycles?: Lifecycle[]
+    transformers?: {[name: string]: CustomTransformer}
+    // components?: {[name: string]: Component}
+    componentLifecycles?: Lifecycle[]
     viewLifecycles?: Lifecycle[]
     getResource? (path): Promise<object>
 }
@@ -24,18 +24,17 @@ interface LoaderConstructor {
 }
 
 const customEvents: {[name: string]: CustomEvent} = {
-    enter (node: HTMLElement, cb: (any) => void): Disposable {
-        const ee = function (this: HTMLElement, e) {
+    enter (isUnbind: boolean, node: Element, cb: (any) => void) {
+        const ee = function (this: Element, e) {
             if (e.keyCode !== 13) return
             e.preventDefault()
             cb.call(this, e)
         }
-        node.addEventListener('keypress', ee, false)
-        return {
-            dispose () {
-                node.removeEventListener('keypress', ee, false)
-            }
+        if (isUnbind) {
+            node.removeEventListener('keypress', ee, false)
+            return
         }
+        node.addEventListener('keypress', ee, false)
     }
 }
 
@@ -52,7 +51,7 @@ export class Application extends Events {
             entry: 'viewport',
             helpers: {},
             components: {},
-            moduleLifecycles: [],
+            componentLifecycles: [],
             viewLifecycles: []
         }, options)
 
@@ -73,7 +72,7 @@ export class Application extends Events {
 
     use (plugin: DrizzlePlugin) {
         plugin.init(this)
-        this.options.moduleLifecycles = this.options.moduleLifecycles.concat(plugin.moduleLifecycles)
+        this.options.componentLifecycles = this.options.componentLifecycles.concat(plugin.componentLifecycles)
         this.options.viewLifecycles = this.options.viewLifecycles.concat(plugin.viewLifecycles)
         this._plugins.push(plugin)
     }
@@ -89,8 +88,8 @@ export class Application extends Events {
 
         const {entry, container} = this.options
         const create = (lo, options) => {
-            const v = new Module(this, lo, options)
-            return v._init().then(() => v._render(createAppendable(container))).then(() => v)
+            const v = new Component(this, lo, options)
+            return v._init().then(() => v._render(new ElementParent(container))).then(() => v)
         }
         if (typeof entry === 'string') {
             loader = this.createLoader(entry)

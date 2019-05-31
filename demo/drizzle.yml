@@ -1,0 +1,16 @@
+root: scripts/app
+name: prefix-for-export
+
+
+import:
+    - package-name # import a
+    - type: npm
+      name: hello
+      alias: foo
+
+    - type: url
+      url: https://xxxx/xx.js
+      global: xx
+
+export:
+    todos: todos

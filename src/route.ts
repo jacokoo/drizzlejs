@@ -1,4 +1,4 @@
-import { Module } from './module'
+import { Component } from './component'
 import { Lifecycle } from './lifecycle'
 import { View } from './view'
 import { DrizzlePlugin, Application } from './drizzle'
@@ -11,24 +11,24 @@ interface EventHandler {
     event: string
 }
 
-interface ModuleHandler {
+interface ComponentHandler {
     ref: string
-    region?: string
+    slot?: string
     model?: string
 }
 
-type Handler = DefaultHandler | ActionHandler | EventHandler | ModuleHandler | string
+type Handler = DefaultHandler | ActionHandler | EventHandler | ComponentHandler | string
 
 interface RouteOptions {
     [route: string]: Handler
 }
 
-declare module './module' {
-    interface Module {
+declare module './component' {
+    interface Component {
         _router?: Router
     }
 
-    interface ModuleOptions {
+    interface ComponentOptions {
         routes?: RouteOptions
     }
 }
@@ -116,15 +116,15 @@ const create = (path) => {
 class Router {
     _prefix: string
 
-    private _module: Module
+    private _component: Component
     private _keys: Token[] = []
     private _defs: DefaultHandler[] = []
     private _currentKey: number = -1
     private _next: Router
     private _previous: string[]
 
-    constructor (module: Module, routes: RouteOptions, prefix: string = '#/') {
-        this._module = module
+    constructor (comp: Component, routes: RouteOptions, prefix: string = '#/') {
+        this._component = comp
         this._prefix = prefix
         this.initRoutes(routes)
     }
@@ -189,21 +189,21 @@ class Router {
     }
 
     private createHandler (h: Handler): DefaultHandler {
-        if (typeof h === 'string') return this.createModuleHandler({ref: h})
+        if (typeof h === 'string') return this.createComponentHandler({ref: h})
         if ('enter' in h) return h as DefaultHandler
         if ('action' in h) return this.createActionHandler(h as ActionHandler)
         if ('event' in h) return this.createEventHandler(h as EventHandler)
-        if ('ref' in h) return this.createModuleHandler(h as ModuleHandler)
+        if ('ref' in h) return this.createComponentHandler(h as ComponentHandler)
         throw new Error('unsupported router handler')
     }
 
     private createActionHandler (h: ActionHandler) {
         return {
             enter: (args: object) => {
-                return this._module._dispatch(h.action, args).then(() => null)
+                return this._component._dispatch(h.action, args).then(() => null)
             },
             update: (args: object) => {
-                return this._module._dispatch(h.action, args)
+                return this._component._dispatch(h.action, args)
             }
         }
     }
@@ -211,48 +211,54 @@ class Router {
     private createEventHandler (h: EventHandler) {
         return {
             enter: (args: object) => {
-                this._module._event(h.event, args, this._previous)
+                this._component._event(h.event, args, this._previous)
                 return Promise.resolve(null)
             },
             update: (args: object) => {
-                this._module._event(h.event, args, this._previous)
+                this._component._event(h.event, args, this._previous)
                 return Promise.resolve()
             }
         }
     }
 
-    private createModuleHandler (h: ModuleHandler) {
+    private createComponentHandler (h: ComponentHandler) {
         let item
         return {
             enter: (args: object) => {
                 const o = h.model ? {[h.model]: args} : args
-                return this._module.regions[h.region || 'default'].show(h.ref, o).then(it => {
-                    item = it
-                    if (it instanceof Module) return it._router
-                    return null
+                return this._component._createItem(h.ref, o).then(it => {
+                    const slot = this._component.slots[h.slot || 'default']
+                    return slot.get().then(target => {
+                        slot.setCleaner(w => w.wait(it.destroy()))
+                        return it._render(target)
+                    }).then(() => {
+                        item = it
+                        if (it instanceof Component) return it._router
+                        return null
+                    })
                 })
             },
 
             update: (args: object) => {
                 if (!args) return Promise.resolve()
                 const o = h.model ? {[h.model]: args} : args
-                if (item && (item instanceof Module)) return item.set(o)
+                if (item && (item instanceof Component)) return item.set(o)
                 return Promise.resolve()
             }
         }
     }
 }
 
-const RouterModuleLifecycle: Lifecycle = {
+const RouterComponentLifecycle: Lifecycle = {
     stage: 'init',
-    init (this: Module) {
+    init (this: Component) {
         const {routes} = this._options
         if (!routes) return
         const prefix = (this._extraState as any)._router_prefix
         this._router = new Router(this, routes, prefix)
     },
 
-    collect (this: Module, data: object): object {
+    collect (this: Component, data: object): object {
         const r = this._router
         if (r) data['@router'] = r._prefix
         return data
@@ -261,21 +267,21 @@ const RouterModuleLifecycle: Lifecycle = {
 
 const RouterViewLifecycle: Lifecycle = {
     collect (this: View, data: object): object {
-        const r = this._module._router
+        const r = this._component._router
         if (r) data['@router'] = r._prefix
         return data
     }
 }
 
 export const RouterPlugin: DrizzlePlugin = {
-    moduleLifecycles: [RouterModuleLifecycle],
+    componentLifecycles: [RouterComponentLifecycle],
     viewLifecycles: [RouterViewLifecycle],
 
     init (app: Application) {
 
     },
 
-    started (item: Module) {
+    started (item: Component) {
         const router = item._router
         if (!router) return
         const doIt = () => {

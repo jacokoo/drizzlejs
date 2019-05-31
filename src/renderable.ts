@@ -1,14 +1,15 @@
 import { Lifecycle, LifecycleContainer } from './lifecycle'
 import { Application } from './application'
-import { Disposable } from './drizzle'
-import { Node } from './template/node'
-import { Appendable, ModuleTemplate } from './template/template'
+import { CustomEvent } from './template-bk/context'
+import { Slot } from './template/slot-tag'
+import { ElementContainer } from './template/context'
+import { ComponentTemplate } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
-    customEvents?: {[name: string]: (HTMLElement, callback: (any) => void) => Disposable}
+    customEvents?: {[name: string]: CustomEvent}
     events?: {[name: string]: (...args) => void}
-    template?: ModuleTemplate
+    template?: ComponentTemplate
     computed?: {[name: string]: (any) => any}
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
     _file?: string
@@ -18,20 +19,11 @@ export enum ComponentState {
     CREATED, INITED, RENDERED
 }
 
-export interface Region {
-    item: Renderable<any>
-    show (name: string, state: object): Promise<Renderable<any>>
-    close (): Promise<any>
-
-    _showNode (nodes: Node[], context: object): Promise<any>
-    _showChildren ()
-}
-
 export abstract class Renderable<T extends RenderOptions> extends LifecycleContainer {
-    _target: Appendable
+    _target: ElementContainer
     _options: T
     ids: {[key: string]: HTMLElement | Renderable<T>} = {}
-    regions: {[key: string]: Region}
+    slots: {[key: string]: Slot}
 
     protected _busy: Promise<any> = Promise.resolve()
     protected _status = ComponentState.CREATED
@@ -41,7 +33,7 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
         this._options = options
     }
 
-    _render (target: Appendable) {
+    _render (target: ElementContainer) {
         if (this._status !== ComponentState.INITED) return Promise.resolve()
 
         this._target = target
