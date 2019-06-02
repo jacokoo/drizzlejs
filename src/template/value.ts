@@ -51,8 +51,12 @@ export function getValue (ctx: DataContext, key: string, state: EachState) {
                 oo = state._state[i]
                 return true
             }
-            oo = oo[v.name][state._state[i]]
-            return v.alias === first
+            if (v.alias === first) {
+                [, oo, ] = ctx.get(v.name, state)
+                oo = oo[state._state[i]]
+                return true
+            }
+            return false
         })) {
             o = oo
         } else {

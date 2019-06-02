@@ -14,7 +14,7 @@ export const Compare: {[key: string]: (v1: any, v2: any) => boolean} = {
 abstract class AbstractHelper implements Helper {
     args: AttributeValue[]
 
-    constructor (...args: AttributeValue[]) {
+    constructor (args: AttributeValue[]) {
         this.args = args
     }
 
@@ -42,9 +42,9 @@ export class BoolHelper extends AbstractHelper {
 }
 
 export class IfHelper extends AbstractHelper {
-    bool: BoolHelper
+    bool: string
 
-    constructor (bool: BoolHelper, ...args: AttributeValue) {
+    constructor (bool: string, args: AttributeValue[]) {
         super(args)
         this.bool = bool
     }
@@ -54,21 +54,23 @@ export class IfHelper extends AbstractHelper {
     }
 
     use (dc: DataContext, state: EachState): number {
-        return this.bool.get(dc, state) ? 0 : 1
+        const [, v, ] = dc.get(this.bool, state)
+        return v ? 0 : 1
     }
 }
 
 export class UnlessHelper extends IfHelper {
     use (dc: DataContext, state: EachState): number {
-        return this.bool.get(dc, state) ? 1 : 0
+        const [, v, ] = dc.get(this.bool, state)
+        return v ? 1 : 0
     }
 }
 
 export class DelayHelper extends AbstractHelper {
     name: string
 
-    constructor(name: string, ...args: AttributeValue[]) {
-        super(...args)
+    constructor(name: string, args: AttributeValue[]) {
+        super(args)
         this.name = name
     }
 
@@ -92,15 +94,18 @@ export class ConcatHelper extends AbstractHelper {
 }
 
 export class MultiHelper implements Helper {
-    helpers: Helper[]
+    helpers: string[]
     joiner: string
 
-    constructor (joiner: string, ...helpers: Helper[]) {
+    constructor (joiner: string, helpers: string[]) {
         this.helpers = helpers
         this.joiner = joiner
     }
 
     get (dc: DataContext, state: EachState): any {
-        return this.helpers.map(it => it.get(dc, state)).join(this.joiner)
+        return this.helpers.map(it => {
+            const [, v] = dc.get(it, state)
+            return v
+        }).join(this.joiner)
     }
 }

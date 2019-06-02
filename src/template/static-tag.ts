@@ -55,9 +55,6 @@ export class StaticTag extends Tag {
             ee.insertBefore(el, anchor)
             return
         }
-        if (!ee) {
-            console.log(this.id, ctx)
-        }
         ee.appendChild(el)
     }
 

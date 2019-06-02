@@ -47,9 +47,12 @@ export class ReferenceTag extends BlockTag  {
     init (ctx: Context, waiter: Waiter) {
         waiter.wait(ctx.create(this.name, this.attr).then(it => ctx.cache.set(this.id, it)))
         Object.keys(this.slots).forEach(it => this.slots[it].init(ctx, waiter))
+        super.init(ctx, waiter)
     }
 
     render (ctx: Context, waiter: Waiter) {
+        super.render(ctx, waiter)
+
         const item = ctx.cache.get(this.id) as View | Component
         if (this.events.length) {
             const et = ctx.fillState(item)

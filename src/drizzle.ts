@@ -7,7 +7,7 @@ import { Application } from './application'
 import { Lifecycle } from './lifecycle'
 import { Component } from './component'
 import { RouterPlugin } from './route'
-import { IfHelper, UnlessHelper, DelayHelper, EchoHelper } from './template/helper'
+import { IfHelper, UnlessHelper, DelayHelper, EchoHelper, BoolHelper, MultiHelper, ConcatHelper } from './template/helper'
 import { DynamicTag } from './template/dynamic-tag'
 import { StaticTag } from './template/static-tag'
 import { ReferenceTag } from './template/reference-tag'
@@ -21,10 +21,6 @@ import { EventDef } from './template/context'
 
 export interface Disposable {
     dispose (): void
-}
-
-const innerHelpers = {
-    if: IfHelper, unless: UnlessHelper
 }
 
 interface NodeConstructor {
@@ -56,10 +52,10 @@ const TX = (id: string, ...ss: [number, string][]) => new TextTag(id, ss)
 const TS = (...ts: Tag[]) => new Tags(ts)
 
 // node attribute
-const SA = (d: StaticTag | DynamicTag | ReferenceTag, name: string, value: any, useSet?: boolean) => {
+const SA = (d: StaticTag | DynamicTag | ReferenceTag, name: string, value: any, useSet: boolean = true) => {
     d.attr(name, value, useSet)
 }
-const DA = (d: DynamicTag, name: string, helper: string, useSet?: boolean) => d.dattr(name, helper, useSet)
+const DA = (d: DynamicTag, name: string, helper: string, useSet: boolean = true) => d.dattr(name, helper, useSet)
 const EVD = (tp: Template, id: string, name: string, method: string, isAction: boolean, ...attrs: AttributeValue[]) => {
     tp.event(id, {name, method, isAction, attrs} as EventDef)
 }
@@ -83,11 +79,25 @@ const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
 
 // helpers
 const H = (tp: Template, id: string, n: string | AttributeValue) => {
-    tp.helper(id, Array.isArray(n) ? new EchoHelper(n) : new EchoHelper(DV(n)))
+    tp.helper(id, Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)]))
+}
+const HB = (tp: Template, id: string, ...args: AttributeValue[]) => {
+    tp.helper(id, new BoolHelper(args))
+}
+const HC = (tp: Template, id: string, ...args: AttributeValue[]) => {
+    tp.helper(id, new ConcatHelper(args))
+}
+const HIF = (tp: Template, id: string, bool: string, ...args: AttributeValue[]) => {
+    tp.helper(id, new IfHelper(bool, args))
+}
+const HUN = (tp: Template, id: string, bool: string, ...args: AttributeValue[]) => {
+    tp.helper(id, new UnlessHelper(bool, args))
+}
+const HM = (tp: Template, id: string, joiner: string, ...helpers: string[]) => {
+    tp.helper(id, new MultiHelper(joiner, helpers))
 }
 const HH = (tp: Template, id: string, n: string, ...args: AttributeValue[]) => {
-    const h = innerHelpers[n] ? new innerHelpers[n](...args) : new DelayHelper(n, ...args)
-    tp.helper(id, h)
+    tp.helper(id, new DelayHelper(n, args))
 }
 
 // block
@@ -105,7 +115,7 @@ const UN = (id: string, needAnchor: boolean, helper: string, trueTags: Tags, fal
 }
 
 export const factory = {
-    SN, DN, TX, REF, SV, DV, AT, H, HH, EVD,
+    SN, DN, TX, REF, SV, DV, AT, H, HC, HB, HIF, HUN, HM, HH, EVD,
     EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS
 }
 

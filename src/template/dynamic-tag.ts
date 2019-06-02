@@ -1,6 +1,6 @@
 import { StaticTag, setAttribute } from './static-tag'
 import { Context, Waiter, EventTarget } from './context'
-import { ChangeType, EachState} from './common'
+import { ChangeType} from './common'
 
 export class DynamicTag extends StaticTag {
     das: [string, string, boolean][] = []
@@ -35,7 +35,10 @@ export class DynamicTag extends StaticTag {
         this.das.forEach(it => {
             const v = ctx.get(it[1])
             if (v[0] === ChangeType.CHANGED) {
-                setAttribute(el as Element, [it[0], v, it[2]])
+                setAttribute(el as Element, [it[0], v[1], it[2]])
+            // TODO temporally solve a bug
+            } else if (this.name === 'input' && it[0] === 'checked') {
+                setAttribute(el as Element, [it[0], v[1], it[2]])
             }
         })
     }

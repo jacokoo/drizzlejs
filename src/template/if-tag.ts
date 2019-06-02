@@ -16,14 +16,8 @@ export class IfTag extends BlockTag {
     }
 
     init (ctx: Context, waiter: Waiter) {
-        this.truePart.forEach(it => {
-            it.parent = this.parent
-            it.init(ctx, waiter)
-        })
-        this.falsePart.forEach(it => {
-            it.parent = this.parent
-            it.init(ctx, waiter)
-        })
+        this.truePart.forEach(it => it.parent = this)
+        this.falsePart.forEach(it => it.parent = this)
         super.init(ctx, waiter)
     }
 
@@ -31,7 +25,7 @@ export class IfTag extends BlockTag {
         super.render(ctx, waiter)
 
         const [, v] = ctx.get(this.bool)
-        this.use(v).render(ctx, waiter)
+        this.renderIt(this.use(v), ctx, waiter)
     }
 
     update (ctx: Context, waiter: Waiter) {
@@ -42,13 +36,20 @@ export class IfTag extends BlockTag {
         }
 
         this.use(old).destroy(ctx, waiter, true)
-        this.use(v).render(ctx, waiter)
+        this.renderIt(this.use(v), ctx, waiter)
     }
 
     destroy (ctx: Context, waiter: Waiter, domRemove: boolean) {
         const [, , v] = ctx.get(this.bool)
         this.use(v).destroy(ctx, waiter, domRemove)
         super.destroy(ctx, waiter, domRemove)
+    }
+
+    renderIt (tags: Tags, ctx: Context, waiter: Waiter) {
+        const w = new Waiter()
+        tags.init(ctx, w)
+        tags.render(ctx, w)
+        waiter.wait(w.end())
     }
 
     use (v: any): Tags {

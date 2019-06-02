@@ -1,5 +1,6 @@
 import { EachKey } from './each-tag'
 import { EachDef, EachState } from './common'
+import { Disposable } from '../drizzle'
 
 export class Cache implements EachState {
     cache: object = {}
@@ -16,13 +17,21 @@ export class Cache implements EachState {
         this._state.push(0)
     }
 
-    next (key: EachKey, create: boolean = true) {
-        if (create) {
-            const c = this.getCache()[this._id[this._id.length - 1]];
-            (c as Array<any>).push({KEY: key})
+    next (key: EachKey): Disposable {
+        const c = this.getCache(this, 1)[this._id[this._id.length - 1]] as Array<any>
+        let o = c.find(it => it.KEY === key)
+        if (!o) {
+            o = {KEY: key}
+            c.push(o)
         }
         this._state.pop()
         this._state.push(key)
+
+        return {
+            dispose () {
+                c.splice(c.indexOf(o), 1)
+            }
+        }
     }
 
     pop (clear?: boolean) {
@@ -35,10 +44,10 @@ export class Cache implements EachState {
         }
     }
 
-    getCache (state: EachState = this, excludeLast: boolean = false): object {
+    getCache (state: EachState = this, exclude: number = 0): object {
         let o = this.cache
         state._id.forEach((it, i) => {
-            if (excludeLast && i === state._id.length) return
+            if (i + exclude >= state._id.length) return
             o = o[it]
             if (!o) return
             o = (o as any[]).find(iit => iit.KEY === state._state[i])
@@ -47,7 +56,13 @@ export class Cache implements EachState {
     }
 
     get (key: string): any {
-        return this.getCache()[key]
+        if (!this._id.length) return this.getCache()[key]
+
+        for (let i = 0; i <= this._id.length; i ++) {
+            const v = this.getCache(this, i)[key]
+            if (v) return v
+        }
+        return null
     }
 
     set (key: string, value: any) {
