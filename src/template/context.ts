@@ -163,10 +163,6 @@ export abstract class DataContext implements Context {
         this.version ++
     }
 
-    value (key: string, state: EachState): any {
-        return getValue(this, key, state)
-    }
-
     slot (id: string, slot: Slot): void {
         this.root.slots[id] = slot
     }

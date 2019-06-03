@@ -306,7 +306,7 @@
             key: 'push',
             value: function push(id, def) {
                 var c = this.getCache();
-                if (!c[id]) c[id] = [];
+                if (!c[id]) c[id] = {};
                 this._id.push(id);
                 this._def.push(def);
                 this._state.push(0);
@@ -315,18 +315,16 @@
             key: 'next',
             value: function next(key) {
                 var c = this.getCache(this, 1)[this._id[this._id.length - 1]];
-                var o = c.find(function (it) {
-                    return it.KEY === key;
-                });
+                var o = c[key];
                 if (!o) {
-                    o = { KEY: key };
-                    c.push(o);
+                    o = {};
+                    c[key] = o;
                 }
                 this._state.pop();
                 this._state.push(key);
                 return {
                     dispose: function dispose() {
-                        c.splice(c.indexOf(o), 1);
+                        delete c[key];
                     }
                 };
             }
@@ -351,9 +349,7 @@
                     if (i + exclude >= state._id.length) return;
                     o = o[it];
                     if (!o) return;
-                    o = o.find(function (iit) {
-                        return iit.KEY === state._state[i];
-                    });
+                    o = o[state._state[i]];
                 });
                 return o;
             }
@@ -506,11 +502,6 @@
             value: function set$$1(data) {
                 this.data = data;
                 this.version++;
-            }
-        }, {
-            key: 'value',
-            value: function value(key, state) {
-                return getValue(this, key, state);
             }
         }, {
             key: 'slot',

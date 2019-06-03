@@ -10,7 +10,7 @@ export class Cache implements EachState {
 
     push (id: string, def: EachDef) {
         const c = this.getCache()
-        if (!c[id]) c[id] = []
+        if (!c[id]) c[id] = {}
 
         this._id.push(id)
         this._def.push(def)
@@ -18,18 +18,18 @@ export class Cache implements EachState {
     }
 
     next (key: EachKey): Disposable {
-        const c = this.getCache(this, 1)[this._id[this._id.length - 1]] as Array<any>
-        let o = c.find(it => it.KEY === key)
+        const c = this.getCache(this, 1)[this._id[this._id.length - 1]] as object
+        let o = c[key]
         if (!o) {
-            o = {KEY: key}
-            c.push(o)
+            o = {}
+            c[key] = o
         }
         this._state.pop()
         this._state.push(key)
 
         return {
             dispose () {
-                c.splice(c.indexOf(o), 1)
+                delete c[key]
             }
         }
     }
@@ -50,7 +50,7 @@ export class Cache implements EachState {
             if (i + exclude >= state._id.length) return
             o = o[it]
             if (!o) return
-            o = (o as any[]).find(iit => iit.KEY === state._state[i])
+            o = o[state._state[i]]
         })
         return o
     }
