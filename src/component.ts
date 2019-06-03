@@ -6,6 +6,7 @@ import { View, ViewOptions } from './view'
 import { Events } from './event'
 import { Disposable } from './drizzle'
 import { ElementContainer } from './template/context'
+import { ComponentTemplate } from './template/template'
 
 export interface ItemOptions {
     views?: string[]
@@ -14,6 +15,7 @@ export interface ItemOptions {
 }
 
 export interface ComponentOptions extends RenderOptions {
+    template?: ComponentTemplate
     store?: StoreOptions
     items?: ItemOptions
 }
@@ -88,7 +90,7 @@ export class Component extends Renderable<ComponentOptions> implements Events {
         const opt = this._items[name]
         const item = opt.type === 'view' ?
             new View(this, opt.options) :
-            new Component(this.app, opt.loader, opt.options, state)
+            new Component(this.app, opt.loader, opt.options as ComponentOptions, state)
         return item._init().then(() => item)
     }
 

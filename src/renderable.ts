@@ -3,13 +3,11 @@ import { Application } from './application'
 import { CustomEvent } from './template-bk/context'
 import { Slot } from './template/slot-tag'
 import { ElementContainer } from './template/context'
-import { ComponentTemplate } from './template/template'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
     customEvents?: {[name: string]: CustomEvent}
     events?: {[name: string]: (...args) => void}
-    template?: ComponentTemplate
     computed?: {[name: string]: (any) => any}
     actions?: {[name: string]: (cb: (data: any) => Promise<any>, data: object) => void}
     _file?: string
