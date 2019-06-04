@@ -6,6 +6,7 @@ import { Lifecycle } from '../lifecycle'
 import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Component } from '../component'
+import { Widget } from './common'
 
 const TargetKey = '_t_'
 
@@ -53,6 +54,7 @@ export abstract class Template {
     events: {[id: string]: EventDef} = {}
     helpers: {[id: string]: Helper} = {}
     root: Tags
+    widgets: {[id: string]: Widget} = {}
 
     constructor (root: Tags) {
         this.root = root
@@ -66,12 +68,11 @@ export abstract class Template {
         def.fn = function (this: EventTarget, e: any) {
             this._ctx.trigger(def, this, e)
         }
-        def.binder = function (this: null, isUnbind: boolean, el: EventTarget) {
-            if (isUnbind) {
-                el.removeEventListener(def.name, def.fn, false)
-                return
-            }
+        def.on = function (this: null, el: EventTarget) {
             el.addEventListener(def.name, def.fn, false)
+        }
+        def.off = function (this: null, el: EventTarget) {
+            el.removeEventListener(def.name, def.fn, false)
         }
         this.events[id] = def
     }

@@ -4,7 +4,7 @@ import { View } from '../view'
 import { getValue, resolveEventArguments } from './value'
 import { Cache } from './cache'
 import { Slot } from './slot-tag'
-import { EachState, HelperResult, ChangeType, CustomTransformer, AttributeValue } from './common'
+import { EachState, HelperResult, ChangeType, CustomTransformer, AttributeValue, State } from './common'
 
 export interface Helper {
     get (dh: DataContext, state: EachState): any
@@ -27,7 +27,8 @@ export interface EventDef {
     attrs: AttributeValue[]
     isAction: boolean
     fn?: (e: any) => void
-    binder?: (isUnbind: boolean, el: EventTarget) => void
+    on?: (el: EventTarget) => void
+    off?: (el: EventTarget) => void
 }
 
 export interface Context {
@@ -65,6 +66,26 @@ export class Waiter {
         const bs = this.busy
         this.busy = []
         return Promise.all(bs)
+    }
+}
+
+class ElementState implements State {
+    el: any
+
+    constructor (el: Element) {
+        this.el = el
+    }
+
+    get (key: string): any {
+        return this.el[`s_${key}`]
+    }
+
+    set (key: string, val: any) {
+        this.el[`s_${key}`] = val
+    }
+
+    clear (key: string) {
+        delete this.el[`s_${key}`]
     }
 }
 
@@ -143,10 +164,19 @@ export abstract class DataContext implements Context {
         const ces = this.root._options.customEvents
         const ce = (ces && ces[def.name]) || this.root.app.options.customEvents[def.name]
         if (ce) {
-            ce(isUnbind, el as any as Element, def.fn)
+            const ee = el as any as Element
+            const s = new ElementState(ee)
+            isUnbind ? ce.off(s, ee, def.fn) : ce.on(s, ee, def.fn)
             return
         }
-        def.binder(isUnbind, el)
+        isUnbind ? def.off(el) : def.on(el)
+    }
+
+    off (el: EventTarget, eventId: string) {
+        const def = this.template.events[eventId]
+        const ces = this.root._options.customEvents
+        const ce = (ces && ces[def.name]) || this.root.app.options.customEvents[def.name]
+
     }
 
     trigger (def: EventDef, el: EventTarget, event: any) {

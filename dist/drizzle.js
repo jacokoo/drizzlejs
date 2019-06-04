@@ -400,6 +400,32 @@
         return Waiter;
     }();
 
+    var ElementState = function () {
+        function ElementState(el) {
+            classCallCheck(this, ElementState);
+
+            this.el = el;
+        }
+
+        createClass(ElementState, [{
+            key: 'get',
+            value: function get$$1(key) {
+                return this.el['s_' + key];
+            }
+        }, {
+            key: 'set',
+            value: function set$$1(key, val) {
+                this.el['s_' + key] = val;
+            }
+        }, {
+            key: 'clear',
+            value: function clear(key) {
+                delete this.el['s_' + key];
+            }
+        }]);
+        return ElementState;
+    }();
+
     var DataContext = function () {
         function DataContext(root, template) {
             classCallCheck(this, DataContext);
@@ -478,10 +504,19 @@
                 var ces = this.root._options.customEvents;
                 var ce = ces && ces[def.name] || this.root.app.options.customEvents[def.name];
                 if (ce) {
-                    ce(isUnbind, el, def.fn);
+                    var ee = el;
+                    var s = new ElementState(ee);
+                    isUnbind ? ce.off(s, ee, def.fn) : ce.on(s, ee, def.fn);
                     return;
                 }
-                def.binder(isUnbind, el);
+                isUnbind ? def.off(el) : def.on(el);
+            }
+        }, {
+            key: 'off',
+            value: function off(el, eventId) {
+                var def = this.template.events[eventId];
+                var ces = this.root._options.customEvents;
+                var ce = ces && ces[def.name] || this.root.app.options.customEvents[def.name];
             }
         }, {
             key: 'trigger',
@@ -616,6 +651,7 @@
             this.tags = {};
             this.events = {};
             this.helpers = {};
+            this.widgets = {};
             this.root = root;
         }
 
@@ -638,12 +674,11 @@
                 def.fn = function (e) {
                     this._ctx.trigger(def, this, e);
                 };
-                def.binder = function (isUnbind, el) {
-                    if (isUnbind) {
-                        el.removeEventListener(def.name, def.fn, false);
-                        return;
-                    }
+                def.on = function (el) {
                     el.addEventListener(def.name, def.fn, false);
+                };
+                def.off = function (el) {
+                    el.removeEventListener(def.name, def.fn, false);
                 };
                 this.events[id] = def;
             }
@@ -1285,17 +1320,22 @@
     });
 
     var customEvents = {
-        enter: function enter(isUnbind, node, cb) {
-            var ee = function ee(e) {
-                if (e.keyCode !== 13) return;
-                e.preventDefault();
-                cb.call(this, e);
-            };
-            if (isUnbind) {
+        enter: {
+            on: function on(state, node, cb) {
+                var ee = function ee(e) {
+                    if (e.keyCode !== 13) return;
+                    e.preventDefault();
+                    cb.call(this, e);
+                };
+                state.set('enter', ee);
+                node.addEventListener('keypress', ee, false);
+            },
+            off: function off(state, node, cb) {
+                var ee = state.get('enter');
+                if (!ee) return;
                 node.removeEventListener('keypress', ee, false);
-                return;
+                state.clear('enter');
             }
-            node.addEventListener('keypress', ee, false);
         }
     };
 

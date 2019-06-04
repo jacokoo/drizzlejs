@@ -1,8 +1,8 @@
 import { Lifecycle, LifecycleContainer } from './lifecycle'
 import { Application } from './application'
-import { CustomEvent } from './template-bk/context'
 import { Slot } from './template/slot-tag'
 import { ElementContainer } from './template/context'
+import { CustomEvent } from './template/common'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]

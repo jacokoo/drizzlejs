@@ -4,7 +4,7 @@ import { DrizzlePlugin } from './drizzle'
 import { Lifecycle } from './lifecycle'
 import { Events } from './event'
 import { ElementParent } from './template/template'
-import { CustomTransformer, CustomEvent } from './template/common'
+import { CustomTransformer, CustomEvent, State } from './template/common'
 
 export interface ApplicationOptions {
     stages?: string[]
@@ -24,17 +24,22 @@ interface LoaderConstructor {
 }
 
 const customEvents: {[name: string]: CustomEvent} = {
-    enter (isUnbind: boolean, node: Element, cb: (any) => void) {
-        const ee = function (this: Element, e) {
-            if (e.keyCode !== 13) return
-            e.preventDefault()
-            cb.call(this, e)
-        }
-        if (isUnbind) {
+    enter: {
+        on (state: State, node: Element, cb: (any) => void) {
+            const ee = function (this: Element, e) {
+                if (e.keyCode !== 13) return
+                e.preventDefault()
+                cb.call(this, e)
+            }
+            state.set('enter', ee)
+            node.addEventListener('keypress', ee, false)
+        },
+        off (state: State, node: Element, cb: (any) => void) {
+            const ee = state.get('enter')
+            if (!ee) return
             node.removeEventListener('keypress', ee, false)
-            return
+            state.clear('enter')
         }
-        node.addEventListener('keypress', ee, false)
     }
 }
 

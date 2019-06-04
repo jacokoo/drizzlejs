@@ -193,17 +193,23 @@ cache['app/demo/todo-list'] = {
     },
 
     customEvents: {
-        escape (isUnbind, node, cb) {
-            const ee = function (e) {
-                if (e.keyCode !== 27) return
-                e.preventDefault()
-                cb.call(this, e)
-            }
-            if (isUnbind) {
+        escape: {
+            on (state, node, cb) {
+                const ee = function (e) {
+                    if (e.keyCode !== 27) return
+                    e.preventDefault()
+                    cb.call(this, e)
+                }
+                state.set('escape', ee)
+                node.addEventListener('keydown', ee, false)
+            },
+
+            off (state, node, cb) {
+                const ee = state.get(`escape`)
+                if (!ee) return
                 node.removeEventListener('keydown', ee, false)
-                return
+                state.clear('escape')
             }
-            node.addEventListener('keydown', ee, false)
         }
     },
 

@@ -7,7 +7,9 @@ import { Application } from './application'
 import { Lifecycle } from './lifecycle'
 import { Component } from './component'
 import { RouterPlugin } from './route'
-import { IfHelper, UnlessHelper, DelayHelper, EchoHelper, BoolHelper, MultiHelper, ConcatHelper } from './template/helper'
+import {
+    IfHelper, UnlessHelper, DelayHelper, EchoHelper, BoolHelper, MultiHelper, ConcatHelper
+} from './template/helper'
 import { DynamicTag } from './template/dynamic-tag'
 import { StaticTag } from './template/static-tag'
 import { ReferenceTag } from './template/reference-tag'

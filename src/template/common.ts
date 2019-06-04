@@ -1,7 +1,23 @@
 export enum ChangeType { CHANGED, NOT_CHANGED }
 export type HelperResult = [ChangeType, any, any]
 export type CustomTransformer = (...args: any[]) => any
-export type CustomEvent = (isUnbind: boolean, el: Element, cb: (event: any) => void) => void
+
+export interface State {
+    get (key: string): any
+    set (key: string, val: any)
+    clear (key: string)
+}
+
+export interface CustomEvent {
+    on (state: State, el: Element, cb: (event: any) => void)
+    off (state: State, el: Element, cb: (event: any) => void)
+}
+
+export interface Widget {
+    create (state: State, el: Node, ...args: any[]): any
+    update (state: State, el: Node, ...args: any[])
+    destory (state: State, el: Node, ...args: any[])
+}
 
 export interface EachState {
     _id: string[]
