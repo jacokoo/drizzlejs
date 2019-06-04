@@ -15,8 +15,13 @@ export interface CustomEvent {
 
 export interface Widget {
     create (state: State, el: Node, ...args: any[]): any
-    update (state: State, el: Node, ...args: any[])
-    destory (state: State, el: Node, ...args: any[])
+    update (state: State, changed: boolean, el: Node, ...args: any[])
+    destory (state: State, el: Node)
+}
+
+export interface WidgetDef {
+    name: string
+    args: string[] // helper ids
 }
 
 export interface EachState {

@@ -4,7 +4,7 @@ import { DrizzlePlugin } from './drizzle'
 import { Lifecycle } from './lifecycle'
 import { Events } from './event'
 import { ElementParent } from './template/template'
-import { CustomTransformer, CustomEvent, State } from './template/common'
+import { CustomTransformer, CustomEvent, State, Widget } from './template/common'
 
 export interface ApplicationOptions {
     stages?: string[]
@@ -13,7 +13,7 @@ export interface ApplicationOptions {
     entry: string | ComponentOptions
     customEvents?: {[name: string]: CustomEvent}
     transformers?: {[name: string]: CustomTransformer}
-    // components?: {[name: string]: Component}
+    widgets?: {[name: string]: Widget}
     componentLifecycles?: Lifecycle[]
     viewLifecycles?: Lifecycle[]
     getResource? (path): Promise<object>

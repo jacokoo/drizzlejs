@@ -6,7 +6,7 @@ import { Lifecycle } from '../lifecycle'
 import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Component } from '../component'
-import { Widget } from './common'
+import { WidgetDef } from './common'
 
 const TargetKey = '_t_'
 
@@ -54,7 +54,6 @@ export abstract class Template {
     events: {[id: string]: EventDef} = {}
     helpers: {[id: string]: Helper} = {}
     root: Tags
-    widgets: {[id: string]: Widget} = {}
 
     constructor (root: Tags) {
         this.root = root
@@ -126,6 +125,12 @@ export abstract class Template {
 }
 
 export class ViewTemplate extends Template {
+    widgets: {[id: string]: WidgetDef} = {}
+
+    widget (id: string, def: WidgetDef) {
+        this.widgets[id] = def
+    }
+
     context (root: Renderable<any>): Context {
         return new ViewContext(root as View, this)
     }

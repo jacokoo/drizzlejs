@@ -89,7 +89,7 @@ export class Component extends Renderable<ComponentOptions> implements Events {
     _createItem (name: string, state?: object) {
         const opt = this._items[name]
         const item = opt.type === 'view' ?
-            new View(this, opt.options) :
+            new View(this, opt.options as ViewOptions) :
             new Component(this.app, opt.loader, opt.options as ComponentOptions, state)
         return item._init().then(() => item)
     }

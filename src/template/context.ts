@@ -1,10 +1,11 @@
 import { Template } from './template'
 import { Component } from '../component'
-import { View } from '../view'
-import { getValue, resolveEventArguments } from './value'
+import { View, ViewOptions } from '../view'
+import { resolveEventArguments } from './value'
 import { Cache } from './cache'
 import { Slot } from './slot-tag'
 import { EachState, HelperResult, ChangeType, CustomTransformer, AttributeValue, State } from './common'
+import { ViewTemplate } from '../drizzle'
 
 export interface Helper {
     get (dh: DataContext, state: EachState): any
@@ -172,13 +173,6 @@ export abstract class DataContext implements Context {
         isUnbind ? def.off(el) : def.on(el)
     }
 
-    off (el: EventTarget, eventId: string) {
-        const def = this.template.events[eventId]
-        const ces = this.root._options.customEvents
-        const ce = (ces && ces[def.name]) || this.root.app.options.customEvents[def.name]
-
-    }
-
     trigger (def: EventDef, el: EventTarget, event: any) {
         const args = resolveEventArguments(this, el, event, def)
         if (def.isAction) {
@@ -202,6 +196,25 @@ export abstract class DataContext implements Context {
 }
 
 export class ViewContext extends DataContext {
+    state: State
+
+    constructor (root: Component | View, template: Template) {
+        super(root, template)
+        this.root = root
+        this.state = {
+            get: (key: string) => {
+                return this.cache.get(`w_${key}`)
+            },
+
+            set: (key: string, val: any) => {
+                this.cache.set(`w_${key}`, val)
+            },
+
+            clear: (key: string) => {
+                this.cache.clear(`w_${key}`)
+            }
+        }
+    }
     transformer (name: string): CustomTransformer | undefined {
         const h = (this.root as View)._options.transformers
         return (h && h[name]) || this.root.app.options.transformers[name]
@@ -209,6 +222,35 @@ export class ViewContext extends DataContext {
 
     create (name: string, state?: object): Promise<Component | View> {
         return (this.root as View)._component._createItem(name, state)
+    }
+
+    widget (type: number, el: Element, id: string) {
+        const def = (this.template as ViewTemplate).widgets[id]
+        let ws = (this.root._options as ViewOptions).widgets
+        if (!ws || !ws[def.name]) {
+            ws = this.root.app.options.widgets
+        }
+
+        const w = (ws && ws[def.name])
+        if (!w) {
+            throw new Error(`no widgit definition found: ${def.name}`)
+        }
+
+        switch (type) {
+        case 0:
+            const args = def.args.map(it => this.get(it)[1])
+            const obj = w.create(this.state, el, ...args)
+            this.cache.set(id, obj)
+            break
+        case 1:
+            const as = def.args.map(it => this.get(it))
+            const changed = as.some(it => it[0] === ChangeType.CHANGED)
+            w.update(this.state, changed, el, ...as.map(it => it[1]))
+            break
+        case 2:
+            w.destory(this.state, el)
+            this.cache.clear(id)
+        }
     }
 }
 

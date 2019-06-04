@@ -43,9 +43,9 @@ const SN = (id: string, name: string, ref?: string) => {
     const node = createTag(name, id, ref)
     return node ? node : new StaticTag(name, id, ref)
 }
-const DN = (id: string, name: string, events: string[], ref?: string) => {
+const DN = (id: string, name: string, events: string[], widgits: string[], ref?: string) => {
     const node = createTag(name, id)
-    return node ? node : new DynamicTag(name, id, events, ref)
+    return node ? node : new DynamicTag(name, id, events, widgits, ref)
 }
 const REF = (id: string, needAnchor: boolean, name: string, events: string[]) => {
     return new ReferenceTag(id, needAnchor, name, events)
@@ -63,6 +63,9 @@ const EVD = (tp: Template, id: string, name: string, method: string, isAction: b
 }
 // const EV = (d: DynamicTag | ReferenceTag, ...events: string[]) => d.event(events)
 const MP = (d: ReferenceTag, name: string, helper: string) => d.map(name, helper)
+const W = (tp: ViewTemplate, id: string, name: string, ...args: string[]) => {
+    tp.widget(id, {name, args})
+}
 
 // const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
 const C = (parent: Tag, ...children: Tag[]) => {
@@ -118,7 +121,7 @@ const UN = (id: string, needAnchor: boolean, helper: string, trueTags: Tags, fal
 
 export const factory = {
     SN, DN, TX, REF, SV, DV, AT, H, HC, HB, HIF, HUN, HM, HH, EVD,
-    EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS
+    EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS, W
 }
 
 export {

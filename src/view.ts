@@ -1,13 +1,13 @@
 import { RenderOptions, Renderable, ComponentState } from './renderable'
 import { Component } from './component'
-import { CustomTransformer } from './template/common'
+import { CustomTransformer, Widget } from './template/common'
 import { ViewTemplate } from './template/template'
 
 export interface ViewOptions extends RenderOptions {
     template?: ViewTemplate
     transformers?: {[name: string]: CustomTransformer},
     state?: object,
-    // components?: {[name: string]: Component}
+    widgets?: {[name: string]: Widget}
 }
 
 export class View extends Renderable<ViewOptions> {
