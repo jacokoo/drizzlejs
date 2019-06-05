@@ -1,6 +1,20 @@
 import { EachKey } from './each-tag'
-import { EachDef, EachState } from './common'
+import { EachDef, EachState, RefDef, RefContainer } from './common'
 import { Disposable } from '../drizzle'
+
+const toKey = (id: string) => `_keys_${id}`
+
+const walk = (re: any[], def: RefDef, current: number, o: object) => {
+    if (current === def.each.length) {
+        if (o[def.id]) re.push(o[def.id])
+        return
+    }
+
+    const keys = o[toKey(def.each[current])]
+    keys.forEach(it => {
+        walk(re, def, current + 1, o[def.each[current]][it])
+    })
+}
 
 export class Cache implements EachState {
     cache: object = {}
@@ -10,20 +24,28 @@ export class Cache implements EachState {
 
     push (id: string, def: EachDef) {
         const c = this.getCache()
-        if (!c[id]) c[id] = {}
+        if (!c[id]) {
+            c[id] = {}
+        }
 
+        c[toKey(id)] = []
         this._id.push(id)
         this._def.push(def)
         this._state.push(0)
     }
 
     next (key: EachKey): Disposable {
-        const c = this.getCache(this, 1)[this._id[this._id.length - 1]] as object
+        const ca = this.getCache(this, 1)
+        const id = this._id[this._id.length - 1]
+        const c = ca[id]
+        const keys = ca[toKey(id)]
         let o = c[key]
         if (!o) {
             o = {}
             c[key] = o
         }
+
+        keys.push(key)
         this._state.pop()
         this._state.push(key)
 
@@ -40,7 +62,9 @@ export class Cache implements EachState {
         this._state.pop()
 
         if (clear) {
-            delete this.getCache()[id]
+            const c = this.getCache()
+            delete c[id]
+            delete c[toKey(id)]
         }
     }
 
@@ -71,5 +95,15 @@ export class Cache implements EachState {
 
     clear (key: string) {
         delete this.getCache()[key]
+    }
+
+    ref (def: RefDef): any {
+        if (!def.each.length) {
+            return this.cache[def.id]
+        }
+
+        const re = []
+        walk(re, def, 0, this.cache)
+        return re
     }
 }

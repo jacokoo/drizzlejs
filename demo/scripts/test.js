@@ -1,4 +1,4 @@
-const {SN, TX, C, TS, SA, REF, DN, EVD, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC} = Drizzle.factory
+const {SN, TX, C, TS, SA, REF, DN, EVD, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC, R} = Drizzle.factory
 const {Application, ComponentTemplate, ViewTemplate, RouterPlugin} = Drizzle
 
 const cache = {}
@@ -30,6 +30,7 @@ C(t1, t2)
 const index = new ComponentTemplate(TS(t1))
 H(index, 'h1', DV('todos'))
 H(index, 'h2', DV('filter'))
+R(index, 'container', 't6')
 
 index.tag(t1, t2, t3, t4, t5)
 
@@ -43,6 +44,11 @@ cache['app/demo/index'] = {
             action: 'updateFilter'
         }
     },
+
+    updated () {
+        console.log(this.ref('container'))
+    },
+
     store: {
         models: {
             todos: {
@@ -179,6 +185,8 @@ EVD(todoList, 'e5', 'blur', 'commitEdit', true, DV('todo'), DV('this.value'))
 EVD(todoList, 'e6', 'enter', 'commitEdit', true, DV('todo'), DV('this.value'))
 EVD(todoList, 'e7', 'escape', 'revertEdit', false, DV('this'), DV('todo'))
 
+R(todoList, 'items', 'v210', 'v26')
+
 cache['app/demo/todo-list'] = {
     template: todoList,
     computed: {
@@ -190,6 +198,10 @@ cache['app/demo/todo-list'] = {
             if (filter === 'active') return todos.filter(it => !it.completed)
             return todos
         }
+    },
+
+    updated () {
+        console.log(this.ref('items'))
     },
 
     customEvents: {

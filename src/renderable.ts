@@ -2,7 +2,7 @@ import { Lifecycle, LifecycleContainer } from './lifecycle'
 import { Application } from './application'
 import { Slot } from './template/slot-tag'
 import { ElementContainer } from './template/context'
-import { CustomEvent } from './template/common'
+import { CustomEvent, RefContainer } from './template/common'
 
 export interface RenderOptions extends Lifecycle {
     cycles?: Lifecycle[]
@@ -20,6 +20,7 @@ export enum ComponentState {
 export abstract class Renderable<T extends RenderOptions> extends LifecycleContainer {
     _target: ElementContainer
     _options: T
+    _refs: RefContainer
     ids: {[key: string]: HTMLElement | Renderable<T>} = {}
     slots: {[key: string]: Slot}
 
@@ -42,6 +43,10 @@ export abstract class Renderable<T extends RenderOptions> extends LifecycleConta
             .then(() => this._status = ComponentState.RENDERED)
 
         return this._busy
+    }
+
+    ref (name: string): any {
+        return this._refs.ref(name)
     }
 
     destroy () {

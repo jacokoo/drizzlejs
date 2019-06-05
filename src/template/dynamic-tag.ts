@@ -7,8 +7,8 @@ export class DynamicTag extends StaticTag {
     evs: string[]
     widgets: string[]
 
-    constructor (name: string, id: string, events: string[] = [], widgets: string[] = [], ref?: string) {
-        super(name, id, ref)
+    constructor (name: string, id: string, events: string[] = [], widgets: string[] = []) {
+        super(name, id)
         this.evs = events
         this.widgets = widgets
     }

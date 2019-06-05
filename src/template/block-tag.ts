@@ -5,8 +5,8 @@ export abstract class BlockTag extends Tag {
     needAnchor: boolean = false
     anid: string
 
-    constructor (id: string, needAnchor: boolean, ref?: string) {
-        super(id, ref)
+    constructor (id: string, needAnchor: boolean) {
+        super(id)
         this.needAnchor = needAnchor
         this.anid = `${id}anchor`
     }

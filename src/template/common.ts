@@ -24,6 +24,15 @@ export interface WidgetDef {
     args: string[] // helper ids
 }
 
+export interface RefDef {
+    id: string
+    each: string[]
+}
+
+export interface RefContainer {
+    ref (name: string): any
+}
+
 export interface EachState {
     _id: string[]
     _def: EachDef[]

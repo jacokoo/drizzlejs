@@ -14,8 +14,8 @@ export class StaticTag extends Tag {
     as: [string, any, boolean][] = []
     inSvg: boolean = false
 
-    constructor(name: string, id: string, ref?: string) {
-        super(id, ref)
+    constructor(name: string, id: string) {
+        super(id)
         this.name = name
         this.inSvg = name === 'svg'
     }

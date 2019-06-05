@@ -6,7 +6,7 @@ import { Lifecycle } from '../lifecycle'
 import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Component } from '../component'
-import { WidgetDef } from './common'
+import { WidgetDef, RefDef } from './common'
 
 const TargetKey = '_t_'
 
@@ -53,6 +53,7 @@ export abstract class Template {
     tags: {[id: string]: Tag} = {}
     events: {[id: string]: EventDef} = {}
     helpers: {[id: string]: Helper} = {}
+    refs: {[name: string]: RefDef} = {}
     root: Tags
 
     constructor (root: Tags) {
@@ -80,6 +81,10 @@ export abstract class Template {
         this.helpers[id] = helper
     }
 
+    ref (name: string, def: RefDef) {
+        this.refs[name] = def
+    }
+
     abstract context (root: Renderable<any>): Context
 
     create (): Lifecycle {
@@ -89,6 +94,7 @@ export abstract class Template {
             stage: 'template',
             init (this: Renderable<any>) {
                 o.context = me.context(this)
+                this._refs = o.context.refs
                 const w = new Waiter()
                 const p = new RootParent()
                 me.root.forEach(it => {

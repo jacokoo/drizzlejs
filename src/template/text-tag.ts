@@ -96,8 +96,8 @@ class Html extends Static {
 export class TextTag extends Tag {
     items: TextItem[]
 
-    constructor (id: string, items: [number, string][], ref?: string) {
-        super(id, ref)
+    constructor (id: string, items: [number, string][]) {
+        super(id)
         this.items = items. map((it, i) => {
             const iid = `${this.id}${i}`
             if (it[0] === 2) return new Html(iid, it[1])

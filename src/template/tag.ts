@@ -21,7 +21,7 @@ export abstract class Tag implements ElementContainer {
     parent: ElementContainer
     children: Tags = emptyTags
 
-    constructor(id: string, ref?: string) {
+    constructor(id: string) {
         this.id = id
     }
 

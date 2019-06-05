@@ -34,18 +34,18 @@ const nodes: {[name: string]: NodeConstructor} = {
     // app: ApplicationNode
 }
 
-function createTag(id: string, name: string, ref?: string): DynamicTag | undefined {
-    if (nodes[name]) return new nodes[name](id, ref)
+function createTag(id: string, name: string): DynamicTag | undefined {
+    if (nodes[name]) return new nodes[name](id)
 }
 
 // nodes
-const SN = (id: string, name: string, ref?: string) => {
-    const node = createTag(name, id, ref)
-    return node ? node : new StaticTag(name, id, ref)
-}
-const DN = (id: string, name: string, events: string[], widgits: string[], ref?: string) => {
+const SN = (id: string, name: string) => {
     const node = createTag(name, id)
-    return node ? node : new DynamicTag(name, id, events, widgits, ref)
+    return node ? node : new StaticTag(name, id)
+}
+const DN = (id: string, name: string, events: string[], widgits: string[]) => {
+    const node = createTag(name, id)
+    return node ? node : new DynamicTag(name, id, events, widgits)
 }
 const REF = (id: string, needAnchor: boolean, name: string, events: string[]) => {
     return new ReferenceTag(id, needAnchor, name, events)
@@ -65,6 +65,9 @@ const EVD = (tp: Template, id: string, name: string, method: string, isAction: b
 const MP = (d: ReferenceTag, name: string, helper: string) => d.map(name, helper)
 const W = (tp: ViewTemplate, id: string, name: string, ...args: string[]) => {
     tp.widget(id, {name, args})
+}
+const R = (tp: Template, name: string, id: string, ...each: string[]) => {
+    tp.ref(name, {id, each})
 }
 
 // const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
@@ -121,7 +124,7 @@ const UN = (id: string, needAnchor: boolean, helper: string, trueTags: Tags, fal
 
 export const factory = {
     SN, DN, TX, REF, SV, DV, AT, H, HC, HB, HIF, HUN, HM, HH, EVD,
-    EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS, W
+    EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS, W, R
 }
 
 export {

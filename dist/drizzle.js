@@ -292,6 +292,20 @@
         return result.slice();
     }
 
+    var toKey = function toKey(id) {
+        return '_keys_' + id;
+    };
+    var walk = function walk(re, def, current, o) {
+        if (current === def.each.length) {
+            if (o[def.id]) re.push(o[def.id]);
+            return;
+        }
+        var keys = o[toKey(def.each[current])];
+        keys.forEach(function (it) {
+            walk(re, def, current + 1, o[def.each[current]][it]);
+        });
+    };
+
     var Cache = function () {
         function Cache() {
             classCallCheck(this, Cache);
@@ -306,7 +320,10 @@
             key: 'push',
             value: function push(id, def) {
                 var c = this.getCache();
-                if (!c[id]) c[id] = {};
+                if (!c[id]) {
+                    c[id] = {};
+                }
+                c[toKey(id)] = [];
                 this._id.push(id);
                 this._def.push(def);
                 this._state.push(0);
@@ -314,12 +331,16 @@
         }, {
             key: 'next',
             value: function next(key) {
-                var c = this.getCache(this, 1)[this._id[this._id.length - 1]];
+                var ca = this.getCache(this, 1);
+                var id = this._id[this._id.length - 1];
+                var c = ca[id];
+                var keys = ca[toKey(id)];
                 var o = c[key];
                 if (!o) {
                     o = {};
                     c[key] = o;
                 }
+                keys.push(key);
                 this._state.pop();
                 this._state.push(key);
                 return {
@@ -335,7 +356,9 @@
                 this._def.pop();
                 this._state.pop();
                 if (clear) {
-                    delete this.getCache()[id];
+                    var c = this.getCache();
+                    delete c[id];
+                    delete c[toKey(id)];
                 }
             }
         }, {
@@ -372,6 +395,16 @@
             key: 'clear',
             value: function clear(key) {
                 delete this.getCache()[key];
+            }
+        }, {
+            key: 'ref',
+            value: function ref(def) {
+                if (!def.each.length) {
+                    return this.cache[def.id];
+                }
+                var re = [];
+                walk(re, def, 0, this.cache);
+                return re;
             }
         }]);
         return Cache;
@@ -426,6 +459,27 @@
         return ElementState;
     }();
 
+    var Refs = function () {
+        function Refs(template, cache) {
+            classCallCheck(this, Refs);
+
+            this.template = template;
+            this.cache = cache;
+        }
+
+        createClass(Refs, [{
+            key: 'ref',
+            value: function ref(name) {
+                var def = this.template.refs[name];
+                if (!def) {
+                    throw new Error('no ref found: ' + name);
+                }
+                return this.cache.ref(def);
+            }
+        }]);
+        return Refs;
+    }();
+
     var DataContext = function () {
         function DataContext(root, template) {
             classCallCheck(this, DataContext);
@@ -435,6 +489,7 @@
             this.root = root;
             this.template = template;
             this.cache = new Cache();
+            this.refs = new Refs(template, this.cache);
         }
 
         createClass(DataContext, [{
@@ -697,6 +752,7 @@
             this.tags = {};
             this.events = {};
             this.helpers = {};
+            this.refs = {};
             this.root = root;
         }
 
@@ -733,6 +789,11 @@
                 this.helpers[id] = _helper;
             }
         }, {
+            key: 'ref',
+            value: function ref(name, def) {
+                this.refs[name] = def;
+            }
+        }, {
             key: 'create',
             value: function create() {
                 var me = this;
@@ -741,6 +802,7 @@
                     stage: 'template',
                     init: function init() {
                         o.context = me.context(this);
+                        this._refs = o.context.refs;
                         var w = new Waiter();
                         var p = new RootParent();
                         me.root.forEach(function (it) {
@@ -958,6 +1020,11 @@
                     return _this2._status = ComponentState.RENDERED;
                 });
                 return this._busy;
+            }
+        }, {
+            key: "ref",
+            value: function ref(name) {
+                return this._refs.ref(name);
             }
         }, {
             key: "destroy",
@@ -2044,7 +2111,7 @@
     var emptyTags = new Tags([]);
 
     var Tag = function () {
-        function Tag(id, ref) {
+        function Tag(id) {
             classCallCheck(this, Tag);
 
             this.children = emptyTags;
@@ -2071,10 +2138,10 @@
     var StaticTag = function (_Tag) {
         inherits(StaticTag, _Tag);
 
-        function StaticTag(name, id, ref) {
+        function StaticTag(name, id) {
             classCallCheck(this, StaticTag);
 
-            var _this = possibleConstructorReturn(this, (StaticTag.__proto__ || Object.getPrototypeOf(StaticTag)).call(this, id, ref));
+            var _this = possibleConstructorReturn(this, (StaticTag.__proto__ || Object.getPrototypeOf(StaticTag)).call(this, id));
 
             _this.as = [];
             _this.inSvg = false;
@@ -2153,10 +2220,9 @@
         function DynamicTag(name, id) {
             var events = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
             var widgets = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
-            var ref = arguments[4];
             classCallCheck(this, DynamicTag);
 
-            var _this = possibleConstructorReturn(this, (DynamicTag.__proto__ || Object.getPrototypeOf(DynamicTag)).call(this, name, id, ref));
+            var _this = possibleConstructorReturn(this, (DynamicTag.__proto__ || Object.getPrototypeOf(DynamicTag)).call(this, name, id));
 
             _this.das = [];
             _this.evs = events;
@@ -2235,10 +2301,10 @@
     var BlockTag = function (_Tag) {
         inherits(BlockTag, _Tag);
 
-        function BlockTag(id, needAnchor, ref) {
+        function BlockTag(id, needAnchor) {
             classCallCheck(this, BlockTag);
 
-            var _this = possibleConstructorReturn(this, (BlockTag.__proto__ || Object.getPrototypeOf(BlockTag)).call(this, id, ref));
+            var _this = possibleConstructorReturn(this, (BlockTag.__proto__ || Object.getPrototypeOf(BlockTag)).call(this, id));
 
             _this.needAnchor = false;
             _this.needAnchor = needAnchor;
@@ -2562,10 +2628,10 @@
     var TextTag = function (_Tag) {
         inherits(TextTag, _Tag);
 
-        function TextTag(id, items, ref) {
+        function TextTag(id, items) {
             classCallCheck(this, TextTag);
 
-            var _this3 = possibleConstructorReturn(this, (TextTag.__proto__ || Object.getPrototypeOf(TextTag)).call(this, id, ref));
+            var _this3 = possibleConstructorReturn(this, (TextTag.__proto__ || Object.getPrototypeOf(TextTag)).call(this, id));
 
             _this3.items = items.map(function (it, i) {
                 var iid = '' + _this3.id + i;
@@ -2934,17 +3000,17 @@
         // TODO window: WindowNode,
         // app: ApplicationNode
     };
-    function createTag(id, name, ref) {
-        if (nodes[name]) return new nodes[name](id, ref);
+    function createTag(id, name) {
+        if (nodes[name]) return new nodes[name](id);
     }
     // nodes
-    var SN = function SN(id, name, ref) {
-        var node = createTag(name, id, ref);
-        return node ? node : new StaticTag(name, id, ref);
-    };
-    var DN = function DN(id, name, events, widgits, ref) {
+    var SN = function SN(id, name) {
         var node = createTag(name, id);
-        return node ? node : new DynamicTag(name, id, events, widgits, ref);
+        return node ? node : new StaticTag(name, id);
+    };
+    var DN = function DN(id, name, events, widgits) {
+        var node = createTag(name, id);
+        return node ? node : new DynamicTag(name, id, events, widgits);
     };
     var REF = function REF(id, needAnchor, name, events) {
         return new ReferenceTag(id, needAnchor, name, events);
@@ -2991,10 +3057,17 @@
 
         tp.widget(id, { name: name, args: args });
     };
+    var R = function R(tp, name, id) {
+        for (var _len5 = arguments.length, each = Array(_len5 > 3 ? _len5 - 3 : 0), _key5 = 3; _key5 < _len5; _key5++) {
+            each[_key5 - 3] = arguments[_key5];
+        }
+
+        tp.ref(name, { id: id, each: each });
+    };
     // const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
     var C = function C(parent) {
-        for (var _len5 = arguments.length, children = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-            children[_key5 - 1] = arguments[_key5];
+        for (var _len6 = arguments.length, children = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
+            children[_key6 - 1] = arguments[_key6];
         }
 
         parent.children = new Tags(children);
@@ -3004,15 +3077,15 @@
     };
     // attributes
     var TI = function TI(name) {
-        for (var _len6 = arguments.length, args = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-            args[_key6 - 1] = arguments[_key6];
+        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+            args[_key7 - 1] = arguments[_key7];
         }
 
         return new TransformerItem(name, args);
     };
     var TV = function TV(value, end) {
-        for (var _len7 = arguments.length, items = Array(_len7 > 2 ? _len7 - 2 : 0), _key7 = 2; _key7 < _len7; _key7++) {
-            items[_key7 - 2] = arguments[_key7];
+        for (var _len8 = arguments.length, items = Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
+            items[_key8 - 2] = arguments[_key8];
         }
 
         return [ValueType.TRANSFORMER, new Transformer(value, items, end)];
@@ -3031,43 +3104,43 @@
         tp.helper(id, Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)]));
     };
     var HB = function HB(tp, id) {
-        for (var _len8 = arguments.length, args = Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
-            args[_key8 - 2] = arguments[_key8];
+        for (var _len9 = arguments.length, args = Array(_len9 > 2 ? _len9 - 2 : 0), _key9 = 2; _key9 < _len9; _key9++) {
+            args[_key9 - 2] = arguments[_key9];
         }
 
         tp.helper(id, new BoolHelper(args));
     };
     var HC = function HC(tp, id) {
-        for (var _len9 = arguments.length, args = Array(_len9 > 2 ? _len9 - 2 : 0), _key9 = 2; _key9 < _len9; _key9++) {
-            args[_key9 - 2] = arguments[_key9];
+        for (var _len10 = arguments.length, args = Array(_len10 > 2 ? _len10 - 2 : 0), _key10 = 2; _key10 < _len10; _key10++) {
+            args[_key10 - 2] = arguments[_key10];
         }
 
         tp.helper(id, new ConcatHelper(args));
     };
     var HIF = function HIF(tp, id, bool) {
-        for (var _len10 = arguments.length, args = Array(_len10 > 3 ? _len10 - 3 : 0), _key10 = 3; _key10 < _len10; _key10++) {
-            args[_key10 - 3] = arguments[_key10];
+        for (var _len11 = arguments.length, args = Array(_len11 > 3 ? _len11 - 3 : 0), _key11 = 3; _key11 < _len11; _key11++) {
+            args[_key11 - 3] = arguments[_key11];
         }
 
         tp.helper(id, new IfHelper(bool, args));
     };
     var HUN = function HUN(tp, id, bool) {
-        for (var _len11 = arguments.length, args = Array(_len11 > 3 ? _len11 - 3 : 0), _key11 = 3; _key11 < _len11; _key11++) {
-            args[_key11 - 3] = arguments[_key11];
+        for (var _len12 = arguments.length, args = Array(_len12 > 3 ? _len12 - 3 : 0), _key12 = 3; _key12 < _len12; _key12++) {
+            args[_key12 - 3] = arguments[_key12];
         }
 
         tp.helper(id, new UnlessHelper(bool, args));
     };
     var HM = function HM(tp, id, joiner) {
-        for (var _len12 = arguments.length, helpers = Array(_len12 > 3 ? _len12 - 3 : 0), _key12 = 3; _key12 < _len12; _key12++) {
-            helpers[_key12 - 3] = arguments[_key12];
+        for (var _len13 = arguments.length, helpers = Array(_len13 > 3 ? _len13 - 3 : 0), _key13 = 3; _key13 < _len13; _key13++) {
+            helpers[_key13 - 3] = arguments[_key13];
         }
 
         tp.helper(id, new MultiHelper(joiner, helpers));
     };
     var HH = function HH(tp, id, n) {
-        for (var _len13 = arguments.length, args = Array(_len13 > 3 ? _len13 - 3 : 0), _key13 = 3; _key13 < _len13; _key13++) {
-            args[_key13 - 3] = arguments[_key13];
+        for (var _len14 = arguments.length, args = Array(_len14 > 3 ? _len14 - 3 : 0), _key14 = 3; _key14 < _len14; _key14++) {
+            args[_key14 - 3] = arguments[_key14];
         }
 
         tp.helper(id, new DelayHelper(n, args));
@@ -3087,7 +3160,7 @@
     };
     var factory = {
         SN: SN, DN: DN, TX: TX, REF: REF, SV: SV, DV: DV, AT: AT, H: H, HC: HC, HB: HB, HIF: HIF, HUN: HUN, HM: HM, HH: HH, EVD: EVD,
-        EAD: EAD, EH: EH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, TI: TI, TV: TV, MP: MP, TS: TS, W: W
+        EAD: EAD, EH: EH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, TI: TI, TV: TV, MP: MP, TS: TS, W: W, R: R
     };
     function registerNode(name, type) {
         nodes[name] = type;
