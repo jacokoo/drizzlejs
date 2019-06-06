@@ -32,7 +32,7 @@ export interface EventDef {
     off?: (el: EventTarget) => void
 }
 
-export interface Context {
+export interface Context extends RefContainer {
     cache: Cache
     name (): string // for log
 
@@ -40,6 +40,7 @@ export interface Context {
     setEl (key: string, el: Element | Comment)
 
     set (data: object)
+    update (obj: object)
 
     // get value of id (helper id)
     get (id: string, state?: EachState): HelperResult
@@ -90,31 +91,12 @@ class ElementState implements State {
     }
 }
 
-class Refs implements RefContainer {
-    template: Template
-    cache: Cache
-
-    constructor (template: Template, cache: Cache) {
-        this.template = template
-        this.cache = cache
-    }
-
-    ref (name: string): any {
-        const def = this.template.refs[name]
-        if (!def) {
-            throw new Error(`no ref found: ${name}`)
-        }
-        return this.cache.ref(def)
-    }
-}
-
 export abstract class DataContext implements Context {
     root: Component | View
     template: Template
     data: object
     cache: Cache
     version: number = 0
-    refs: Refs
 
     inSvg: boolean = false
 
@@ -122,7 +104,6 @@ export abstract class DataContext implements Context {
         this.root = root
         this.template = template
         this.cache = new Cache()
-        this.refs = new Refs(template, this.cache)
     }
 
     name (): string {
@@ -207,8 +188,20 @@ export abstract class DataContext implements Context {
         this.version ++
     }
 
+    update (obj: object) {
+
+    }
+
     slot (id: string, slot: Slot): void {
         this.root.slots[id] = slot
+    }
+
+    ref (name: string): any {
+        const def = this.template.refs[name]
+        if (!def) {
+            throw new Error(`no ref found: ${name}`)
+        }
+        return this.cache.ref(def)
     }
 
     abstract transformer (name: string): CustomTransformer | undefined

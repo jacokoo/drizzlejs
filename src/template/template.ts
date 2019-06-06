@@ -90,11 +90,11 @@ export abstract class Template {
     create (): Lifecycle {
         const me = this
         const o = {
-            context: null,
+            context: null as Context,
             stage: 'template',
             init (this: Renderable<any>) {
                 o.context = me.context(this)
-                this._refs = o.context.refs
+                this._refs = o.context
                 const w = new Waiter()
                 const p = new RootParent()
                 me.root.forEach(it => {

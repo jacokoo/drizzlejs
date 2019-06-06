@@ -24,7 +24,7 @@ export class View extends Renderable<ViewOptions> {
     }
 
     _init () {
-        if (this._options.state) this.set(this._options.state, true)
+        if (this._options.state) this._set(this._options.state, true)
         return super._init()
     }
 
@@ -38,7 +38,11 @@ export class View extends Renderable<ViewOptions> {
         return this._state[key]
     }
 
-    set (data: object, silent: boolean = false) {
+    set (data: object) {
+        return this._set(data, false)
+    }
+
+    _set (data: object, silent: boolean, source?: any) {
         if (silent || this._status !== ComponentState.RENDERED) {
             Object.assign(this._state, data)
             return Promise.resolve()
@@ -48,7 +52,7 @@ export class View extends Renderable<ViewOptions> {
             .then(() => this._doBeforeUpdate())
             .then(() => Object.assign(this._state, data))
             .then(() => this._doCollect(this.get()))
-            .then(d => this._doUpdated(d))
+            .then(d => this._doUpdated(d, source))
 
         return this._busy
     }

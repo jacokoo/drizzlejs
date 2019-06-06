@@ -22,19 +22,6 @@ export interface ComponentOptions extends RenderOptions {
 
 const UPDATE_ACTION = `update${+new Date()}`
 
-const clone = (target: any) => {
-    if (Array.isArray(target)) {
-        return target.map(it => clone(it))
-    }
-    if (typeof target === 'object') {
-        return Object.keys(target).reduce((acc: any, it) => {
-            acc[it] = clone(target[it])
-            return acc
-        }, {})
-    }
-    return target
-}
-
 interface ComponentRenference {
     [name: string]: {
         loader: string,
@@ -75,15 +62,16 @@ export class Component extends Renderable<ComponentOptions> implements Events {
             return acc
         }, {})
 
+        return this._set(data)
+    }
+
+    _set (data: object, source?: any) {
         return this._status === ComponentState.CREATED ?
-            this._store.dispatch(UPDATE_ACTION, d) : this._dispatch(UPDATE_ACTION, d)
+        this._store.dispatch(UPDATE_ACTION, data) : this._dispatch(UPDATE_ACTION, data, source)
     }
 
     get (name?: string) {
-        const obj = this._store.get(name)
-
-        // TODO only works in dev mode
-        return clone(obj)
+        return Object.freeze(this._store.get(name))
     }
 
     _createItem (name: string, state?: object) {
@@ -94,12 +82,12 @@ export class Component extends Renderable<ComponentOptions> implements Events {
         return item._init().then(() => item)
     }
 
-    _dispatch (name: string, payload?: any) {
+    _dispatch (name: string, payload?: any, source?: any) {
         this._busy = this._busy
             .then(() => this._doBeforeUpdate())
             .then(() => this._store.dispatch(name, payload))
             .then(() => this._doCollect(this.get()))
-            .then(data => this._doUpdated(data))
+            .then(data => this._doUpdated(data, source))
 
         return this._busy
     }

@@ -37,7 +37,7 @@ export function getAttributeValue (ctx: DataContext, av: AttributeValue, state: 
     }
 }
 
-export function getValue (ctx: DataContext, key: string, state: EachState) {
+export function getValue (ctx: DataContext, key: string, state: EachState): any {
     const ks = tokenize(key)
     const first = ks.shift()
     let o = ctx.data

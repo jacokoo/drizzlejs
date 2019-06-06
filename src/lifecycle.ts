@@ -17,9 +17,9 @@ export interface Lifecycle {
 }
 
 const callIt = (
-    ctx: LifecycleContainer, cycles: Lifecycle[], method: string, reverse = false, args: any[] = []
+    ctx: LifecycleContainer, cycles: Lifecycle[], method: string, reverse = false, args: any[] = [], exclude?: any
 ): Promise<any> => {
-    return cycles.filter(it => it[method])[reverse ? 'reduceRight' : 'reduce']((acc, it) => {
+    return cycles.filter(it => it !== exclude && it[method])[reverse ? 'reduceRight' : 'reduce']((acc, it) => {
         return acc.then(() => it[method].apply(ctx, args))
     }, Promise.resolve())
 }
@@ -61,8 +61,8 @@ export class LifecycleContainer {
         return callIt(this, this._cycles, 'beforeUpdate')
     }
 
-    protected _doUpdated (data: object) {
-        return callIt(this, this._cycles, 'updated', false, [data])
+    protected _doUpdated (data: object, exclude: any) {
+        return callIt(this, this._cycles, 'updated', false, [data], exclude)
     }
 
     protected _doBeforeDestroy () {

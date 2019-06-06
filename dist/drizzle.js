@@ -4,12 +4,6 @@
     (factory((global.Drizzle = {})));
 }(this, (function (exports) { 'use strict';
 
-    var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    };
-
     var classCallCheck = function (instance, Constructor) {
       if (!(instance instanceof Constructor)) {
         throw new TypeError("Cannot call a class as a function");
@@ -459,27 +453,6 @@
         return ElementState;
     }();
 
-    var Refs = function () {
-        function Refs(template, cache) {
-            classCallCheck(this, Refs);
-
-            this.template = template;
-            this.cache = cache;
-        }
-
-        createClass(Refs, [{
-            key: 'ref',
-            value: function ref(name) {
-                var def = this.template.refs[name];
-                if (!def) {
-                    throw new Error('no ref found: ' + name);
-                }
-                return this.cache.ref(def);
-            }
-        }]);
-        return Refs;
-    }();
-
     var DataContext = function () {
         function DataContext(root, template) {
             classCallCheck(this, DataContext);
@@ -489,7 +462,6 @@
             this.root = root;
             this.template = template;
             this.cache = new Cache();
-            this.refs = new Refs(template, this.cache);
         }
 
         createClass(DataContext, [{
@@ -587,9 +559,21 @@
                 this.version++;
             }
         }, {
+            key: 'update',
+            value: function update(obj) {}
+        }, {
             key: 'slot',
             value: function slot(id, _slot) {
                 this.root.slots[id] = _slot;
+            }
+        }, {
+            key: 'ref',
+            value: function ref(name) {
+                var def = this.template.refs[name];
+                if (!def) {
+                    throw new Error('no ref found: ' + name);
+                }
+                return this.cache.ref(def);
             }
         }]);
         return DataContext;
@@ -802,7 +786,7 @@
                     stage: 'template',
                     init: function init() {
                         o.context = me.context(this);
-                        this._refs = o.context.refs;
+                        this._refs = o.context;
                         var w = new Waiter();
                         var p = new RootParent();
                         me.root.forEach(function (it) {
@@ -887,9 +871,10 @@
     var callIt = function callIt(ctx, cycles, method) {
         var reverse = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
         var args = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
+        var exclude = arguments[5];
 
         return cycles.filter(function (it) {
-            return it[method];
+            return it !== exclude && it[method];
         })[reverse ? 'reduceRight' : 'reduce'](function (acc, it) {
             return acc.then(function () {
                 return it[method].apply(ctx, args);
@@ -958,8 +943,8 @@
             }
         }, {
             key: '_doUpdated',
-            value: function _doUpdated(data) {
-                return callIt(this, this._cycles, 'updated', false, [data]);
+            value: function _doUpdated(data, exclude) {
+                return callIt(this, this._cycles, 'updated', false, [data], exclude);
             }
         }, {
             key: '_doBeforeDestroy',
@@ -1196,7 +1181,7 @@
         createClass(View, [{
             key: '_init',
             value: function _init() {
-                if (this._options.state) this.set(this._options.state, true);
+                if (this._options.state) this._set(this._options.state, true);
                 return get(View.prototype.__proto__ || Object.getPrototypeOf(View.prototype), '_init', this).call(this);
             }
         }, {
@@ -1211,9 +1196,12 @@
         }, {
             key: 'set',
             value: function set$$1(data) {
+                return this._set(data, false);
+            }
+        }, {
+            key: '_set',
+            value: function _set(data, silent, source) {
                 var _this2 = this;
-
-                var silent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
                 if (silent || this._status !== ComponentState.RENDERED) {
                     Object.assign(this._state, data);
@@ -1226,7 +1214,7 @@
                 }).then(function () {
                     return _this2._doCollect(_this2.get());
                 }).then(function (d) {
-                    return _this2._doUpdated(d);
+                    return _this2._doUpdated(d, source);
                 });
                 return this._busy;
             }
@@ -1281,20 +1269,6 @@
     }();
 
     var UPDATE_ACTION = 'update' + +new Date();
-    var clone = function clone(target) {
-        if (Array.isArray(target)) {
-            return target.map(function (it) {
-                return clone(it);
-            });
-        }
-        if ((typeof target === 'undefined' ? 'undefined' : _typeof(target)) === 'object') {
-            return Object.keys(target).reduce(function (acc, it) {
-                acc[it] = clone(target[it]);
-                return acc;
-            }, {});
-        }
-        return target;
-    };
     var componentReferences = {};
 
     var Component = function (_Renderable) {
@@ -1327,14 +1301,17 @@
                     if (data[item]) acc[item] = data[item];
                     return acc;
                 }, {});
-                return this._status === ComponentState.CREATED ? this._store.dispatch(UPDATE_ACTION, d) : this._dispatch(UPDATE_ACTION, d);
+                return this._set(data);
+            }
+        }, {
+            key: '_set',
+            value: function _set(data, source) {
+                return this._status === ComponentState.CREATED ? this._store.dispatch(UPDATE_ACTION, data) : this._dispatch(UPDATE_ACTION, data, source);
             }
         }, {
             key: 'get',
             value: function get$$1(name) {
-                var obj = this._store.get(name);
-                // TODO only works in dev mode
-                return clone(obj);
+                return Object.freeze(this._store.get(name));
             }
         }, {
             key: '_createItem',
@@ -1347,7 +1324,7 @@
             }
         }, {
             key: '_dispatch',
-            value: function _dispatch(name, payload) {
+            value: function _dispatch(name, payload, source) {
                 var _this2 = this;
 
                 this._busy = this._busy.then(function () {
@@ -1357,7 +1334,7 @@
                 }).then(function () {
                     return _this2._doCollect(_this2.get());
                 }).then(function (data) {
-                    return _this2._doUpdated(data);
+                    return _this2._doUpdated(data, source);
                 });
                 return this._busy;
             }
