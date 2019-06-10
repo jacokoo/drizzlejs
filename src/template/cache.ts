@@ -17,6 +17,7 @@ const walk = (re: any[], def: RefDef, current: number, o: object) => {
 }
 
 export class Cache implements EachState {
+    current: any
     cache: object = {}
     _id: string[] = []
     _def: EachDef[] = []
@@ -32,6 +33,7 @@ export class Cache implements EachState {
         this._id.push(id)
         this._def.push(def)
         this._state.push(0)
+        this.current = null
     }
 
     next (key: EachKey): Disposable {
@@ -44,6 +46,7 @@ export class Cache implements EachState {
             o = {}
             c[key] = o
         }
+        this.current = o
 
         keys.push(key)
         this._state.pop()
@@ -60,6 +63,8 @@ export class Cache implements EachState {
         const id = this._id.pop()
         this._def.pop()
         this._state.pop()
+        this.current = null
+        if (this._def.length) this.current = this.getCache()
 
         if (clear) {
             const c = this.getCache()
@@ -69,6 +74,7 @@ export class Cache implements EachState {
     }
 
     getCache (state: EachState = this, exclude: number = 0): object {
+        if (exclude === 0 && this.current) return this.current
         let o = this.cache
         state._id.forEach((it, i) => {
             if (i + exclude >= state._id.length) return

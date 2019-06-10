@@ -321,6 +321,7 @@
                 this._id.push(id);
                 this._def.push(def);
                 this._state.push(0);
+                this.current = null;
             }
         }, {
             key: 'next',
@@ -334,6 +335,7 @@
                     o = {};
                     c[key] = o;
                 }
+                this.current = o;
                 keys.push(key);
                 this._state.pop();
                 this._state.push(key);
@@ -349,6 +351,8 @@
                 var id = this._id.pop();
                 this._def.pop();
                 this._state.pop();
+                this.current = null;
+                if (this._def.length) this.current = this.getCache();
                 if (clear) {
                     var c = this.getCache();
                     delete c[id];
@@ -361,6 +365,7 @@
                 var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this;
                 var exclude = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 
+                if (exclude === 0 && this.current) return this.current;
                 var o = this.cache;
                 state._id.forEach(function (it, i) {
                     if (i + exclude >= state._id.length) return;
