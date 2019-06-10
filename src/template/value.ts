@@ -76,7 +76,7 @@ export function getValue (ctx: DataContext, key: string, state: EachState): any 
 
 const cache: {[key: string]: string[]} = {}
 
-function tokenize(input: string): string[] {
+export function tokenize(input: string): string[] {
     if (cache[input]) {
         return cache[input].slice()
     }

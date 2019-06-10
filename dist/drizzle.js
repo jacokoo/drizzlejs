@@ -525,8 +525,8 @@
                 return this.inSvg ? document.createElementNS('http://www.w3.org/2000/svg', name) : document.createElement(name);
             }
         }, {
-            key: 'bind',
-            value: function bind(isUnbind, el, eventId) {
+            key: 'event',
+            value: function event(isUnbind, el, eventId) {
                 var def = this.template.events[eventId];
                 var ces = this.root._options.customEvents;
                 var ce = ces && ces[def.name] || this.root.app.options.customEvents[def.name];
@@ -650,6 +650,14 @@
                         w.destory(this.state, el);
                         this.cache.clear(id);
                 }
+            }
+        }, {
+            key: 'bind',
+            value: function bind(type, el, id) {
+                var bd = this.template.bindings[id];
+                if (type === 0) return bd.bind(el);
+                if (type === 1) return bd.update(el);
+                if (type === 2) return bd.unbind(el);
             }
         }]);
         return ViewContext;
@@ -829,6 +837,7 @@
             var _this2 = possibleConstructorReturn(this, (ViewTemplate.__proto__ || Object.getPrototypeOf(ViewTemplate)).apply(this, arguments));
 
             _this2.widgets = {};
+            _this2.bindings = {};
             return _this2;
         }
 
@@ -836,6 +845,11 @@
             key: 'widget',
             value: function widget(id, def) {
                 this.widgets[id] = def;
+            }
+        }, {
+            key: 'binding',
+            value: function binding(id, def) {
+                this.bindings[id] = def;
             }
         }, {
             key: 'context',
@@ -2197,13 +2211,17 @@
         function DynamicTag(name, id) {
             var events = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
             var widgets = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
+            var bds = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
             classCallCheck(this, DynamicTag);
 
             var _this = possibleConstructorReturn(this, (DynamicTag.__proto__ || Object.getPrototypeOf(DynamicTag)).call(this, name, id));
 
             _this.das = [];
+            _this.exists = false;
             _this.evs = events;
             _this.widgets = widgets;
+            _this.bindings = bds;
+            _this.exists = !!(events.length || widgets.length || bds.length);
             return _this;
         }
 
@@ -2219,10 +2237,13 @@
                 this.updateAttrs(ctx);
                 if (!this.evs.length && !this.widgets.length) return;
                 var el = ctx.getEl(this.id);
-                if (this.evs.length || this.widgets.length) {
+                if (this.evs.length || this.bindings.length) {
                     var ee = ctx.fillState(el);
                     this.evs.forEach(function (it) {
-                        return ctx.bind(false, ee, it);
+                        return ctx.event(false, ee, it);
+                    });
+                    this.bindings.forEach(function (it) {
+                        return ctx.bind(0, ee, it);
                     });
                 }
                 this.widgets.forEach(function (it) {
@@ -2234,9 +2255,13 @@
             value: function update(ctx, waiter) {
                 get(DynamicTag.prototype.__proto__ || Object.getPrototypeOf(DynamicTag.prototype), 'update', this).call(this, ctx, waiter);
                 this.updateAttrs(ctx);
-                if (!this.evs.length && !this.widgets.length) return;
                 var el = ctx.getEl(this.id);
-                if (this.evs.length) ctx.fillState(el);
+                if (this.evs.length || this.bindings.length) {
+                    var ee = ctx.fillState(el);
+                    this.bindings.forEach(function (it) {
+                        return ctx.bind(1, ee, it);
+                    });
+                }
                 this.widgets.forEach(function (it) {
                     return ctx.widget(1, el, it);
                 });
@@ -2260,15 +2285,19 @@
         }, {
             key: 'destroy',
             value: function destroy(ctx, waiter, domRemove) {
-                if (this.evs.length || this.widgets.length) {
-                    var el = ctx.getEl(this.id);
+                var el = ctx.getEl(this.id);
+                if (this.evs.length || this.bindings.length) {
+                    var ee = el;
                     this.evs.forEach(function (it) {
-                        return ctx.bind(true, el, it);
+                        return ctx.event(true, ee, it);
                     });
-                    this.widgets.forEach(function (it) {
-                        return ctx.widget(2, el, it);
+                    this.bindings.forEach(function (it) {
+                        return ctx.bind(2, ee, it);
                     });
                 }
+                this.widgets.forEach(function (it) {
+                    return ctx.widget(2, el, it);
+                });
                 get(DynamicTag.prototype.__proto__ || Object.getPrototypeOf(DynamicTag.prototype), 'destroy', this).call(this, ctx, waiter, domRemove);
             }
         }]);

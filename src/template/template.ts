@@ -7,6 +7,7 @@ import { Renderable } from '../renderable'
 import { View } from '../view'
 import { Component } from '../component'
 import { WidgetDef, RefDef } from './common'
+import { Binding } from './binding'
 
 const TargetKey = '_t_'
 
@@ -132,9 +133,14 @@ export abstract class Template {
 
 export class ViewTemplate extends Template {
     widgets: {[id: string]: WidgetDef} = {}
+    bindings: {[id: string]: Binding} = {}
 
     widget (id: string, def: WidgetDef) {
         this.widgets[id] = def
+    }
+
+    binding (id: string, def: Binding) {
+        this.bindings[id] = def
     }
 
     context (root: Renderable<any>): Context {

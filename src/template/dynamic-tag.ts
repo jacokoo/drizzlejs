@@ -6,11 +6,15 @@ export class DynamicTag extends StaticTag {
     das: [string, string, boolean][] = []
     evs: string[]
     widgets: string[]
+    bindings: string[]
+    exists: boolean = false
 
-    constructor (name: string, id: string, events: string[] = [], widgets: string[] = []) {
+    constructor (name: string, id: string, events: string[] = [], widgets: string[] = [], bds: string[] = []) {
         super(name, id)
         this.evs = events
         this.widgets = widgets
+        this.bindings = bds
+        this.exists = !!(events.length || widgets.length || bds.length)
     }
 
     dattr (name: string, helperId: string, useSet?: boolean) {
@@ -23,9 +27,10 @@ export class DynamicTag extends StaticTag {
         if (!this.evs.length && !this.widgets.length) return
 
         const el = ctx.getEl(this.id) as Element
-        if (this.evs.length || this.widgets.length) {
+        if (this.evs.length || this.bindings.length) {
             const ee = ctx.fillState(el)
-            this.evs.forEach(it => ctx.bind(false, ee, it))
+            this.evs.forEach(it => ctx.event(false, ee, it))
+            this.bindings.forEach(it => (ctx as ViewContext).bind(0, ee, it))
         }
         this.widgets.forEach(it => (ctx as ViewContext).widget(0, el, it))
     }
@@ -33,10 +38,12 @@ export class DynamicTag extends StaticTag {
     update (ctx: Context, waiter: Waiter) {
         super.update(ctx, waiter)
         this.updateAttrs(ctx)
-        if (!this.evs.length && !this.widgets.length) return
         const el = ctx.getEl(this.id) as Element
-        if (this.evs.length) ctx.fillState(el)
 
+        if (this.evs.length || this.bindings.length) {
+            const ee = ctx.fillState(el)
+            this.bindings.forEach(it => (ctx as ViewContext).bind(1, ee, it))
+        }
         this.widgets.forEach(it => (ctx as ViewContext).widget(1, el, it))
     }
 
@@ -54,11 +61,13 @@ export class DynamicTag extends StaticTag {
     }
 
     destroy (ctx: Context, waiter: Waiter, domRemove: boolean) {
-        if (this.evs.length || this.widgets.length) {
-            const el = ctx.getEl(this.id) as Element
-            this.evs.forEach(it => ctx.bind(true, el as any as EventTarget, it))
-            this.widgets.forEach(it => (ctx as ViewContext).widget(2, el, it))
+        const el = ctx.getEl(this.id) as Element
+        if (this.evs.length || this.bindings.length) {
+            const ee = el as any as EventTarget
+            this.evs.forEach(it => ctx.event(true, ee, it))
+            this.bindings.forEach(it => (ctx as ViewContext).bind(2, ee, it))
         }
+        this.widgets.forEach(it => (ctx as ViewContext).widget(2, el, it))
         super.destroy(ctx, waiter, domRemove)
     }
 }

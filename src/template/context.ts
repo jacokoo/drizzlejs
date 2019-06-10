@@ -51,7 +51,7 @@ export interface Context extends RefContainer {
     endSvg (): void
     createElement (name: string): Element
 
-    bind (isUnbind: boolean, el: EventTarget, eventId: string)
+    event (isUnbind: boolean, el: EventTarget, eventId: string)
     trigger (def: EventDef, el: EventTarget, event: any)
     create (name: string, state?: object): Promise<Component | View>
     slot (id: string, slot: Slot): void
@@ -161,7 +161,7 @@ export abstract class DataContext implements Context {
             document.createElement(name)
     }
 
-    bind (isUnbind: boolean, el: EventTarget, eventId: string) {
+    event (isUnbind: boolean, el: EventTarget, eventId: string) {
         const def = this.template.events[eventId]
         const ces = this.root._options.customEvents
         const ce = (ces && ces[def.name]) || this.root.app.options.customEvents[def.name]
@@ -264,6 +264,13 @@ export class ViewContext extends DataContext {
             w.destory(this.state, el)
             this.cache.clear(id)
         }
+    }
+
+    bind (type: number, el: EventTarget, id: string): void {
+        const bd = (this.template as ViewTemplate).bindings[id]
+        if (type === 0) return bd.bind(el)
+        if (type === 1) return bd.update(el)
+        if (type === 2) return bd.unbind(el)
     }
 }
 
