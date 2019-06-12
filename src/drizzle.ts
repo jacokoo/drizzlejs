@@ -119,12 +119,14 @@ const E = (tp: Template, id: string, e: EventDef) => tp.event(id, e)
 const W = (tp: ViewTemplate, id: string, name: string, ...args: string[]) => tp.widget(id, {name, args})
 const R = (tp: Template, name: string, id: string, ...each: string[]) => tp.ref(name, {id, each})
 const B = (tp: ViewTemplate, id: string, type: number, target: string) => tp.binding(id, new bindings[type](id, target))
+const T = (tp: Template, ...tags: Tag[]) => tp.tag(tags)
+const RO = (tp: Template, ...tags: Tag[]) => tp.roots(new Tags(tags))
 
 export const factory = {
     ST, DT, TX, REF, SV, DV, AT,
     H, HE, HC, HB, HIF, HUN, HM, HH,
     E, EV, EAD, EH, IF, UN, C,
-    SA, DA, TI, TV, TS, W, R, B
+    SA, DA, TI, TV, TS, W, R, B, T, RO
 }
 
 export {

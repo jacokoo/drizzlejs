@@ -740,24 +740,24 @@
     }();
 
     var Template = function () {
-        function Template(root) {
+        function Template() {
             classCallCheck(this, Template);
 
             this.tags = {};
             this.events = {};
             this.helpers = {};
             this.refs = {};
-            this.root = root;
         }
 
         createClass(Template, [{
+            key: 'roots',
+            value: function roots(root) {
+                this.root = root;
+            }
+        }, {
             key: 'tag',
-            value: function tag() {
+            value: function tag(ts) {
                 var _this = this;
-
-                for (var _len = arguments.length, ts = Array(_len), _key = 0; _key < _len; _key++) {
-                    ts[_key] = arguments[_key];
-                }
 
                 ts.forEach(function (it) {
                     return _this.tags[it.id] = it;
@@ -865,10 +865,10 @@
     var ComponentTemplate = function (_Template2) {
         inherits(ComponentTemplate, _Template2);
 
-        function ComponentTemplate(root, exportedModels) {
+        function ComponentTemplate(exportedModels) {
             classCallCheck(this, ComponentTemplate);
 
-            var _this3 = possibleConstructorReturn(this, (ComponentTemplate.__proto__ || Object.getPrototypeOf(ComponentTemplate)).call(this, root));
+            var _this3 = possibleConstructorReturn(this, (ComponentTemplate.__proto__ || Object.getPrototypeOf(ComponentTemplate)).call(this));
 
             _this3.exportedModels = [];
             _this3.exportedModels = exportedModels;
@@ -3425,11 +3425,25 @@
     var B = function B(tp, id, type, target) {
         return tp.binding(id, new bindings[type](id, target));
     };
+    var T = function T(tp) {
+        for (var _len16 = arguments.length, tags = Array(_len16 > 1 ? _len16 - 1 : 0), _key16 = 1; _key16 < _len16; _key16++) {
+            tags[_key16 - 1] = arguments[_key16];
+        }
+
+        return tp.tag(tags);
+    };
+    var RO = function RO(tp) {
+        for (var _len17 = arguments.length, tags = Array(_len17 > 1 ? _len17 - 1 : 0), _key17 = 1; _key17 < _len17; _key17++) {
+            tags[_key17 - 1] = arguments[_key17];
+        }
+
+        return tp.roots(new Tags(tags));
+    };
     var factory = {
         ST: ST, DT: DT, TX: TX, REF: REF, SV: SV, DV: DV, AT: AT,
         H: H, HE: HE, HC: HC, HB: HB, HIF: HIF, HUN: HUN, HM: HM, HH: HH,
         E: E, EV: EV, EAD: EAD, EH: EH, IF: IF, UN: UN, C: C,
-        SA: SA, DA: DA, TI: TI, TV: TV, TS: TS, W: W, R: R, B: B
+        SA: SA, DA: DA, TI: TI, TV: TV, TS: TS, W: W, R: R, B: B, T: T, RO: RO
     };
     function registerNode(name, type) {
         nodes[name] = type;

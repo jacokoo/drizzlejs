@@ -57,11 +57,11 @@ export abstract class Template {
     refs: {[name: string]: RefDef} = {}
     root: Tags
 
-    constructor (root: Tags) {
+    roots (root: Tags) {
         this.root = root
     }
 
-    tag (...ts: Tag[]) {
+    tag (ts: Tag[]) {
         ts.forEach(it => this.tags[it.id] = it)
     }
 
@@ -151,8 +151,8 @@ export class ViewTemplate extends Template {
 export class ComponentTemplate extends Template {
     exportedModels: string[] = []
 
-    constructor(root: Tags, exportedModels: string[]) {
-        super(root)
+    constructor(exportedModels: string[]) {
+        super()
         this.exportedModels = exportedModels
     }
 

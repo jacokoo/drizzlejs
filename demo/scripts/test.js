@@ -1,7 +1,12 @@
-const {ST, TX, C, TS, SA, REF, DT, EV, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC, R, HE, E} = Drizzle.factory
+const {ST, TX, C, TS, SA, REF, DT, EV, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC, R, HE, E, T, RO} = Drizzle.factory
 const {Application, ComponentTemplate, ViewTemplate, RouterPlugin} = Drizzle
 
 const cache = {}
+
+const index = new ComponentTemplate()
+H(index, 'h1', HE('todos'))
+H(index, 'h2', HE('filter'))
+R(index, 'container', 't6')
 
 const t1 = ST('t1', 'div')
 SA(t1, 'class', 'todoapp-container', true)
@@ -23,12 +28,9 @@ C(t4, t5)
 C(t3, t4, t6)
 C(t2, t3, t7, t8)
 C(t1, t2)
-const index = new ComponentTemplate(TS(t1))
-H(index, 'h1', HE('todos'))
-H(index, 'h2', HE('filter'))
-R(index, 'container', 't6')
 
-index.tag(t1, t2, t3, t4, t5)
+T(index, t1, t2, t3, t4, t5)
+RO(index, t1)
 
 let id = 0
 
@@ -100,12 +102,15 @@ cache['app/demo/index'] = {
     }
 }
 
+const createTodo = new ViewTemplate()
+E(createTodo, 'e1', EV('enter', 'newTodo', true, 'this.value', 'this'))
+
 const v11 = DT('v11', 'input', ['e1'])
 SA(v11, 'class', 'new-todo', true)
 SA(v11, 'placeholder', 'What needs to be done?', true)
-const createTodo = new ViewTemplate(TS(v11))
-createTodo.tag(v11)
-E(createTodo, 'e1', EV('enter', 'newTodo', true, 'this.value', 'this'))
+
+T(createTodo, v11)
+RO(createTodo, v11)
 
 cache['app/demo/create-todo'] = {
     template: createTodo,
@@ -117,6 +122,26 @@ cache['app/demo/create-todo'] = {
     }
 }
 
+const todoList = new ViewTemplate()
+H(todoList, 'h1', HB('todos.length'))
+H(todoList, 'h2', HE('allDone'))
+H(todoList, 'h3', HB('todo.completed'))
+H(todoList, 'h4', HB('todo', SV('=='), 'editing'))
+H(todoList, 'h5', HIF('h3', SV('completed')))
+H(todoList, 'h6', HIF('h4', SV('editing')))
+H(todoList, 'h7', HM(' ', 'h5', 'h6'))
+H(todoList, 'h8', HE('todo.name'))
+H(todoList, 'h9', HE('filtered'))
+
+E(todoList, 'e1', EV('change', 'toggleAll', true, 'this.checked'))
+E(todoList, 'e2', EV('change', 'toggle', true, 'todo.id', 'this.checked'))
+E(todoList, 'e3', EV('dblclick', 'edit', false, 'todo'))
+E(todoList, 'e4', EV('click', 'remove', true, 'todo.id'))
+E(todoList, 'e5', EV('blur', 'commitEdit', true, 'todo', 'this.value'))
+E(todoList, 'e6', EV('enter', 'commitEdit', true, 'todo', 'this.value'))
+E(todoList, 'e7', EV('escape', 'revertEdit', false, 'this', 'todo'))
+
+R(todoList, 'items', 'v210', 'v26')
 
 const v22 = ST('v22', 'section')
 SA(v22, 'class', 'main', true)
@@ -152,7 +177,6 @@ const v213 = DT('v213', 'input', ['e5', 'e6', 'e7'])
 SA(v213, 'class', 'edit', true)
 DA(v213, 'value', 'h8', false)
 
-
 const v26 = EH('v26', false, EAD('h9', 'todo'), TS(v27))
 C(v210, v211)
 C(v28, v29, v210, v212)
@@ -161,27 +185,8 @@ C(v25, v26)
 C(v22, v23, v24, v25)
 
 const v21 = IF('v21', false, 'h1', TS(v22))
-const todoList = new ViewTemplate(TS(v21))
-todoList.tag(v21, v22, v23, v24, v25, v26, v27, v28, v29, v210, v211, v212, v213)
-H(todoList, 'h1', HB('todos.length'))
-H(todoList, 'h2', HE('allDone'))
-H(todoList, 'h3', HB('todo.completed'))
-H(todoList, 'h4', HB('todo', SV('=='), 'editing'))
-H(todoList, 'h5', HIF('h3', SV('completed')))
-H(todoList, 'h6', HIF('h4', SV('editing')))
-H(todoList, 'h7', HM(' ', 'h5', 'h6'))
-H(todoList, 'h8', HE('todo.name'))
-H(todoList, 'h9', HE('filtered'))
-
-E(todoList, 'e1', EV('change', 'toggleAll', true, 'this.checked'))
-E(todoList, 'e2', EV('change', 'toggle', true, 'todo.id', 'this.checked'))
-E(todoList, 'e3', EV('dblclick', 'edit', false, 'todo'))
-E(todoList, 'e4', EV('click', 'remove', true, 'todo.id'))
-E(todoList, 'e5', EV('blur', 'commitEdit', true, 'todo', 'this.value'))
-E(todoList, 'e6', EV('enter', 'commitEdit', true, 'todo', 'this.value'))
-E(todoList, 'e7', EV('escape', 'revertEdit', false, 'this', 'todo'))
-
-R(todoList, 'items', 'v210', 'v26')
+T(todoList, v21, v22, v23, v24, v25, v26, v27, v28, v29, v210, v211, v212, v213)
+RO(todoList, v21)
 
 cache['app/demo/todo-list'] = {
     template: todoList,
@@ -248,6 +253,22 @@ cache['app/demo/todo-list'] = {
         }
     }
 }
+const todoFooter = new ViewTemplate()
+H(todoFooter, 'h1', HB('todos.length'))
+H(todoFooter, 'h2', HE('remaining'))
+H(todoFooter, 'h3', HB('remaining', SV('=='), SV(1)))
+H(todoFooter, 'h4', HIF('h3', SV(' item left'), SV(' items left')))
+H(todoFooter, 'h5', HB('filter', SV('=='), SV('all')))
+H(todoFooter, 'h6', HB('filter', SV('=='), SV('active')))
+H(todoFooter, 'h7', HB('filter', SV('=='), SV('completed')))
+H(todoFooter, 'h8', HIF('h5', SV('selected')))
+H(todoFooter, 'h9', HIF('h6', SV('selected')))
+H(todoFooter, 'h10', HIF('h7', SV('selected')))
+H(todoFooter, 'h11', HC('@router', SV('all')))
+H(todoFooter, 'h12', HC('@router', SV('active')))
+H(todoFooter, 'h13', HC('@router', SV('completed')))
+H(todoFooter, 'h14', HB('haveCompleted'))
+E(todoFooter, 'e1', EV('click', 'clearCompleted', true))
 
 const v32 = ST('v32', 'footer')
 SA(v32, 'class', 'footer', true)
@@ -298,23 +319,9 @@ C(v33, v34)
 C(v32, v33, v36, v318)
 
 const v31 = IF('v31', false, 'h1', TS(v32))
-const todoFooter = new ViewTemplate(TS(v31))
-H(todoFooter, 'h1', HB('todos.length'))
-H(todoFooter, 'h2', HE('remaining'))
-H(todoFooter, 'h3', HB('remaining', SV('=='), SV(1)))
-H(todoFooter, 'h4', HIF('h3', SV(' item left'), SV(' items left')))
-H(todoFooter, 'h5', HB('filter', SV('=='), SV('all')))
-H(todoFooter, 'h6', HB('filter', SV('=='), SV('active')))
-H(todoFooter, 'h7', HB('filter', SV('=='), SV('completed')))
-H(todoFooter, 'h8', HIF('h5', SV('selected')))
-H(todoFooter, 'h9', HIF('h6', SV('selected')))
-H(todoFooter, 'h10', HIF('h7', SV('selected')))
-H(todoFooter, 'h11', HC('@router', SV('all')))
-H(todoFooter, 'h12', HC('@router', SV('active')))
-H(todoFooter, 'h13', HC('@router', SV('completed')))
-H(todoFooter, 'h14', HB('haveCompleted'))
-todoFooter.tag(v31, v32, v33, v34, v35, v36, v37, v38, v39, v310, v311, v312, v313, v314, v315, v316, v317, v318)
-E(todoFooter, 'e1', EV('click', 'clearCompleted', true))
+
+T(todoFooter, v31, v32, v33, v34, v35, v36, v37, v38, v39, v310, v311, v312, v313, v314, v315, v316, v317, v318)
+RO(todoFooter, v31)
 
 cache['app/demo/todo-footer'] = {
     template: todoFooter,
@@ -339,5 +346,4 @@ const app = new Application({
 })
 
 app.use(RouterPlugin)
-
 app.start()
