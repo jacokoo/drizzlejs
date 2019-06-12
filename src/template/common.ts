@@ -1,3 +1,5 @@
+import { Transformer } from './transformer'
+
 export enum ChangeType { CHANGED, NOT_CHANGED }
 export type HelperResult = [ChangeType, any, any]
 export type CustomTransformer = (...args: any[]) => any

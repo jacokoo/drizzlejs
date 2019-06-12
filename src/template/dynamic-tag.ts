@@ -7,14 +7,12 @@ export class DynamicTag extends StaticTag {
     evs: string[]
     widgets: string[]
     bindings: string[]
-    exists: boolean = false
 
     constructor (name: string, id: string, events: string[] = [], widgets: string[] = [], bds: string[] = []) {
         super(name, id)
         this.evs = events
         this.widgets = widgets
         this.bindings = bds
-        this.exists = !!(events.length || widgets.length || bds.length)
     }
 
     dattr (name: string, helperId: string, useSet?: boolean) {

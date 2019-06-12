@@ -1,35 +1,31 @@
-const {SN, TX, C, TS, SA, REF, DN, EVD, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC, R} = Drizzle.factory
+const {ST, TX, C, TS, SA, REF, DT, EV, DV, SV, IF, H, MP, DA, EAD, EH, HIF, HB, HM, HC, R, HE, E} = Drizzle.factory
 const {Application, ComponentTemplate, ViewTemplate, RouterPlugin} = Drizzle
 
 const cache = {}
 
-const t1 = SN('t1', 'div')
+const t1 = ST('t1', 'div')
 SA(t1, 'class', 'todoapp-container', true)
 
-const t2 = SN('t2', 'section')
+const t2 = ST('t2', 'section')
 SA(t2, 'class', 'todoapp', true)
 
-const t3 = SN('t3', 'header')
+const t3 = ST('t3', 'header')
 SA(t3, 'class', 'todo-header', true)
 
-const t4 = SN('t4', 'h1')
+const t4 = ST('t4', 'h1')
 const t5 = TX('t5', [0, 'todos'])
 
 const t6 = REF('t6', false, 'create-todo')
-const t7 = REF('t7', true, 'todo-list')
-MP(t7, 'todos', 'h1')
-MP(t7, 'filter', 'h2')
-const t8 = REF('t8', false, 'todo-footer')
-MP(t8, 'todos', 'h1')
-MP(t8, 'filter', 'h2')
+const t7 = REF('t7', true, 'todo-list', [], ['todos', 'h1'], ['filter', 'h2'])
+const t8 = REF('t8', false, 'todo-footer', [], ['todos', 'h1'], ['filter', 'h2'])
 
 C(t4, t5)
 C(t3, t4, t6)
 C(t2, t3, t7, t8)
 C(t1, t2)
 const index = new ComponentTemplate(TS(t1))
-H(index, 'h1', DV('todos'))
-H(index, 'h2', DV('filter'))
+H(index, 'h1', HE('todos'))
+H(index, 'h2', HE('filter'))
 R(index, 'container', 't6')
 
 index.tag(t1, t2, t3, t4, t5)
@@ -104,12 +100,12 @@ cache['app/demo/index'] = {
     }
 }
 
-const v11 = DN('v11', 'input', ['e1'])
+const v11 = DT('v11', 'input', ['e1'])
 SA(v11, 'class', 'new-todo', true)
 SA(v11, 'placeholder', 'What needs to be done?', true)
 const createTodo = new ViewTemplate(TS(v11))
 createTodo.tag(v11)
-EVD(createTodo, 'e1', 'enter', 'newTodo', true, DV('this.value'), DV('this'))
+E(createTodo, 'e1', EV('enter', 'newTodo', true, 'this.value', 'this'))
 
 cache['app/demo/create-todo'] = {
     template: createTodo,
@@ -122,37 +118,37 @@ cache['app/demo/create-todo'] = {
 }
 
 
-const v22 = SN('v22', 'section')
+const v22 = ST('v22', 'section')
 SA(v22, 'class', 'main', true)
 
-const v23 = DN('v23', 'input', ['e1'])
+const v23 = DT('v23', 'input', ['e1'])
 SA(v23, 'class', 'toggle-all', true)
 SA(v23, 'type', 'checkbox', true)
 SA(v23, 'id', 'toggle-all', true)
 DA(v23, 'checked', 'h2', false)
 
-const v24 = SN('v24', 'label')
+const v24 = ST('v24', 'label')
 SA(v24, 'for', 'toggle-all', true)
 
-const v25 = SN('v25', 'ul')
+const v25 = ST('v25', 'ul')
 SA(v25, 'class', 'todo-list', true)
 
-const v27 = DN('v27', 'li')
+const v27 = DT('v27', 'li')
 DA(v27, 'class', 'h7', true)
 
-const v28 = SN('v28', 'div')
+const v28 = ST('v28', 'div')
 SA(v28, 'class', 'view', true)
 
-const v29 = DN('v29', 'input', ['e2'])
+const v29 = DT('v29', 'input', ['e2'])
 SA(v29, 'class', 'toggle', true)
 SA(v29, 'type', 'checkbox', true)
 DA(v29, 'checked', 'h3', false)
 
-const v210 = DN('v210', 'label', ['e3'])
+const v210 = DT('v210', 'label', ['e3'])
 const v211 = TX('v211', [1, 'h8'])
-const v212 = DN('v212', 'button', ['e4'])
+const v212 = DT('v212', 'button', ['e4'])
 SA(v212, 'class', 'destroy', true)
-const v213 = DN('v213', 'input', ['e5', 'e6', 'e7'])
+const v213 = DT('v213', 'input', ['e5', 'e6', 'e7'])
 SA(v213, 'class', 'edit', true)
 DA(v213, 'value', 'h8', false)
 
@@ -167,23 +163,23 @@ C(v22, v23, v24, v25)
 const v21 = IF('v21', false, 'h1', TS(v22))
 const todoList = new ViewTemplate(TS(v21))
 todoList.tag(v21, v22, v23, v24, v25, v26, v27, v28, v29, v210, v211, v212, v213)
-HB(todoList, 'h1', DV('todos.length'))
-H(todoList, 'h2', DV('allDone'))
-HB(todoList, 'h3', DV('todo.completed'))
-HB(todoList, 'h4', DV('todo'), SV('=='), DV('editing'))
-HIF(todoList, 'h5', 'h3', SV('completed'))
-HIF(todoList, 'h6', 'h4', SV('editing'))
-HM(todoList, 'h7', ' ', 'h5', 'h6')
-H(todoList, 'h8', DV('todo.name'))
-H(todoList, 'h9', DV('filtered'))
+H(todoList, 'h1', HB('todos.length'))
+H(todoList, 'h2', HE('allDone'))
+H(todoList, 'h3', HB('todo.completed'))
+H(todoList, 'h4', HB('todo', SV('=='), 'editing'))
+H(todoList, 'h5', HIF('h3', SV('completed')))
+H(todoList, 'h6', HIF('h4', SV('editing')))
+H(todoList, 'h7', HM(' ', 'h5', 'h6'))
+H(todoList, 'h8', HE('todo.name'))
+H(todoList, 'h9', HE('filtered'))
 
-EVD(todoList, 'e1', 'change', 'toggleAll', true, DV('this.checked'))
-EVD(todoList, 'e2', 'change', 'toggle', true, DV('todo.id'), DV('this.checked'))
-EVD(todoList, 'e3', 'dblclick', 'edit', false, DV('todo'))
-EVD(todoList, 'e4', 'click', 'remove', true, DV('todo.id'))
-EVD(todoList, 'e5', 'blur', 'commitEdit', true, DV('todo'), DV('this.value'))
-EVD(todoList, 'e6', 'enter', 'commitEdit', true, DV('todo'), DV('this.value'))
-EVD(todoList, 'e7', 'escape', 'revertEdit', false, DV('this'), DV('todo'))
+E(todoList, 'e1', EV('change', 'toggleAll', true, 'this.checked'))
+E(todoList, 'e2', EV('change', 'toggle', true, 'todo.id', 'this.checked'))
+E(todoList, 'e3', EV('dblclick', 'edit', false, 'todo'))
+E(todoList, 'e4', EV('click', 'remove', true, 'todo.id'))
+E(todoList, 'e5', EV('blur', 'commitEdit', true, 'todo', 'this.value'))
+E(todoList, 'e6', EV('enter', 'commitEdit', true, 'todo', 'this.value'))
+E(todoList, 'e7', EV('escape', 'revertEdit', false, 'this', 'todo'))
 
 R(todoList, 'items', 'v210', 'v26')
 
@@ -253,43 +249,43 @@ cache['app/demo/todo-list'] = {
     }
 }
 
-const v32 = SN('v32', 'footer')
+const v32 = ST('v32', 'footer')
 SA(v32, 'class', 'footer', true)
 
-const v33 = SN('v33', 'span')
+const v33 = ST('v33', 'span')
 SA(v33, 'class', 'todo-count', true)
-const v34 = SN('v34', 'strong')
+const v34 = ST('v34', 'strong')
 const v35 = TX('v35', [1, 'h2'], [0, ' '], [1, 'h4'])
 
-const v36 = SN('v36', 'ul')
+const v36 = ST('v36', 'ul')
 SA(v36, 'class', 'filters', true)
 
-const v37 = SN('v37', 'li')
-const v38 = SN('v38', 'li')
-const v39 = SN('v39', 'li')
+const v37 = ST('v37', 'li')
+const v38 = ST('v38', 'li')
+const v39 = ST('v39', 'li')
 
-const v310 = DN('v310', 'a')
+const v310 = DT('v310', 'a')
 DA(v310, 'class', 'h8', true)
 DA(v310, 'href', 'h11', true)
 C(v37, v310)
 const v313 = TX('v313', [0, 'All'])
 C(v310, v313)
 
-const v311 = DN('v311', 'a')
+const v311 = DT('v311', 'a')
 DA(v311, 'class', 'h9', true)
 DA(v311, 'href', 'h12', true)
 C(v38, v311)
 const v314 = TX('v314', [0, 'Active'])
 C(v311, v314)
 
-const v312 = DN('v312', 'a')
+const v312 = DT('v312', 'a')
 DA(v312, 'class', 'h10', true)
 DA(v312, 'href', 'h13', true)
 C(v39, v312)
 const v315 = TX('v315', [0, 'Completed'])
 C(v312, v315)
 
-const v316 = DN('v316', 'button', ['e1'])
+const v316 = DT('v316', 'button', ['e1'])
 SA(v316, 'class', 'clear-completed', true)
 const v317 = TX('v317', [0, 'Clear completed'])
 C(v316, v317)
@@ -303,22 +299,22 @@ C(v32, v33, v36, v318)
 
 const v31 = IF('v31', false, 'h1', TS(v32))
 const todoFooter = new ViewTemplate(TS(v31))
-HB(todoFooter, 'h1', DV('todos.length'))
-H(todoFooter, 'h2', DV('remaining'))
-HB(todoFooter, 'h3', DV('remaining'), SV('=='), SV(1))
-HIF(todoFooter, 'h4', 'h3', SV(' item left'), SV(' items left'))
-HB(todoFooter, 'h5', DV('filter'), SV('=='), SV('all'))
-HB(todoFooter, 'h6', DV('filter'), SV('=='), SV('active'))
-HB(todoFooter, 'h7', DV('filter'), SV('=='), SV('completed'))
-HIF(todoFooter, 'h8', 'h5', SV('selected'))
-HIF(todoFooter, 'h9', 'h6', SV('selected'))
-HIF(todoFooter, 'h10', 'h7', SV('selected'))
-HC(todoFooter, 'h11', DV('@router'), SV('all'))
-HC(todoFooter, 'h12', DV('@router'), SV('active'))
-HC(todoFooter, 'h13', DV('@router'), SV('completed'))
-HB(todoFooter, 'h14', DV('haveCompleted'))
+H(todoFooter, 'h1', HB('todos.length'))
+H(todoFooter, 'h2', HE('remaining'))
+H(todoFooter, 'h3', HB('remaining', SV('=='), SV(1)))
+H(todoFooter, 'h4', HIF('h3', SV(' item left'), SV(' items left')))
+H(todoFooter, 'h5', HB('filter', SV('=='), SV('all')))
+H(todoFooter, 'h6', HB('filter', SV('=='), SV('active')))
+H(todoFooter, 'h7', HB('filter', SV('=='), SV('completed')))
+H(todoFooter, 'h8', HIF('h5', SV('selected')))
+H(todoFooter, 'h9', HIF('h6', SV('selected')))
+H(todoFooter, 'h10', HIF('h7', SV('selected')))
+H(todoFooter, 'h11', HC('@router', SV('all')))
+H(todoFooter, 'h12', HC('@router', SV('active')))
+H(todoFooter, 'h13', HC('@router', SV('completed')))
+H(todoFooter, 'h14', HB('haveCompleted'))
 todoFooter.tag(v31, v32, v33, v34, v35, v36, v37, v38, v39, v310, v311, v312, v313, v314, v315, v316, v317, v318)
-EVD(todoFooter, 'e1', 'click', 'clearCompleted', true)
+E(todoFooter, 'e1', EV('click', 'clearCompleted', true))
 
 cache['app/demo/todo-footer'] = {
     template: todoFooter,

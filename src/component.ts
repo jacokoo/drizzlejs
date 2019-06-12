@@ -71,7 +71,7 @@ export class Component extends Renderable<ComponentOptions> implements Events {
     }
 
     get (name?: string) {
-        return Object.freeze(this._store.get(name))
+        return Object.assign({}, this._store.get(name))
     }
 
     _createItem (name: string, state?: object) {

@@ -19,7 +19,10 @@ import { TransformerItem, Transformer } from './template/transformer'
 import { EachTag } from './template/each-tag'
 import { Attribute, AttributeValue, NormalValue, ValueType, EachDef } from './template/common'
 import { IfTag, UnlessTag } from './template/if-tag'
-import { EventDef } from './template/context'
+import { EventDef, Helper } from './template/context'
+import {
+    InputValue, InputChecked, Select, Binding, WindowScrollX, WindowScrollY, CheckGroup, RadioGroup
+} from './template/binding'
 
 export interface Disposable {
     dispose (): void
@@ -38,74 +41,55 @@ function createTag(id: string, name: string): DynamicTag | undefined {
     if (nodes[name]) return new nodes[name](id)
 }
 
-// nodes
-const SN = (id: string, name: string) => {
+type HelperArg = string | AttributeValue
+
+const map = (args: HelperArg[]) => args.map(it => Array.isArray(it) ? it : DV(it))
+
+// tags
+const ST = (id: string, name: string) => {
     const node = createTag(name, id)
     return node ? node : new StaticTag(name, id)
 }
-const DN = (id: string, name: string, events: string[], widgits: string[]) => {
+const DT = (id: string, name: string, events: string[], widgits: string[], bds: string[]) => {
     const node = createTag(name, id)
-    return node ? node : new DynamicTag(name, id, events, widgits)
+    return node ? node : new DynamicTag(name, id, events, widgits, bds)
 }
-const REF = (id: string, needAnchor: boolean, name: string, events: string[]) => {
-    return new ReferenceTag(id, needAnchor, name, events)
+const REF = (id: string, needAnchor: boolean, name: string, events: string[], ...mps: [string, string][]) => {
+    return new ReferenceTag(id, needAnchor, name, events, mps)
 }
 const TX = (id: string, ...ss: [number, string][]) => new TextTag(id, ss)
 const TS = (...ts: Tag[]) => new Tags(ts)
+const C = (parent: Tag, ...children: Tag[]) => {
+    parent.children = new Tags(children)
+    children.forEach(it => it.parent = parent)
+}
 
 // node attribute
 const SA = (d: StaticTag | DynamicTag | ReferenceTag, name: string, value: any, useSet: boolean = true) => {
     d.attr(name, value, useSet)
 }
 const DA = (d: DynamicTag, name: string, helper: string, useSet: boolean = true) => d.dattr(name, helper, useSet)
-const EVD = (tp: Template, id: string, name: string, method: string, isAction: boolean, ...attrs: AttributeValue[]) => {
-    tp.event(id, {name, method, isAction, attrs} as EventDef)
-}
-// const EV = (d: DynamicTag | ReferenceTag, ...events: string[]) => d.event(events)
-const MP = (d: ReferenceTag, name: string, helper: string) => d.map(name, helper)
-const W = (tp: ViewTemplate, id: string, name: string, ...args: string[]) => {
-    tp.widget(id, {name, args})
-}
-const R = (tp: Template, name: string, id: string, ...each: string[]) => {
-    tp.ref(name, {id, each})
-}
-
-// const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
-const C = (parent: Tag, ...children: Tag[]) => {
-    parent.children = new Tags(children)
-    children.forEach(it => it.parent = parent)
-}
 
 // attributes
-const TI = (name: string, ...args: NormalValue[]) => new TransformerItem(name, args)
-
-const TV = (value: string, end?: NormalValue, ...items: TransformerItem[]) =>
-    [ValueType.TRANSFORMER, new Transformer(value, items, end)] as AttributeValue
 const SV = (v: string) => [ValueType.STATIC, v] as NormalValue
 const DV = (v: string) => [ValueType.DYNAMIC, v] as NormalValue
 const AT = (n: string, v: AttributeValue) => [n, v] as Attribute
+const TI = (name: string, ...args: NormalValue[]) => new TransformerItem(name, args)
+const TV = (value: string, end?: NormalValue, ...items: TransformerItem[]) =>
+    [ValueType.TRANSFORMER, new Transformer(value, items, end)] as AttributeValue
 
 // helpers
-const H = (tp: Template, id: string, n: string | AttributeValue) => {
-    tp.helper(id, Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)]))
-}
-const HB = (tp: Template, id: string, ...args: AttributeValue[]) => {
-    tp.helper(id, new BoolHelper(args))
-}
-const HC = (tp: Template, id: string, ...args: AttributeValue[]) => {
-    tp.helper(id, new ConcatHelper(args))
-}
-const HIF = (tp: Template, id: string, bool: string, ...args: AttributeValue[]) => {
-    tp.helper(id, new IfHelper(bool, args))
-}
-const HUN = (tp: Template, id: string, bool: string, ...args: AttributeValue[]) => {
-    tp.helper(id, new UnlessHelper(bool, args))
-}
-const HM = (tp: Template, id: string, joiner: string, ...helpers: string[]) => {
-    tp.helper(id, new MultiHelper(joiner, helpers))
-}
-const HH = (tp: Template, id: string, n: string, ...args: AttributeValue[]) => {
-    tp.helper(id, new DelayHelper(n, args))
+const HE = (n: HelperArg) => Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)])
+const HB = (...args: HelperArg[]) => new BoolHelper(map(args))
+const HC = (...args: HelperArg[]) => new ConcatHelper(map(args))
+const HIF = (bool: string, ...args: HelperArg[]) => new IfHelper(bool, map(args))
+const HUN = (bool: string, ...args: HelperArg[]) => new UnlessHelper(bool, map(args))
+const HM = (joiner: string, ...helpers: string[]) => new MultiHelper(joiner, helpers)
+const HH = (name: string, ...args: HelperArg[]) => new DelayHelper(name, map(args))
+
+// event
+const EV = (name: string, method: string, isAction: boolean, ...attrs: HelperArg[]) => {
+    return {name, method, isAction, attrs: map(attrs)} as EventDef
 }
 
 // block
@@ -122,9 +106,25 @@ const UN = (id: string, needAnchor: boolean, helper: string, trueTags: Tags, fal
     return new UnlessTag(id, needAnchor, helper, trueTags, falseTags)
 }
 
+interface BindingCreator {
+    new (id: string, target: string): Binding
+}
+
+const bindings: BindingCreator[] = [
+    InputValue, InputChecked, Select, WindowScrollX, WindowScrollY, RadioGroup, CheckGroup
+]
+
+const H = (tp: Template, id: string, h: Helper) => tp.helper(id, h)
+const E = (tp: Template, id: string, e: EventDef) => tp.event(id, e)
+const W = (tp: ViewTemplate, id: string, name: string, ...args: string[]) => tp.widget(id, {name, args})
+const R = (tp: Template, name: string, id: string, ...each: string[]) => tp.ref(name, {id, each})
+const B = (tp: ViewTemplate, id: string, type: number, target: string) => tp.binding(id, new bindings[type](id, target))
+
 export const factory = {
-    SN, DN, TX, REF, SV, DV, AT, H, HC, HB, HIF, HUN, HM, HH, EVD,
-    EAD, EH, IF, UN, C, SA, DA, TI, TV, MP, TS, W, R
+    ST, DT, TX, REF, SV, DV, AT,
+    H, HE, HC, HB, HIF, HUN, HM, HH,
+    E, EV, EAD, EH, IF, UN, C,
+    SA, DA, TI, TV, TS, W, R, B
 }
 
 export {

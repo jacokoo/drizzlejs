@@ -29,7 +29,7 @@ export class View extends Renderable<ViewOptions> {
     }
 
     get (key?: string) {
-        if (!key) return this._state
+        if (!key) return Object.assign({}, this._state)
 
         if (this._options.computed && this._options.computed[key]) {
             return this._options.computed[key](this._state)

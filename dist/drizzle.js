@@ -130,6 +130,10 @@
       };
     }();
 
+    var toArray = function (arr) {
+      return Array.isArray(arr) ? arr : Array.from(arr);
+    };
+
     var toConsumableArray = function (arr) {
       if (Array.isArray(arr)) {
         for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
@@ -286,15 +290,12 @@
         return result.slice();
     }
 
-    var toKey = function toKey(id) {
-        return '_keys_' + id;
-    };
     var walk = function walk(re, def, current, o) {
         if (current === def.each.length) {
             if (o[def.id]) re.push(o[def.id]);
             return;
         }
-        var keys = o[toKey(def.each[current])];
+        var keys = o['_keys_' + def.each[current]];
         keys.forEach(function (it) {
             walk(re, def, current + 1, o[def.each[current]][it]);
         });
@@ -317,7 +318,6 @@
                 if (!c[id]) {
                     c[id] = {};
                 }
-                c[toKey(id)] = [];
                 this._id.push(id);
                 this._def.push(def);
                 this._state.push(0);
@@ -329,14 +329,12 @@
                 var ca = this.getCache(this, 1);
                 var id = this._id[this._id.length - 1];
                 var c = ca[id];
-                var keys = ca[toKey(id)];
                 var o = c[key];
                 if (!o) {
                     o = {};
                     c[key] = o;
                 }
                 this.current = o;
-                keys.push(key);
                 this._state.pop();
                 this._state.push(key);
                 return {
@@ -356,7 +354,6 @@
                 if (clear) {
                     var c = this.getCache();
                     delete c[id];
-                    delete c[toKey(id)];
                 }
             }
         }, {
@@ -1206,7 +1203,7 @@
         }, {
             key: 'get',
             value: function get$$1(key) {
-                if (!key) return this._state;
+                if (!key) return Object.assign({}, this._state);
                 if (this._options.computed && this._options.computed[key]) {
                     return this._options.computed[key](this._state);
                 }
@@ -1330,7 +1327,7 @@
         }, {
             key: 'get',
             value: function get$$1(name) {
-                return Object.freeze(this._store.get(name));
+                return Object.assign({}, this._store.get(name));
             }
         }, {
             key: '_createItem',
@@ -2222,11 +2219,9 @@
             var _this = possibleConstructorReturn(this, (DynamicTag.__proto__ || Object.getPrototypeOf(DynamicTag)).call(this, name, id));
 
             _this.das = [];
-            _this.exists = false;
             _this.evs = events;
             _this.widgets = widgets;
             _this.bindings = bds;
-            _this.exists = !!(events.length || widgets.length || bds.length);
             return _this;
         }
 
@@ -2392,15 +2387,16 @@
 
         function ReferenceTag(id, needAnchor, name) {
             var events = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
+            var mps = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [];
             classCallCheck(this, ReferenceTag);
 
             var _this = possibleConstructorReturn(this, (ReferenceTag.__proto__ || Object.getPrototypeOf(ReferenceTag)).call(this, id, needAnchor));
 
             _this.slots = {};
             _this.attrs = {};
-            _this.mappings = []; // [name, helper-id]
             _this.name = name;
             _this.events = events;
+            _this.mappings = mps;
             return _this;
         }
 
@@ -2408,11 +2404,6 @@
             key: 'attr',
             value: function attr(name, value) {
                 this.attrs[name] = value;
-            }
-        }, {
-            key: 'map',
-            value: function map(name, helper) {
-                this.mappings.push([name, helper]);
             }
         }, {
             key: 'init',
@@ -2437,7 +2428,7 @@
                 if (this.events.length) {
                     var et = ctx.fillState(item);
                     this.events.forEach(function (it) {
-                        return ctx.bind(false, et, it);
+                        return ctx.event(false, et, it);
                     });
                 }
                 waiter.wait(item.set(this.mappings.reduce(function (acc, it) {
@@ -2501,7 +2492,7 @@
                     var item = ctx.cache.get(_this5.id);
                     if (_this5.events.length) {
                         _this5.events.forEach(function (it) {
-                            return ctx.bind(true, item, it);
+                            return ctx.event(true, item, it);
                         });
                     }
                     return item.destroy();
@@ -2793,9 +2784,20 @@
                     this.renderElse(ctx, waiter);
                     return;
                 }
+                this.storeKeys(ctx, kv);
                 this.doEach(ctx, kv, function () {
                     return _this3.renderBody(ctx, waiter);
                 });
+            }
+        }, {
+            key: 'storeKeys',
+            value: function storeKeys(ctx, kv) {
+                ctx.cache.set('_keys_' + this.id, kv);
+            }
+        }, {
+            key: 'clearKeys',
+            value: function clearKeys(ctx) {
+                ctx.cache.clear('_keys_' + this.id);
             }
         }, {
             key: 'update',
@@ -2812,6 +2814,7 @@
                 var okv = toKeys(old);
                 var le = !lkv.length;
                 var oe = !okv.length;
+                this.storeKeys(ctx, lkv);
                 if (le && oe) {
                     this.falsePart.update(ctx, waiter);
                     return;
@@ -2878,6 +2881,7 @@
             key: 'doEach',
             value: function doEach(ctx, list, fn) {
                 var remove = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+                var destroy = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
                 ctx.cache.push(this.id, this.def);
                 list.forEach(function (it) {
@@ -2885,7 +2889,7 @@
                     fn(it);
                     if (remove) d.dispose();
                 });
-                ctx.cache.pop();
+                ctx.cache.pop(destroy);
             }
         }, {
             key: 'destroy',
@@ -2901,8 +2905,9 @@
                 var kv = changed === ChangeType.NOT_CHANGED ? toKeys(list) : toKeys(old);
                 this.doEach(ctx, kv, function () {
                     return _this5.loopPart.destroy(ctx, waiter, domRemove);
-                }, true);
+                }, true, true);
                 if (!kv.length) this.falsePart.destroy(ctx, waiter, domRemove);
+                this.clearKeys(ctx);
                 get(EachTag.prototype.__proto__ || Object.getPrototypeOf(EachTag.prototype), 'destroy', this).call(this, ctx, waiter, domRemove);
             }
         }]);
@@ -3007,6 +3012,242 @@
         return UnlessTag;
     }(IfTag);
 
+    var AbstractBinding = function () {
+        function AbstractBinding(id, target, event, get$$1, set$$1) {
+            classCallCheck(this, AbstractBinding);
+
+            this.id = id;
+            this.target = target;
+            this.event = event;
+            this.setter = set$$1;
+            this.fn = function () {
+                var el = this;
+                var ctx = this._ctx;
+                ctx.update(genUpdate(this, ctx.data, target, get$$1(el)));
+            };
+        }
+
+        createClass(AbstractBinding, [{
+            key: 'bind',
+            value: function bind(el) {
+                el.addEventListener(this.event, this.fn, false);
+            }
+        }, {
+            key: 'update',
+            value: function update(el) {
+                var ee = this;
+                this.setter(ee, getValue(el._ctx, this.target, el));
+            }
+        }, {
+            key: 'unbind',
+            value: function unbind(el) {
+                el.removeEventListener(this.event, this.fn, false);
+            }
+        }]);
+        return AbstractBinding;
+    }();
+
+    var InputValue = function (_AbstractBinding) {
+        inherits(InputValue, _AbstractBinding);
+
+        function InputValue(id, target) {
+            classCallCheck(this, InputValue);
+
+            var get$$1 = function get$$1(el) {
+                return el.value;
+            };
+            var set$$1 = function set$$1(el, value) {
+                return el.value = value;
+            };
+            return possibleConstructorReturn(this, (InputValue.__proto__ || Object.getPrototypeOf(InputValue)).call(this, id, target, 'input', get$$1, set$$1));
+        }
+
+        return InputValue;
+    }(AbstractBinding);
+
+    var InputChecked = function (_AbstractBinding2) {
+        inherits(InputChecked, _AbstractBinding2);
+
+        function InputChecked(id, target) {
+            classCallCheck(this, InputChecked);
+
+            var get$$1 = function get$$1(el) {
+                return el.checked;
+            };
+            var set$$1 = function set$$1(el, value) {
+                return el.checked = value;
+            };
+            return possibleConstructorReturn(this, (InputChecked.__proto__ || Object.getPrototypeOf(InputChecked)).call(this, id, target, 'change', get$$1, set$$1));
+        }
+
+        return InputChecked;
+    }(AbstractBinding);
+
+    var Select = function (_AbstractBinding3) {
+        inherits(Select, _AbstractBinding3);
+
+        function Select(id, target) {
+            classCallCheck(this, Select);
+            return possibleConstructorReturn(this, (Select.__proto__ || Object.getPrototypeOf(Select)).call(this, id, target, 'change', getSelectValue, setSelectOption));
+        }
+
+        return Select;
+    }(AbstractBinding);
+
+    var WindowScrollX = function (_AbstractBinding4) {
+        inherits(WindowScrollX, _AbstractBinding4);
+
+        function WindowScrollX(id, target) {
+            classCallCheck(this, WindowScrollX);
+
+            var get$$1 = function get$$1(el) {
+                return el.pageXOffset;
+            };
+            var set$$1 = function set$$1(el, value) {
+                var w = el;
+                w.scrollTo(value, w.pageYOffset);
+            };
+            return possibleConstructorReturn(this, (WindowScrollX.__proto__ || Object.getPrototypeOf(WindowScrollX)).call(this, id, target, 'scroll', get$$1, set$$1));
+        }
+
+        return WindowScrollX;
+    }(AbstractBinding);
+
+    var WindowScrollY = function (_AbstractBinding5) {
+        inherits(WindowScrollY, _AbstractBinding5);
+
+        function WindowScrollY(id, target) {
+            classCallCheck(this, WindowScrollY);
+
+            var get$$1 = function get$$1(el) {
+                return el.pageYOffset;
+            };
+            var set$$1 = function set$$1(el, value) {
+                var w = el;
+                w.scrollTo(w.pageXOffset, value);
+            };
+            return possibleConstructorReturn(this, (WindowScrollY.__proto__ || Object.getPrototypeOf(WindowScrollY)).call(this, id, target, 'scroll', get$$1, set$$1));
+        }
+
+        return WindowScrollY;
+    }(AbstractBinding);
+
+    var RadioGroup = function (_AbstractBinding6) {
+        inherits(RadioGroup, _AbstractBinding6);
+
+        function RadioGroup(id, target) {
+            classCallCheck(this, RadioGroup);
+
+            var get$$1 = function get$$1(el) {
+                return el.value;
+            };
+            var set$$1 = function set$$1(el, value) {
+                var ee = el;
+                ee.checked = ee.value === value + '';
+            };
+            return possibleConstructorReturn(this, (RadioGroup.__proto__ || Object.getPrototypeOf(RadioGroup)).call(this, id, target, 'change', get$$1, set$$1));
+        }
+
+        return RadioGroup;
+    }(AbstractBinding);
+
+    var CheckGroup = function () {
+        function CheckGroup(id, target) {
+            classCallCheck(this, CheckGroup);
+
+            this.id = id;
+            this.target = target;
+            this.fn = function () {
+                var ctx = this._ctx;
+                var c = ctx.cache.get(id);
+                if (!c) return;
+                var v = c.filter(function (it) {
+                    return it.checked;
+                }).map(function (it) {
+                    return it.value;
+                });
+                ctx.update(genUpdate(this, ctx.data, target, v));
+            };
+        }
+
+        createClass(CheckGroup, [{
+            key: 'bind',
+            value: function bind(el) {
+                var c = el._ctx.cache.get(this.id);
+                if (!c) {
+                    c = [];
+                    c.push(el);
+                }
+                el.addEventListener('change', this.fn, false);
+            }
+        }, {
+            key: 'update',
+            value: function update(el) {
+                var v = getValue(el._ctx, this.target, el);
+                var ee = el;
+                ee.checked = v.indexOf(ee.value) !== -1;
+            }
+        }, {
+            key: 'unbind',
+            value: function unbind(el) {
+                var c = el._ctx.cache.get(this.id);
+                if (!c) return;
+                c.splice(c.indexOf(el), 1);
+                if (!c.length) el._ctx.cache.clear(this.id);
+                el.removeEventListener('change', this.fn, false);
+            }
+        }]);
+        return CheckGroup;
+    }();
+
+    var getSelectValue = function getSelectValue(el) {
+        var opt = el.options[el.selectedIndex || 0];
+        return opt && opt.value;
+    };
+    var setSelectOption = function setSelectOption(el, value) {
+        // tslint:disable-next-line:prefer-for-of
+        for (var i = 0; i < el.options.length; i++) {
+            var opt = el.options[i];
+            if (opt.value === value + '') {
+                opt.selected = true;
+                return;
+            }
+        }
+    };
+    function setValue(data, tks, value) {
+        if (!tks.length) return value;
+        tks.reduce(function (acc, it, i) {
+            if (i === tks.length) {
+                acc[it] = value;
+                return;
+            }
+            if (!acc[it]) acc[it] = {};
+            return acc[it];
+        }, data);
+        return data;
+    }
+    function genUpdate(state, data, key, value) {
+        var _tokenize = tokenize(key),
+            _tokenize2 = toArray(_tokenize),
+            first = _tokenize2[0],
+            tail = _tokenize2.slice(1);
+
+        var idx = state._def.findIndex(function (it) {
+            return it.alias === first;
+        });
+        if (idx === -1) {
+            return defineProperty({}, first, setValue(data[first], tail, value));
+        }
+        var list = data[state._def[0].name];
+        var o = data;
+        for (var i = 0; i < idx; i++) {
+            o = data[state._def[i].name][state._state[i]];
+        }
+        var list2 = o[state._def[idx].name];
+        list2[state._state[idx]] = setValue(list2[state._state[idx]], tail, value);
+        return defineProperty({}, first, list);
+    }
+
     var nodes = {
         // TODO window: WindowNode,
         // app: ApplicationNode
@@ -3014,31 +3255,50 @@
     function createTag(id, name) {
         if (nodes[name]) return new nodes[name](id);
     }
-    // nodes
-    var SN = function SN(id, name) {
+    var map = function map(args) {
+        return args.map(function (it) {
+            return Array.isArray(it) ? it : DV(it);
+        });
+    };
+    // tags
+    var ST = function ST(id, name) {
         var node = createTag(name, id);
         return node ? node : new StaticTag(name, id);
     };
-    var DN = function DN(id, name, events, widgits) {
+    var DT = function DT(id, name, events, widgits, bds) {
         var node = createTag(name, id);
-        return node ? node : new DynamicTag(name, id, events, widgits);
+        return node ? node : new DynamicTag(name, id, events, widgits, bds);
     };
     var REF = function REF(id, needAnchor, name, events) {
-        return new ReferenceTag(id, needAnchor, name, events);
+        for (var _len = arguments.length, mps = Array(_len > 4 ? _len - 4 : 0), _key = 4; _key < _len; _key++) {
+            mps[_key - 4] = arguments[_key];
+        }
+
+        return new ReferenceTag(id, needAnchor, name, events, mps);
     };
     var TX = function TX(id) {
-        for (var _len = arguments.length, ss = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-            ss[_key - 1] = arguments[_key];
+        for (var _len2 = arguments.length, ss = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            ss[_key2 - 1] = arguments[_key2];
         }
 
         return new TextTag(id, ss);
     };
     var TS = function TS() {
-        for (var _len2 = arguments.length, ts = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-            ts[_key2] = arguments[_key2];
+        for (var _len3 = arguments.length, ts = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+            ts[_key3] = arguments[_key3];
         }
 
         return new Tags(ts);
+    };
+    var C = function C(parent) {
+        for (var _len4 = arguments.length, children = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+            children[_key4 - 1] = arguments[_key4];
+        }
+
+        parent.children = new Tags(children);
+        children.forEach(function (it) {
+            return it.parent = parent;
+        });
     };
     // node attribute
     var SA = function SA(d, name, value) {
@@ -3050,57 +3310,7 @@
         var useSet = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
         return d.dattr(name, helper, useSet);
     };
-    var EVD = function EVD(tp, id, name, method, isAction) {
-        for (var _len3 = arguments.length, attrs = Array(_len3 > 5 ? _len3 - 5 : 0), _key3 = 5; _key3 < _len3; _key3++) {
-            attrs[_key3 - 5] = arguments[_key3];
-        }
-
-        tp.event(id, { name: name, method: method, isAction: isAction, attrs: attrs });
-    };
-    // const EV = (d: DynamicTag | ReferenceTag, ...events: string[]) => d.event(events)
-    var MP = function MP(d, name, helper) {
-        return d.map(name, helper);
-    };
-    var W = function W(tp, id, name) {
-        for (var _len4 = arguments.length, args = Array(_len4 > 3 ? _len4 - 3 : 0), _key4 = 3; _key4 < _len4; _key4++) {
-            args[_key4 - 3] = arguments[_key4];
-        }
-
-        tp.widget(id, { name: name, args: args });
-    };
-    var R = function R(tp, name, id) {
-        for (var _len5 = arguments.length, each = Array(_len5 > 3 ? _len5 - 3 : 0), _key5 = 3; _key5 < _len5; _key5++) {
-            each[_key5 - 3] = arguments[_key5];
-        }
-
-        tp.ref(name, { id: id, each: each });
-    };
-    // const CO = (d: DynamicNode, name: string, ...hs: Helper[]) => d.component(name, hs)
-    var C = function C(parent) {
-        for (var _len6 = arguments.length, children = Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-            children[_key6 - 1] = arguments[_key6];
-        }
-
-        parent.children = new Tags(children);
-        children.forEach(function (it) {
-            return it.parent = parent;
-        });
-    };
     // attributes
-    var TI = function TI(name) {
-        for (var _len7 = arguments.length, args = Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
-            args[_key7 - 1] = arguments[_key7];
-        }
-
-        return new TransformerItem(name, args);
-    };
-    var TV = function TV(value, end) {
-        for (var _len8 = arguments.length, items = Array(_len8 > 2 ? _len8 - 2 : 0), _key8 = 2; _key8 < _len8; _key8++) {
-            items[_key8 - 2] = arguments[_key8];
-        }
-
-        return [ValueType.TRANSFORMER, new Transformer(value, items, end)];
-    };
     var SV = function SV(v) {
         return [ValueType.STATIC, v];
     };
@@ -3110,51 +3320,73 @@
     var AT = function AT(n, v) {
         return [n, v];
     };
+    var TI = function TI(name) {
+        for (var _len5 = arguments.length, args = Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+            args[_key5 - 1] = arguments[_key5];
+        }
+
+        return new TransformerItem(name, args);
+    };
+    var TV = function TV(value, end) {
+        for (var _len6 = arguments.length, items = Array(_len6 > 2 ? _len6 - 2 : 0), _key6 = 2; _key6 < _len6; _key6++) {
+            items[_key6 - 2] = arguments[_key6];
+        }
+
+        return [ValueType.TRANSFORMER, new Transformer(value, items, end)];
+    };
     // helpers
-    var H = function H(tp, id, n) {
-        tp.helper(id, Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)]));
+    var HE = function HE(n) {
+        return Array.isArray(n) ? new EchoHelper([n]) : new EchoHelper([DV(n)]);
     };
-    var HB = function HB(tp, id) {
-        for (var _len9 = arguments.length, args = Array(_len9 > 2 ? _len9 - 2 : 0), _key9 = 2; _key9 < _len9; _key9++) {
-            args[_key9 - 2] = arguments[_key9];
+    var HB = function HB() {
+        for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+            args[_key7] = arguments[_key7];
         }
 
-        tp.helper(id, new BoolHelper(args));
+        return new BoolHelper(map(args));
     };
-    var HC = function HC(tp, id) {
-        for (var _len10 = arguments.length, args = Array(_len10 > 2 ? _len10 - 2 : 0), _key10 = 2; _key10 < _len10; _key10++) {
-            args[_key10 - 2] = arguments[_key10];
+    var HC = function HC() {
+        for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+            args[_key8] = arguments[_key8];
         }
 
-        tp.helper(id, new ConcatHelper(args));
+        return new ConcatHelper(map(args));
     };
-    var HIF = function HIF(tp, id, bool) {
-        for (var _len11 = arguments.length, args = Array(_len11 > 3 ? _len11 - 3 : 0), _key11 = 3; _key11 < _len11; _key11++) {
-            args[_key11 - 3] = arguments[_key11];
+    var HIF = function HIF(bool) {
+        for (var _len9 = arguments.length, args = Array(_len9 > 1 ? _len9 - 1 : 0), _key9 = 1; _key9 < _len9; _key9++) {
+            args[_key9 - 1] = arguments[_key9];
         }
 
-        tp.helper(id, new IfHelper(bool, args));
+        return new IfHelper(bool, map(args));
     };
-    var HUN = function HUN(tp, id, bool) {
-        for (var _len12 = arguments.length, args = Array(_len12 > 3 ? _len12 - 3 : 0), _key12 = 3; _key12 < _len12; _key12++) {
-            args[_key12 - 3] = arguments[_key12];
+    var HUN = function HUN(bool) {
+        for (var _len10 = arguments.length, args = Array(_len10 > 1 ? _len10 - 1 : 0), _key10 = 1; _key10 < _len10; _key10++) {
+            args[_key10 - 1] = arguments[_key10];
         }
 
-        tp.helper(id, new UnlessHelper(bool, args));
+        return new UnlessHelper(bool, map(args));
     };
-    var HM = function HM(tp, id, joiner) {
-        for (var _len13 = arguments.length, helpers = Array(_len13 > 3 ? _len13 - 3 : 0), _key13 = 3; _key13 < _len13; _key13++) {
-            helpers[_key13 - 3] = arguments[_key13];
+    var HM = function HM(joiner) {
+        for (var _len11 = arguments.length, helpers = Array(_len11 > 1 ? _len11 - 1 : 0), _key11 = 1; _key11 < _len11; _key11++) {
+            helpers[_key11 - 1] = arguments[_key11];
         }
 
-        tp.helper(id, new MultiHelper(joiner, helpers));
+        return new MultiHelper(joiner, helpers);
     };
-    var HH = function HH(tp, id, n) {
-        for (var _len14 = arguments.length, args = Array(_len14 > 3 ? _len14 - 3 : 0), _key14 = 3; _key14 < _len14; _key14++) {
-            args[_key14 - 3] = arguments[_key14];
+    var HH = function HH(name) {
+        for (var _len12 = arguments.length, args = Array(_len12 > 1 ? _len12 - 1 : 0), _key12 = 1; _key12 < _len12; _key12++) {
+            args[_key12 - 1] = arguments[_key12];
         }
 
-        tp.helper(id, new DelayHelper(n, args));
+        return new DelayHelper(name, map(args));
+    };
+    // event
+    var EV = function EV(name, method, isAction) {
+        for (var _len13 = arguments.length, attrs = Array(_len13 > 3 ? _len13 - 3 : 0), _key13 = 3; _key13 < _len13; _key13++) {
+            attrs[_key13 - 3] = arguments[_key13];
+        }
+
+        return { name: name, method: method, isAction: isAction, attrs: map(attrs) };
     };
     // block
     var EAD = function EAD(name, alias, idx, key) {
@@ -3169,9 +3401,35 @@
     var UN = function UN(id, needAnchor, helper, trueTags, falseTags) {
         return new UnlessTag(id, needAnchor, helper, trueTags, falseTags);
     };
+    var bindings = [InputValue, InputChecked, Select, WindowScrollX, WindowScrollY, RadioGroup, CheckGroup];
+    var H = function H(tp, id, h) {
+        return tp.helper(id, h);
+    };
+    var E = function E(tp, id, e) {
+        return tp.event(id, e);
+    };
+    var W = function W(tp, id, name) {
+        for (var _len14 = arguments.length, args = Array(_len14 > 3 ? _len14 - 3 : 0), _key14 = 3; _key14 < _len14; _key14++) {
+            args[_key14 - 3] = arguments[_key14];
+        }
+
+        return tp.widget(id, { name: name, args: args });
+    };
+    var R = function R(tp, name, id) {
+        for (var _len15 = arguments.length, each = Array(_len15 > 3 ? _len15 - 3 : 0), _key15 = 3; _key15 < _len15; _key15++) {
+            each[_key15 - 3] = arguments[_key15];
+        }
+
+        return tp.ref(name, { id: id, each: each });
+    };
+    var B = function B(tp, id, type, target) {
+        return tp.binding(id, new bindings[type](id, target));
+    };
     var factory = {
-        SN: SN, DN: DN, TX: TX, REF: REF, SV: SV, DV: DV, AT: AT, H: H, HC: HC, HB: HB, HIF: HIF, HUN: HUN, HM: HM, HH: HH, EVD: EVD,
-        EAD: EAD, EH: EH, IF: IF, UN: UN, C: C, SA: SA, DA: DA, TI: TI, TV: TV, MP: MP, TS: TS, W: W, R: R
+        ST: ST, DT: DT, TX: TX, REF: REF, SV: SV, DV: DV, AT: AT,
+        H: H, HE: HE, HC: HC, HB: HB, HIF: HIF, HUN: HUN, HM: HM, HH: HH,
+        E: E, EV: EV, EAD: EAD, EH: EH, IF: IF, UN: UN, C: C,
+        SA: SA, DA: DA, TI: TI, TV: TV, TS: TS, W: W, R: R, B: B
     };
     function registerNode(name, type) {
         nodes[name] = type;

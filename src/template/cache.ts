@@ -2,15 +2,13 @@ import { EachKey } from './each-tag'
 import { EachDef, EachState, RefDef, RefContainer } from './common'
 import { Disposable } from '../drizzle'
 
-const toKey = (id: string) => `_keys_${id}`
-
 const walk = (re: any[], def: RefDef, current: number, o: object) => {
     if (current === def.each.length) {
         if (o[def.id]) re.push(o[def.id])
         return
     }
 
-    const keys = o[toKey(def.each[current])]
+    const keys = o[`_keys_${def.each[current]}`]
     keys.forEach(it => {
         walk(re, def, current + 1, o[def.each[current]][it])
     })
@@ -29,7 +27,6 @@ export class Cache implements EachState {
             c[id] = {}
         }
 
-        c[toKey(id)] = []
         this._id.push(id)
         this._def.push(def)
         this._state.push(0)
@@ -40,7 +37,6 @@ export class Cache implements EachState {
         const ca = this.getCache(this, 1)
         const id = this._id[this._id.length - 1]
         const c = ca[id]
-        const keys = ca[toKey(id)]
         let o = c[key]
         if (!o) {
             o = {}
@@ -48,7 +44,6 @@ export class Cache implements EachState {
         }
         this.current = o
 
-        keys.push(key)
         this._state.pop()
         this._state.push(key)
 
@@ -69,7 +64,6 @@ export class Cache implements EachState {
         if (clear) {
             const c = this.getCache()
             delete c[id]
-            delete c[toKey(id)]
         }
     }
 

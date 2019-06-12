@@ -37,7 +37,17 @@ export class EachTag extends BlockTag {
             this.renderElse(ctx, waiter)
             return
         }
+
+        this.storeKeys(ctx, kv)
         this.doEach(ctx, kv, () => this.renderBody(ctx, waiter))
+    }
+
+    storeKeys (ctx: Context, kv: EachKey[]) {
+        ctx.cache.set(`_keys_${this.id}`, kv)
+    }
+
+    clearKeys (ctx: Context) {
+        ctx.cache.clear(`_keys_${this.id}`)
     }
 
     update (ctx: Context, waiter: Waiter) {
@@ -46,6 +56,8 @@ export class EachTag extends BlockTag {
         const okv = toKeys(old)
         const le = !lkv.length
         const oe = !okv.length
+
+        this.storeKeys(ctx, lkv)
 
         if (le && oe) {
             this.falsePart.update(ctx, waiter)
@@ -98,21 +110,22 @@ export class EachTag extends BlockTag {
         waiter.wait(w.end())
     }
 
-    doEach (ctx: Context, list: EachKey[], fn: (EachKey) => void, remove: boolean = false) {
+    doEach (ctx: Context, list: EachKey[], fn: (EachKey) => void, remove: boolean = false, destroy: boolean = false) {
         ctx.cache.push(this.id, this.def)
         list.forEach(it => {
             const d = ctx.cache.next(it)
             fn(it)
             if (remove) d.dispose()
         })
-        ctx.cache.pop()
+        ctx.cache.pop(destroy)
     }
 
     destroy (ctx: Context, waiter: Waiter, domRemove: boolean) {
         const [changed, list, old] = ctx.get(this.def.name)
         const kv = changed === ChangeType.NOT_CHANGED ? toKeys(list) : toKeys(old)
-        this.doEach(ctx, kv, () => this.loopPart.destroy(ctx, waiter, domRemove), true)
+        this.doEach(ctx, kv, () => this.loopPart.destroy(ctx, waiter, domRemove), true, true)
         if (!kv.length) this.falsePart.destroy(ctx, waiter, domRemove)
+        this.clearKeys(ctx)
         super.destroy(ctx, waiter, domRemove)
     }
 }

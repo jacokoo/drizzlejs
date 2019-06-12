@@ -28,20 +28,17 @@ export class ReferenceTag extends BlockTag  {
 
     slots: {[id: string]: Tags} = {}
     attrs: object = {}
-    mappings: [string, string][] = [] // [name, helper-id]
+    mappings: [string, string][] // [name, helper-id]
 
-    constructor (id: string, needAnchor: boolean, name: string, events: string[] = []) {
+    constructor (id: string, needAnchor: boolean, name: string, events: string[] = [], mps: [string, string][] = []) {
         super(id, needAnchor)
         this.name = name
         this.events = events
+        this.mappings = mps
     }
 
     attr (name: string, value: any) {
         this.attrs[name] = value
-    }
-
-    map (name: string, helper: string) {
-        this.mappings.push([name, helper])
     }
 
     init (ctx: Context, waiter: Waiter) {
@@ -56,7 +53,7 @@ export class ReferenceTag extends BlockTag  {
         const item = ctx.cache.get(this.id) as View | Component
         if (this.events.length) {
             const et = ctx.fillState(item)
-            this.events.forEach(it => ctx.bind(false, et, it))
+            this.events.forEach(it => ctx.event(false, et, it))
         }
 
         waiter.wait(item.set(this.mappings.reduce((acc, it) => {
@@ -104,7 +101,7 @@ export class ReferenceTag extends BlockTag  {
         waiter.wait(w.end().then(() => {
             const item = ctx.cache.get(this.id) as View | Component
             if (this.events.length) {
-                this.events.forEach(it => ctx.bind(true, item as any as EventTarget, it))
+                this.events.forEach(it => ctx.event(true, item as any as EventTarget, it))
             }
             return item.destroy()
         }))
